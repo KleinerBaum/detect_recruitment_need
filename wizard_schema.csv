@@ -1,0 +1,121 @@
+step,key,field_type,is_must,label,options,helptext
+BASIC,job_title,text_input,1,Job Title,,Bitte den exakten Jobtitel angeben
+BASIC,employment_type,selectbox,1,Employment Type,"Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other",Beschäftigungsart auswählen
+BASIC,contract_type,selectbox,1,Contract Type,"Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit",Vertragsart auswählen
+BASIC,seniority_level,selectbox,1,Seniority Level,"Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern",Karrierestufe auswählen
+BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
+BASIC,work_schedule,selectbox,0,Work Schedule,"Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid",Arbeitszeitmodell auswählen
+BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
+COMPANY,company_name,text_input,1,Company Name,,Firmenname
+COMPANY,city,text_input,1,Company City,,Stadt (Sitz der Firma)
+COMPANY,company_size,selectbox,0,Company Size,"1-10;11-50;51-200;201-500;501-1000;1001-5000;5001+",Unternehmensgröße auswählen
+COMPANY,industry,selectbox,0,Industry,"IT;Consulting;Finance;Healthcare;Manufacturing;Retail;Automotive;Construction;Media;Other",Branche auswählen
+COMPANY,headquarters_location,text_input,0,Headquarters Location,,Hauptsitz
+COMPANY,place_of_work,text_input,0,Place of Work,,Genaue Arbeitsstätte
+COMPANY,company_website,text_input,0,Company Website,,Firmenwebsite (URL)
+DEPARTMENT,department_name,text_input,0,Department Name,,Abteilung
+DEPARTMENT,brand_name,text_input,0,Brand Name,,Marke
+DEPARTMENT,team_size,selectbox,0,Team Size,"1-2;3-5;6-10;11-20;21-50;50+",Teamgröße
+DEPARTMENT,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
+DEPARTMENT,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
+DEPARTMENT,reports_to,text_input,0,Reports To,,Vorgesetzter
+DEPARTMENT,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
+DEPARTMENT,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
+DEPARTMENT,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
+DEPARTMENT,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
+DEPARTMENT,client_difficulties,text_area,0,Client Difficulties,,Schwierigkeiten mit Kunden
+DEPARTMENT,main_stakeholders,text_area,0,Main Stakeholders,,Wichtigste Stakeholder
+DEPARTMENT,team_motivation,text_area,0,Team Motivation,,Was motiviert das Team?
+DEPARTMENT,recent_team_changes,text_area,0,Recent Team Changes,,Kürzliche Teamänderungen
+DEPARTMENT,office_language,selectbox,0,Office Language,"Deutsch;Englisch;Französisch;Italienisch;Spanisch;Other",Bürosprache
+DEPARTMENT,office_type,selectbox,0,Office Type,"Open Space;Einzelbüro;Remote;Hybrid;Home Office",Bürotyp
+ROLE,role_description,text_area,1,Role Description,,Stellenbeschreibung / Aufgabenstellung
+ROLE,role_type,selectbox,0,Role Type,"Technical;Non-Technical;Leadership;Operational;Project-based;Consultant",Rollenart
+ROLE,role_keywords,text_area,0,Role Keywords,,Schlagworte zur Rolle
+ROLE,role_performance_metrics,text_area,0,Performance Metrics,,Leistungskennzahlen
+ROLE,role_priority_projects,text_area,0,Priority Projects,,Wichtige Projekte
+ROLE,primary_responsibilities,text_area,1,Primary Responsibilities,,Hauptaufgaben
+ROLE,key_deliverables,text_area,0,Key Deliverables,,Zentrale Ergebnisse
+ROLE,success_metrics,text_area,0,Success Metrics,,Erfolgskriterien
+ROLE,main_projects,text_area,0,Main Projects,,Wesentliche Projekte
+ROLE,travel_required,selectbox,0,Travel Required,"No;Rarely;Occasionally;Regularly;Frequently",Reiseanteil
+ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
+ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
+ROLE,decision_authority,checkbox,0,Decision Authority,,Entscheidungskompetenz
+ROLE,process_improvement,checkbox,0,Process Improvement,,Prozessoptimierung gefragt?
+ROLE,innovation_expected,checkbox,0,Innovation Expected,,Innovationsgrad gefordert?
+ROLE,daily_tools,text_area,0,Daily Tools,,Tägliche Tools/Programme
+TASKS,task_list,text_area,1,Task List,,Aufgabenliste
+TASKS,key_responsibilities,text_area,1,Key Responsibilities,,Hauptverantwortlichkeiten
+TASKS,technical_tasks,text_area,0,Technical Tasks,,Technische Aufgaben
+TASKS,managerial_tasks,text_area,0,Managerial Tasks,,Führungsaufgaben
+TASKS,administrative_tasks,text_area,0,Administrative Tasks,,Verwaltungsaufgaben
+TASKS,customer_facing_tasks,text_area,0,Customer Facing Tasks,,Kundenkontaktaufgaben
+TASKS,internal_reporting_tasks,text_area,0,Internal Reporting Tasks,,Interne Berichte
+TASKS,performance_tasks,text_area,0,Performance Tasks,,Leistungsaufgaben
+TASKS,innovation_tasks,text_area,0,Innovation Tasks,,Innovationsaufgaben
+TASKS,task_prioritization,checkbox,0,Task Prioritization,,Aufgabenpriorisierung nötig?
+SKILLS,must_have_skills,text_area,1,Must Have Skills,,Erforderliche Kompetenzen/Skills
+SKILLS,nice_to_have_skills,text_area,0,Nice to Have Skills,,Wünschenswerte Skills
+SKILLS,hard_skills,text_area,0,Hard Skills,,Fachliche Kompetenzen
+SKILLS,soft_skills,text_area,0,Soft Skills,,Soziale Kompetenzen
+SKILLS,certifications_required,text_area,0,Certifications Required,,Benötigte Zertifikate
+SKILLS,language_requirements,text_area,0,Language Requirements,,Sprachanforderungen
+SKILLS,languages_optional,text_area,0,Languages Optional,,Weitere Sprachkenntnisse
+SKILLS,analytical_skills,checkbox,0,Analytical Skills,,Analytische Fähigkeiten?
+SKILLS,communication_skills,checkbox,0,Communication Skills,,Kommunikationsfähigkeit?
+SKILLS,project_management_skills,checkbox,0,Project Management Skills,,Projektmanagement-Skills?
+SKILLS,tool_proficiency,text_area,0,Tool Proficiency,,Toolkenntnisse
+SKILLS,tech_stack,text_area,0,Tech Stack,,Tech-Stack
+SKILLS,domain_expertise,text_area,0,Domain Expertise,,Fachgebiet
+SKILLS,leadership_competencies,checkbox,0,Leadership Competencies,,Führungskompetenz
+SKILLS,industry_experience,checkbox,0,Industry Experience,,Branchenerfahrung
+SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere Anforderungen
+SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
+SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
+SKILLS,visa_sponsorship,selectbox,0,Visa Sponsorship,"No;Yes;Optional",Visa möglich?
+COMPENSATION,salary_currency,selectbox,1,Salary Currency,"EUR;USD;GBP;CHF;PLN;Other",Währung
+COMPENSATION,salary_range,text_input,1,Salary Range (EUR),,"Bsp.: 50000–65000"
+COMPENSATION,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt
+COMPENSATION,salary_range_max,number_input,0,Salary Range Max (EUR),,Maximalgehalt
+COMPENSATION,bonus_scheme,text_area,0,Bonus Scheme,,Bonusregelung
+COMPENSATION,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
+COMPENSATION,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
+COMPENSATION,vacation_days,number_input,0,Vacation Days,,Urlaubstage
+COMPENSATION,remote_policy,selectbox,0,Remote Policy,"Onsite;Remote;Hybrid;Flexible;Home Office;After Probation",Homeoffice-Regelung
+COMPENSATION,flexible_hours,selectbox,0,Flexible Hours,"No;Yes;After Probation;By Arrangement",Flexible Arbeitszeiten
+COMPENSATION,relocation_support,selectbox,0,Relocation Support,"No;Yes;Optional",Umzugshilfe
+COMPENSATION,childcare_support,selectbox,0,Childcare Support,"No;Yes;Optional",Kinderbetreuung
+COMPENSATION,learning_budget,number_input,0,Learning Budget (EUR),,Weiterbildungsbudget
+COMPENSATION,company_car,checkbox,0,Company Car,,Firmenwagen
+COMPENSATION,sabbatical_option,checkbox,0,Sabbatical Option,,Sabbatical möglich?
+COMPENSATION,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
+COMPENSATION,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
+COMPENSATION,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
+COMPENSATION,other_perks,text_area,0,Other Perks,,Weitere Benefits
+COMPENSATION,pay_frequency,selectbox,1,Pay Frequency,"Monthly;Yearly;Weekly;Bi-Weekly;Quarterly",Zahlungsintervall
+RECRUITMENT,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
+RECRUITMENT,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Telefonnummer für Bewerbungen
+RECRUITMENT,recruitment_steps,text_area,0,Recruitment Steps,,Bewerbungsprozess
+RECRUITMENT,recruitment_timeline,text_area,0,Recruitment Timeline,,Ablauf/Zeitrahmen
+RECRUITMENT,number_of_interviews,number_input,0,Number of Interviews,,Anzahl Interviews
+RECRUITMENT,interview_format,selectbox,0,Interview Format,"Onsite;Remote;Hybrid;Phone",Interview-Format
+RECRUITMENT,interview_stage_count,number_input,0,Interview Stages,,Stufen im Auswahlprozess
+RECRUITMENT,interview_docs_required,text_area,0,Interview Docs Required,,Erforderliche Unterlagen
+RECRUITMENT,assessment_tests,checkbox,0,Assessment Tests,,Einstellungstests?
+RECRUITMENT,interview_notes,text_area,0,Interview Notes,,Notizen zu Gesprächen
+RECRUITMENT,onboarding_process,text_area,0,Onboarding Process,,Einarbeitungsprozess
+RECRUITMENT,onboarding_process_overview,text_area,0,Onboarding Process Overview,,Überblick Einarbeitung
+RECRUITMENT,probation_period,number_input,0,Probation Period (Months),,Dauer Probezeit (Monate)
+RECRUITMENT,mentorship_program,checkbox,0,Mentorship Program,,Mentorenprogramm?
+RECRUITMENT,welcome_package,checkbox,0,Welcome Package,,Willkommenspaket?
+RECRUITMENT,application_instructions,text_area,0,Application Instructions,,Bewerbungshinweise
+RECRUITMENT,line_manager_name,text_input,0,Line Manager Name,,Fachvorgesetzter Name
+RECRUITMENT,line_manager_email,text_input,0,Line Manager Email,,Fachvorgesetzter Email
+RECRUITMENT,line_manager_recv_cv,checkbox,0,Line Manager Receives CV,,Erhält CV?
+RECRUITMENT,hr_poc_name,text_input,0,HR POC Name,,HR-Ansprechpartner Name
+RECRUITMENT,hr_poc_email,text_input,0,HR POC Email,,HR-Ansprechpartner Email
+RECRUITMENT,hr_poc_recv_cv,checkbox,0,HR POC Receives CV,,Erhält CV?
+RECRUITMENT,finance_poc_name,text_input,0,Finance POC Name,,Finance-Ansprechpartner Name
+RECRUITMENT,finance_poc_email,text_input,0,Finance POC Email,,Finance-Ansprechpartner Email
+RECRUITMENT,finance_poc_recv_offer,checkbox,0,Finance POC Receives Offer,,Erhält Angebot?
