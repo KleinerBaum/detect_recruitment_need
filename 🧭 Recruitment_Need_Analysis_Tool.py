@@ -1,8 +1,10 @@
 from __future__ import annotations
-
+from streamlit import session_state as ss
 import asyncio, json, re, ast, logging, os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
+from datetime import date
+
 from io import BytesIO
 from typing import Iterable
 from bs4 import BeautifulSoup
@@ -16,6 +18,9 @@ import datetime as dt
 import csv
 from collections import defaultdict
 import re
+from typing import Any
+from pathlib import Path
+import base64
 
 SCHEMA = {}
 with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
@@ -28,17 +33,6 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         row["options"] = options
         SCHEMA[step].append(row)
         
-SCHEMA = {}
-with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
-    for row in csv.DictReader(f):
-        step = row["step"]
-        if step not in SCHEMA:
-            SCHEMA[step] = []
-        # Parsing options (as list if present)
-        options = row["options"].split(";") if row["options"].strip() else None
-        row["options"] = options
-        SCHEMA[step].append(row)
-
 DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
 
 st.markdown(
@@ -114,7 +108,6 @@ STEPS: list[tuple[str, list[str]]] = [
     (name.title().replace("_", " "), [item["key"] for item in SCHEMA[name]])
     for name in ORDER if name in SCHEMA
 ]
-st.write("Generated steps:", STEPS)
 
 # ──────────────────────────────────────────────
 # REGEX PATTERNS
@@ -422,6 +415,284 @@ def show_input(key, default, meta):
     st.session_state["data"][key] = val
 
 
+
+def display_extracted_values_editable(extracted: dict, keys: list[str], step_name: str):
+    """
+    Zeigt extrahierte Werte an und ermöglicht Edit per Icon.
+    Änderungen landen direkt in ss["data"].
+    """
+    chunk_size = 5
+    labels = [(k, v) for k, v in ((k, extracted.get(k)) for k in keys) if v and getattr(v, "value", None)]
+    if not labels:
+        st.info("Keine Werte extrahiert.")
+        return
+
+    # --- Edit-Handling ---
+    if "edit_state" not in ss:
+        ss["edit_state"] = {}  # Dict[str, bool]
+    if "edit_values" not in ss:
+        ss["edit_values"] = {}  # Dict[str, str]
+
+    chunks = [labels[i:i + chunk_size] for i in range(0, len(labels), chunk_size)]
+    cols = st.columns(len(chunks))
+
+    for col, chunk in zip(cols, chunks):
+        with col:
+            for k, res in chunk:
+                label = k.replace("_", " ").title()
+                val = res.value
+                confidence = int(res.confidence * 100)
+                edit_key = f"{step_name}_{k}_edit"
+                edit_val_key = f"{step_name}_{k}_editval"
+                # --- Standardanzeige mit Icon ---
+                if not ss["edit_state"].get(edit_key, False):
+                    st.markdown(
+                        f"<b>{label}:</b> {val} <span style='color:#888'>({confidence}%)</span> "
+                        f"<span style='cursor:pointer;'>&nbsp;</span>",
+                        unsafe_allow_html=True,
+                    )
+                    # Icon as button (for accessibility)
+                    if st.button("✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True):
+                        ss["edit_state"][edit_key] = True
+                        ss["edit_values"][edit_val_key] = val
+                        st.rerun()  # Sofort umschalten!
+                else:
+                    # Edit mode
+                    new_val = st.text_input(f"{label} bearbeiten", value=ss["edit_values"].get(edit_val_key, val), key=f"{edit_val_key}_input")
+                    col1, col2 = st.columns([2, 1])
+                    with col1:
+                        if st.button("✔️ Speichern", key=f"{edit_key}_save"):
+                            ss["data"][k] = new_val
+                            ss["edit_state"][edit_key] = False
+                            st.rerun()
+                    with col2:
+                        if st.button("❌ Abbrechen", key=f"{edit_key}_cancel"):
+                            ss["edit_state"][edit_key] = False
+                            st.rerun()
+
+def display_missing_fields(meta_fields, extracted: dict, step_name: str):
+    # Felder, die NICHT in extracted sind oder keinen Wert haben
+    missing = []
+    for meta in meta_fields:
+        k = meta["key"]
+        # Wert fehlt, oder leer
+        if not (k in extracted and getattr(extracted[k], "value", None)):
+            missing.append(meta)
+    if not missing:
+        return
+
+    st.subheader("Noch offene Felder")
+    if "edit_state" not in ss:
+        ss["edit_state"] = {}
+    if "edit_values" not in ss:
+        ss["edit_values"] = {}
+
+    for meta in missing:
+        k = meta["key"]
+        label = meta.get("label", k.replace("_", " ").title())
+        edit_key = f"{step_name}_{k}_manualedit"
+        edit_val_key = f"{step_name}_{k}_manualval"
+        val = ss["data"].get(k, "")
+        if not ss["edit_state"].get(edit_key, False):
+            # Zeile mit Icon
+            st.markdown(f"<b>{label}:</b> <span style='color:#888'>{val or '(leer)'}</span>", unsafe_allow_html=True)
+            if st.button("✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True):
+                ss["edit_state"][edit_key] = True
+                ss["edit_values"][edit_val_key] = val
+                st.rerun()
+        else:
+            # Edit-Input
+            new_val = st.text_input(f"{label} eingeben", value=ss["edit_values"].get(edit_val_key, val), key=f"{edit_val_key}_input")
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                if st.button("✔️ Speichern", key=f"{edit_key}_save"):
+                    ss["data"][k] = new_val
+                    ss["edit_state"][edit_key] = False
+                    st.rerun()
+            with col2:
+                if st.button("❌ Abbrechen", key=f"{edit_key}_cancel"):
+                    ss["edit_state"][edit_key] = False
+                    st.rerun()
+
+
+img_path = Path("images/AdobeStock_506577005.jpeg")
+
+# Bild als Base64 laden (damit es im CSS eingebettet werden kann)
+def get_base64_image(img_path):
+    with open(img_path, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+    return f"data:image/jpeg;base64,{encoded}"
+
+# CSS-Block für halbtransparentes Hintergrundbild
+def set_background(image_path: Path, opacity=0.5):
+    img_url = get_base64_image(image_path)
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background: linear-gradient(rgba(255, 255, 255, {1-opacity}), rgba(255, 255, 255, {0-opacity})), 
+                        url("{img_url}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# Hintergrund aktivieren
+set_background(img_path, opacity=0.5)
+
+
+# Mapping für Subtitles pro Step
+STEP_SUBTITLES = {
+    "BASIC": (
+        "Hier werden die Basisdaten zur Vakanz gesammelt – sie sind wichtig für die spätere Zuordnung, Suche und Vergleichbarkeit. "
+        "Je vollständiger diese Angaben sind, desto gezielter kann die Stelle gefunden und analysiert werden."
+    ),
+    "COMPANY": (
+        "Informationen zum Unternehmen helfen, die Vakanz besser zu verorten und passgenaues Employer Branding zu ermöglichen. "
+        "Firmenbezogene Angaben erhöhen die Glaubwürdigkeit und Transparenz gegenüber Kandidat:innen."
+    ),
+    "DEPARTMENT": (
+        "Team- und Abteilungsinfos sind entscheidend, um das Umfeld und die Anforderungen präzise zu erfassen. "
+        "So wird klar, wie die Position im Team eingebettet ist und welche Schnittstellen relevant sind."
+    ),
+    "ROLE": (
+        "Die Aufgaben und die Rolle sind das Herzstück der Ausschreibung – hier bitte besonders genau sein. "
+        "Je klarer die Rolle beschrieben ist, desto besser passen die späteren Kandidat:innen."
+    ),
+    "TASKS": (
+        "Hier werden alle wesentlichen Aufgaben und Verantwortlichkeiten der Position gesammelt. "
+        "Eine transparente Aufgabenbeschreibung hilft Missverständnisse zu vermeiden und Erwartungen zu steuern."
+    ),
+    "SKILLS": (
+        "An dieser Stelle werden die fachlichen und persönlichen Kompetenzen festgehalten, die für die Vakanz wichtig sind. "
+        "Eine genaue Definition der Anforderungen erleichtert das Matching im späteren Prozess."
+    ),
+    "BENEFITS": (
+        "In diesem Abschnitt werden die Vorteile und Benefits präsentiert, die das Unternehmen bietet. "
+        "Attraktive Zusatzleistungen steigern die Arbeitgeberattraktivität und fördern Bewerbungen."
+    ),
+    "TARGET_GROUP": (
+        "Hier analysierst du die Zielgruppe, für die die Position besonders attraktiv ist. "
+        "Durch das Verständnis der Zielgruppe kann die Ansprache und das Sourcing gezielter erfolgen."
+    ),
+    "INTERVIEW": (
+        "Der Interviewprozess und die beteiligten Personen werden in diesem Abschnitt dokumentiert. "
+        "Eine klare Struktur des Prozesses sorgt für ein professionelles Kandidaten-Erlebnis."
+    ),
+    "SUMMARY": (
+        "Im letzten Schritt werden alle Informationen noch einmal übersichtlich zusammengefasst. "
+        "Überprüfe die Angaben und exportiere das vollständige Anforderungsprofil."
+    ),
+}
+
+
+# AI-Functions
+
+# --- a) Jobad-Generator mit DSGVO, SEO, Edit, PDF ---
+async def generate_jobad(data: dict) -> str:
+    """
+    Generiert eine professionelle, DSGVO-konforme und SEO-optimierte Stellenanzeige auf Basis der gesammelten Daten.
+    Rückgabe: Jobad als Markdown/Text.
+    """
+    prompt = (
+        "Erstelle eine vollständige, DSGVO-konforme und suchmaschinenoptimierte Stellenanzeige "
+        "auf Basis der folgenden strukturierten Daten. "
+        "Achte auf Transparenz (Datenschutz), genderneutrale Sprache und passende Formatierung. "
+        f"Daten: {json.dumps(data, ensure_ascii=False, default=str)}"
+    )
+    chat = await client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0.7,
+        max_tokens=1500,
+        messages=[
+            {"role": "system", "content": "Du bist HR- und SEO-Textexperte."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return chat.choices[0].message.content.strip()
+
+def download_as_pdf(text: str, filename: str = "jobad.pdf"):
+    """
+    Konvertiert einen gegebenen Text zu PDF und stellt ihn als Download bereit.
+    """
+    import fpdf  # oder reportlab, pdfkit etc.
+    from fpdf import FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    for line in text.splitlines():
+        pdf.cell(0, 10, txt=line, ln=1)
+    pdf.output(filename)
+    with open(filename, "rb") as f:
+        st.download_button("Download PDF", f, file_name=filename, mime="application/pdf")
+
+# --- b) Interview-Vorbereitungs-Sheet ---
+async def generate_interview_sheet(data: dict) -> str:
+    """
+    Erstellt ein kompaktes, tabellarisches Vorbereitungsblatt für Line und HR auf Basis der wichtigsten Anforderungen, Aufgaben und Wunschkriterien.
+    Rückgabe: Markdown- oder HTML-Tabelle.
+    """
+    prompt = (
+        "Erstelle eine übersichtliche Interviewvorbereitung für Fachbereich und HR. "
+        "Stelle Schlüsselkriterien, Muss- und Wunsch-Skills sowie Frageempfehlungen tabellarisch dar. "
+        f"Basisdaten: {json.dumps(data, ensure_ascii=False)}"
+    )
+    chat = await client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0.5,
+        max_tokens=800,
+        messages=[
+            {"role": "system", "content": "Du bist Interviewcoach für HR und Linemanager."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return chat.choices[0].message.content.strip()
+
+# --- c) Boolean Searchstring ---
+async def generate_boolean_search(data: dict) -> str:
+    """
+    Erstellt einen professionellen, auf die Vakanz optimierten Boolean Searchstring für Jobbörsen, LinkedIn, XING etc.
+    """
+    prompt = (
+        "Erstelle einen prägnanten, suchmaschinenoptimierten Boolean Searchstring für Active Sourcing. "
+        "Nutze Aufgaben, Anforderungen und Skills als Grundlage. "
+        f"Stellenprofil: {json.dumps(data, ensure_ascii=False)}"
+    )
+    chat = await client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0.3,
+        max_tokens=300,
+        messages=[
+            {"role": "system", "content": "Du bist Sourcing-Experte."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return chat.choices[0].message.content.strip()
+
+# --- d) Arbeitsvertrag-Generator ---
+async def generate_contract(data: dict) -> str:
+    """
+    Erstellt einen einfachen Entwurf für einen Arbeitsvertrag auf Basis der extrahierten Stammdaten.
+    (Beachte: Dies ist keine Rechtsberatung und ersetzt keinen Juristen!)
+    """
+    prompt = (
+        "Erstelle einen Muster-Arbeitsvertrag (nur als Vorlage, keine Rechtsberatung!) auf Basis dieser strukturierten Daten. "
+        "Inkludiere alle relevanten Pflichtangaben (Name, Stelle, Vergütung, Beginn, Probezeit, Aufgaben, Arbeitszeit). "
+        f"Daten: {json.dumps(data, ensure_ascii=False, default=str)}"
+    )
+    chat = await client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0.4,
+        max_tokens=1200,
+        messages=[
+            {"role": "system", "content": "Du bist Vertragsgenerator für HR (keine Rechtsberatung)."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return chat.choices[0].message.content.strip()
+
 # ── Streamlit main ------------------------------------------------------------
 def main():
     st.set_page_config(
@@ -444,12 +715,12 @@ def main():
     if step == 0:
         # Schönes Welcome-Design!
         st.markdown("""
-            <h1 style="text-align:center">Recruitment Need Analysis Tool 🧭</h1>
-            <div style="text-align:center">
-                <p>Welcome! This wizard helps you quickly create a complete vacancy profile.<br>
-                Upload a job ad (PDF/DOCX) or paste a URL. All relevant information will be extracted automatically.<br>
-                <b>Afterwards, just review and complete missing fields step-by-step.</b></p>
-            </div>
+        <div class="black-text">
+            <h2>Recruitment Need Analysis Tool 🧭</h2>
+            <p>Welcome! This wizard helps you quickly create a complete vacancy profile.</p>
+            <p>Upload a Job Advert or paste a URL. All relevant information will be extracted and preprocessed automatically.</p>
+            <p>Afterwards, just review and complete missing fields step-by-step.</p>
+        </div>
         """, unsafe_allow_html=True)
 
         st.divider()
@@ -472,28 +743,27 @@ def main():
 
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS)+1:
-        # Classic Wizard Step UI
         step_idx = step - 1
-        title, fields = STEPS[step_idx]
-        clean_title = title.split("–", 1)[-1].strip()
-        data = ss["data"]
-
-        # (Optional: Headline dynamisch anpassen wie gehabt)
-        st.header(clean_title)
+        step_name = ORDER[step_idx]
+        meta_fields = SCHEMA[step_name]   # <-- Zuerst setzen!
+        fields = [item["key"] for item in meta_fields]
         extr: dict[str, ExtractResult] = ss["extracted"]
 
+        # Headline & Subtitle
+        st.markdown(f"<h2 style='text-align:center'>{step_name.title()}</h2>", unsafe_allow_html=True)
+        subtitle = STEP_SUBTITLES.get(step_name, "")
+        if subtitle:
+            st.markdown(f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>", unsafe_allow_html=True)
+
+        # Extrahierte Werte mit Editierfunktion
         st.subheader("Auto-extracted values")
-        for k in fields:
-            res = extr.get(k)
-            if res and res.value:
-                ss["data"].setdefault(k, res.value)
-                st.text(f"{k}: {res.value}  ({res.confidence:.0%})")
+        display_extracted_values_editable(extr, fields, step_name)
 
-        # Inputs in zwei Spalten, Pflichtfelder hervorheben
-        step_name = ORDER[step_idx]
-        meta_fields = SCHEMA[step_name]
+        # Sektion für Felder ohne Wert, Edit per Icon
+        display_missing_fields(meta_fields, extr, step_name)
+
+        # Formfelder (Pflicht/Optional wie gehabt)
         left, right = st.columns(2)
-
         for meta in meta_fields:
             key = meta["key"]
             result = extr.get(key) if key in extr else ExtractResult()
@@ -511,16 +781,36 @@ def main():
         ok = all(ss["data"].get(k) for k in required_keys)
         nxt.button("Next →", disabled=not ok, on_click=lambda: goto(step + 1))
 
+
+
     # ----------- Summary / Abschluss ----------
     elif step == len(STEPS)+1:
-        st.header("Summary")
-        st.json(ss["data"], expanded=False)
-        st.download_button(
-            "Download JSON",
-            data=json.dumps(ss["data"], indent=2),
-            file_name=f"vacalyser_{datetime.now():%Y%m%d_%H%M}.json",
-            mime="application/json",
-        )
+        st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
+        action = st.selectbox("Wählen Sie eine Aktion:", [
+            "Jobad generieren",
+            "Interviewvorbereitung erstellen",
+            "Boolean Searchstring generieren",
+            "Arbeitsvertrag generieren"
+        ])
+
+        if st.button("Ausführen"):
+            with st.spinner("Generiere Output…"):
+                if action == "Jobad generieren":
+                    jobad = asyncio.run(generate_jobad(ss["data"]))
+                    st.markdown(jobad)
+                    st.info("Du kannst den Text jetzt anpassen und als PDF exportieren.")
+                    if st.button("PDF Download"):
+                        download_as_pdf(jobad)
+                elif action == "Interviewvorbereitung erstellen":
+                    interview_sheet = asyncio.run(generate_interview_sheet(ss["data"]))
+                    st.markdown(interview_sheet)
+                elif action == "Boolean Searchstring generieren":
+                    boolean_str = asyncio.run(generate_boolean_search(ss["data"]))
+                    st.code(boolean_str)
+                elif action == "Arbeitsvertrag generieren":
+                    contract = asyncio.run(generate_contract(ss["data"]))
+                    st.markdown(contract)
+
         st.button("← Edit", on_click=lambda: goto(len(STEPS)))  # zurück zu letztem Step
 
 if __name__ == "__main__":
