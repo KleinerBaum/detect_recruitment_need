@@ -716,10 +716,10 @@ def main():
         # Schönes Welcome-Design!
         st.markdown("""
         <div class="black-text">
-            <h2>Recruitment Need Analysis Tool 🧭</h2>
-            <p>Welcome! This wizard helps you quickly create a complete vacancy profile.</p>
+            <h2>Recruitment Need Analysis 🧭</h2>
+            <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
             <p>Upload a Job Advert or paste a URL. All relevant information will be extracted and preprocessed automatically.</p>
-            <p>Afterwards, just review and complete missing fields step-by-step.</p>
+            <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
         </div>
         """, unsafe_allow_html=True)
 
