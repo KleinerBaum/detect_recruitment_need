@@ -749,9 +749,8 @@ def main():
                 else:
                     text = http_text(url)
                 ss["extracted"] = asyncio.run(extract(text))
-            goto(1)
-            st.rerun()   # Wichtig: zwingt ein UI-Update nach goto
 
+        st.button("Next →", disabled=not job_title, on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS)+1:
         step_idx = step - 1
