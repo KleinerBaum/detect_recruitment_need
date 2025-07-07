@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 import httpx, streamlit as st
 from openai import AsyncOpenAI
 from PyPDF2 import PdfReader
-import docx  
+import docx
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
 import datetime as dt
@@ -37,7 +37,7 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         options = row["options"].split(";") if row["options"].strip() else None
         row["options"] = options
         SCHEMA[step].append(row)
-        
+
 DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
 
 st.markdown(
@@ -60,6 +60,7 @@ if not api_key:
     st.stop()
 
 client = AsyncOpenAI(api_key=api_key)
+
 
 # ── JSON helpers ──────────────────────────────────────────────────────────────
 def brute_force_brace_fix(s: str) -> str:
@@ -88,6 +89,7 @@ def safe_json_load(text: str) -> dict:
                     logging.error("Secondary JSON extraction failed: %s", e)
                     return {}
 
+
 # ★ mandatory
 MUST_HAVE_KEYS = {
     "job_title",
@@ -106,13 +108,25 @@ MUST_HAVE_KEYS = {
     "recruitment_contact_email",
 }
 
-ORDER = ["BASIC", "COMPANY", "DEPARTMENT", "ROLE", "TASKS", "SKILLS",
-         "BENEFITS", "TARGET_GROUP", "INTERVIEW", "SUMMARY"]
+ORDER = [
+    "BASIC",
+    "COMPANY",
+    "DEPARTMENT",
+    "ROLE",
+    "TASKS",
+    "SKILLS",
+    "BENEFITS",
+    "TARGET_GROUP",
+    "INTERVIEW",
+    "SUMMARY",
+]
 
 STEPS: list[tuple[str, list[str]]] = [
     (name.title().replace("_", " "), [item["key"] for item in SCHEMA[name]])
-    for name in ORDER if name in SCHEMA
+    for name in ORDER
+    if name in SCHEMA
 ]
+
 
 # ──────────────────────────────────────────────
 # REGEX PATTERNS
@@ -122,13 +136,18 @@ STEPS: list[tuple[str, list[str]]] = [
 def _simple(label_en: str, label_de: str, cap: str) -> str:
     return rf"(?:{label_en}|{label_de})\s*:?\s*(?P<{cap}>.+)"
 
+
 REGEX_PATTERNS = {
     # BASIC INFO - mandatory
     "job_title": _simple("Job\\s*Title|Position|Stellenbezeichnung", "", "job_title"),
     "employment_type": _simple("Employment\\s*Type", "Vertragsart", "employment_type"),
     "contract_type": _simple("Contract\\s*Type", "Vertragstyp", "contract_type"),
-    "seniority_level": _simple("Seniority\\s*Level", "Karrierelevel", "seniority_level"),
-    "date_of_employment_start": _simple("Start\\s*Date|Begin\\s*Date", "Eintrittsdatum", "date_of_employment_start"),
+    "seniority_level": _simple(
+        "Seniority\\s*Level", "Karrierelevel", "seniority_level"
+    ),
+    "date_of_employment_start": _simple(
+        "Start\\s*Date|Begin\\s*Date", "Eintrittsdatum", "date_of_employment_start"
+    ),
     "work_schedule": _simple("Work\\s*Schedule", "Arbeitszeitmodell", "work_schedule"),
     "work_location_city": _simple("City|Ort", "Ort", "work_location_city"),
     # Company core
@@ -136,7 +155,9 @@ REGEX_PATTERNS = {
     "city": _simple("City", "Stadt", "city"),
     "company_size": _simple("Company\\s*Size", "Mitarbeiterzahl", "company_size"),
     "industry": _simple("Industry", "Branche", "industry"),
-    "headquarters_location": _simple("HQ\\s*Location", "Hauptsitz", "headquarters_location"),
+    "headquarters_location": _simple(
+        "HQ\\s*Location", "Hauptsitz", "headquarters_location"
+    ),
     "place_of_work": _simple("Place\\s*of\\s*Work", "Arbeitsort", "place_of_work"),
     "company_website": r"(?P<company_website>https?://\S+)",
     # Department / team
@@ -144,27 +165,53 @@ REGEX_PATTERNS = {
     "brand_name": _simple("Brand", "", "brand_name"),
     "team_size": _simple("Team\\s*Size", "Teamgröße", "team_size"),
     "team_structure": _simple("Team\\s*Structure", "Teamaufbau", "team_structure"),
-    "direct_reports_count": _simple("Direct\\s*Reports", "Direkt\\s*Berichte", "direct_reports_count"),
+    "direct_reports_count": _simple(
+        "Direct\\s*Reports", "Direkt\\s*Berichte", "direct_reports_count"
+    ),
     "reports_to": _simple("Reports\\s*To", "unterstellt", "reports_to"),
     "supervises": _simple("Supervises", "Führungsverantwortung", "supervises"),
     "tech_stack": _simple("Tech(ology)?\\s*Stack", "Technologien?", "tech_stack"),
     "culture_notes": _simple("Culture", "Kultur", "culture_notes"),
-    "team_challenges": _simple("Team\\s*Challenges", "Herausforderungen", "team_challenges"),
-    "client_difficulties": _simple("Client\\s*Difficulties", "Kundenprobleme", "client_difficulties"),
-    "main_stakeholders": _simple("Stakeholders?", "Hauptansprechpartner", "main_stakeholders"),
-    "team_motivation": _simple("Team\\s*Motivation", "Team\\s*Motivationen?", "team_motivation"),
-    "recent_team_changes": _simple("Recent\\s*Team\\s*Changes", "Teamveränderungen", "recent_team_changes"),
+    "team_challenges": _simple(
+        "Team\\s*Challenges", "Herausforderungen", "team_challenges"
+    ),
+    "client_difficulties": _simple(
+        "Client\\s*Difficulties", "Kundenprobleme", "client_difficulties"
+    ),
+    "main_stakeholders": _simple(
+        "Stakeholders?", "Hauptansprechpartner", "main_stakeholders"
+    ),
+    "team_motivation": _simple(
+        "Team\\s*Motivation", "Team\\s*Motivationen?", "team_motivation"
+    ),
+    "recent_team_changes": _simple(
+        "Recent\\s*Team\\s*Changes", "Teamveränderungen", "recent_team_changes"
+    ),
     "office_language": _simple("Office\\s*Language", "Bürosprache", "office_language"),
     "office_type": _simple("Office\\s*Type", "Bürotyp", "office_type"),
     # Role definition
-    "role_description": _simple("Role\\s*Description|Role\\s*Purpose", "Aufgabenstellung", "role_description"),
+    "role_description": _simple(
+        "Role\\s*Description|Role\\s*Purpose", "Aufgabenstellung", "role_description"
+    ),
     "role_type": _simple("Role\\s*Type", "Rollenart", "role_type"),
-    "role_keywords": _simple("Role\\s*Keywords?", "Stellenschlüsselwörter", "role_keywords"),
-    "role_performance_metrics": _simple("Performance\\s*Metrics", "Rollenkennzahlen", "role_performance_metrics"),
-    "role_priority_projects": _simple("Priority\\s*Projects", "Prioritätsprojekte", "role_priority_projects"),
-    "primary_responsibilities": _simple("Primary\\s*Responsibilities", "Hauptaufgaben", "primary_responsibilities"),
-    "key_deliverables": _simple("Key\\s*Deliverables", "Ergebnisse", "key_deliverables"),
-    "success_metrics": _simple("Success\\s*Metrics", "Erfolgskennzahlen", "success_metrics"),
+    "role_keywords": _simple(
+        "Role\\s*Keywords?", "Stellenschlüsselwörter", "role_keywords"
+    ),
+    "role_performance_metrics": _simple(
+        "Performance\\s*Metrics", "Rollenkennzahlen", "role_performance_metrics"
+    ),
+    "role_priority_projects": _simple(
+        "Priority\\s*Projects", "Prioritätsprojekte", "role_priority_projects"
+    ),
+    "primary_responsibilities": _simple(
+        "Primary\\s*Responsibilities", "Hauptaufgaben", "primary_responsibilities"
+    ),
+    "key_deliverables": _simple(
+        "Key\\s*Deliverables", "Ergebnisse", "key_deliverables"
+    ),
+    "success_metrics": _simple(
+        "Success\\s*Metrics", "Erfolgskennzahlen", "success_metrics"
+    ),
     "main_projects": _simple("Main\\s*Projects", "Hauptprojekte", "main_projects"),
     "travel_required": _simple("Travel\\s*Required", "Reisetätigkeit", "travel_required"),
     "physical_duties": _simple("Physical\\s*Duties", "Körperliche\\s*Arbeit", "physical_duties"),
