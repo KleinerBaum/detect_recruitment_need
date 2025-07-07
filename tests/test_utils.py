@@ -24,7 +24,7 @@ def test_safe_json_load_valid_and_malformed():
 
 def test_pattern_search_confidence_and_value():
     tool = load_tool_module()
-    res = tool.pattern_search('Name: Alice', 'name', r'(?P<name>.+)')
+    res = tool.pattern_search("Name: Alice", "name", r"(?P<name>.+)")
     assert res is not None
-    assert res.value == 'Alice'
+    assert res.value == "Alice"
     assert res.confidence == 0.9
