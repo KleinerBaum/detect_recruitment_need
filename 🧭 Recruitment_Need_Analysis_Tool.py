@@ -766,7 +766,6 @@ def main():
             st.markdown(f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>", unsafe_allow_html=True)
 
         # Extrahierte Werte mit Editierfunktion
-        st.subheader("Auto-extracted values")
         display_extracted_values_editable(extr, fields, step_name)
 
         # Sektion für Felder ohne Wert, Edit per Icon
