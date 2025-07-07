@@ -1,6 +1,6 @@
 # requirements.txt
 # -----------------
-streamlit==1.46.1          # UI framework :contentReference[oaicite:0]{index=0}
+streamlit4  
 openai==1.93.0             # OpenAI Python SDK :contentReference[oaicite:1]{index=1}
 PyPDF2==3.0.1
 python-docx==1.1.2            # fast PDF text extraction (import as “fitz”) :contentReference[oaicite:2]{index=2}
