@@ -724,6 +724,17 @@ def main():
         """, unsafe_allow_html=True)
 
         st.divider()
+                # Job title input field
+        job_title_default = ss["data"].get("job_title")
+        if not job_title_default:
+            extr_title = ss.get("extracted", {}).get("job_title")
+            if isinstance(extr_title, ExtractResult):
+                job_title_default = extr_title.value or ""
+        job_title = st.text_input("Job Title", value=job_title_default or "")
+        ss["data"]["job_title"] = job_title
+        if job_title and not ss.get("extracted", {}).get("job_title"):
+            ss["extracted"]["job_title"] = ExtractResult(job_title, 1.0)
+
         up = st.file_uploader("Upload Job Description (PDF or DOCX)", type=["pdf", "docx"])
         url = st.text_input("…or paste a Job Ad URL")
 
