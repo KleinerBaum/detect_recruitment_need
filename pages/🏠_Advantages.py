@@ -1,8 +1,8 @@
 # pages/advantages.py
 """Streamlit-Seite: Vorteile / Advantages von Vacalyser
 
-Bietet einen Sprachumschalter (Deutsch ↔ English) und vier Tabs für die
-Zielgruppen Line Manager, Recruiter, Unternehmen und Bewerber.
+Bietet einen Sprachumschalter (Deutsch ↔ English) und drei Tabs für die
+Zielgruppen Line Manager, Recruiter und Unternehmen.
 Die Bullet‑Listen lassen sich jederzeit kürzen oder erweitern, indem du die
 entsprechenden Listen unten anpasst.
 """
@@ -289,12 +289,13 @@ benefits: BenefitsDict = {
 # ---------------------------------------------------------------------------
 
 
-def render_benefits(title: str, items: List[str], show_top: int = 8):
-    """Render top benefits plus full list in expander."""
+def render_benefits(title: str, items: List[str], show_top: int = 8) -> None:
+    """Render top benefits plus full list in expander using bullet points."""
+
     st.subheader(title)
 
     for benefit in items[:show_top]:
-        st.markdown(f"• **{benefit}**")
+        st.markdown(f"- **{benefit}**")
 
     if len(items) > show_top:
         with st.expander(
@@ -302,10 +303,11 @@ def render_benefits(title: str, items: List[str], show_top: int = 8):
                 f"Alle {len(items)} Vorteile anzeigen"
                 if lang == "Deutsch"
                 else f"Show all {len(items)} advantages"
-            )
+            ),
+            expanded=False,
         ):
-            for idx, benefit in enumerate(items[show_top:], start=show_top + 1):
-                st.markdown(f"{idx}. {benefit}")
+            for benefit in items[show_top:]:
+                st.markdown(f"- {benefit}")
 
 
 # ---------------------------------------------------------------------------
@@ -332,9 +334,9 @@ st.markdown(intro_de if lang == "Deutsch" else intro_en)
 # Layout: Tabs
 # ---------------------------------------------------------------------------
 
-tab_labels_de = ["👩‍💼 Line Manager", "🧑‍💻 Recruiter", "🏢 Unternehmen", "🙋 Bewerber"]
+tab_labels_de = ["👩‍💼 Line Manager", "🧑‍💻 Recruiter", "🏢 Unternehmen"]
 
-tab_labels_en = ["👩‍💼 Line Manager", "🧑‍💻 Recruiter", "🏢 Company", "🙋 Candidate"]
+tab_labels_en = ["👩‍💼 Line Manager", "🧑‍💻 Recruiter", "🏢 Company"]
 
 labels = tab_labels_de if lang == "Deutsch" else tab_labels_en
 
@@ -349,10 +351,6 @@ with tabs[1]:
 with tabs[2]:
     label_key = "Unternehmen" if lang == "Deutsch" else "Company"
     render_benefits(labels[2], benefits[lang][label_key])
-
-with tabs[3]:
-    label_key = "Bewerber" if lang == "Deutsch" else "Candidate"
-    render_benefits(labels[3], benefits[lang][label_key])
 
 # ---------------------------------------------------------------------------
 # Footer Hinweis
