@@ -11,9 +11,10 @@ import os
 from dataclasses import dataclass
 
 from io import BytesIO
-from typing import Iterable
+from pathlib import Path
 from bs4 import BeautifulSoup
-import httpx, streamlit as st
+import httpx
+import streamlit as st
 from openai import AsyncOpenAI
 from PyPDF2 import PdfReader
 import docx
@@ -21,13 +22,9 @@ from dotenv import load_dotenv
 from dateutil import parser as dateparser
 import datetime as dt
 import csv
-from collections import defaultdict
-import re
-from typing import Any
-from pathlib import Path
 import base64
 
-SCHEMA = {}
+SCHEMA: dict[str, list[dict[str, str]]] = {}
 with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
     for row in csv.DictReader(f):
         step = row["step"]
@@ -213,92 +210,212 @@ REGEX_PATTERNS = {
         "Success\\s*Metrics", "Erfolgskennzahlen", "success_metrics"
     ),
     "main_projects": _simple("Main\\s*Projects", "Hauptprojekte", "main_projects"),
-    "travel_required": _simple("Travel\\s*Required", "Reisetätigkeit", "travel_required"),
-    "physical_duties": _simple("Physical\\s*Duties", "Körperliche\\s*Arbeit", "physical_duties"),
+    "travel_required": _simple(
+        "Travel\\s*Required", "Reisetätigkeit", "travel_required"
+    ),
+    "physical_duties": _simple(
+        "Physical\\s*Duties", "Körperliche\\s*Arbeit", "physical_duties"
+    ),
     "on_call": _simple("On[-\\s]?Call", "Bereitschaft", "on_call"),
-    "decision_authority": _simple("Decision\\s*Authority", "Entscheidungsbefugnis", "decision_authority"),
-    "process_improvement": _simple("Process\\s*Improvement", "Prozessverbesserung", "process_improvement"),
-    "innovation_expected": _simple("Innovation\\s*Expected", "Innovationsgrad", "innovation_expected"),
-    "daily_tools": _simple("Daily\\s*Tools", "Tägliche\\s*Tools?", "daily_tools"),
+    "decision_authority": _simple(
+        "Decision\\s*Authority", "Entscheidungsbefugnis", "decision_authority"
+    ),
+    "process_improvement": _simple(
+        "Process\\s*Improvement", "Prozessverbesserung", "process_improvement"
+    ),
+    "innovation_expected": _simple(
+        "Innovation\\s*Expected", "Innovationsgrad", "innovation_expected"
+    ),    "daily_tools": _simple("Daily\\s*Tools", "Tägliche\\s*Tools?", "daily_tools"),
     # Tasks
     "task_list": _simple("Task\\s*List", "Aufgabenliste", "task_list"),
-    "key_responsibilities": _simple("Key\\s*Responsibilities", "Hauptverantwortlichkeiten", "key_responsibilities"),
-    "technical_tasks": _simple("Technical\\s*Tasks?", "Technische\\s*Aufgaben", "technical_tasks"),
-    "managerial_tasks": _simple("Managerial\\s*Tasks?", "Führungsaufgaben", "managerial_tasks"),
-    "administrative_tasks": _simple("Administrative\\s*Tasks?", "Verwaltungsaufgaben", "administrative_tasks"),
-    "customer_facing_tasks": _simple("Customer[-\\s]?Facing\\s*Tasks?", "Kundenkontaktaufgaben", "customer_facing_tasks"),
-    "internal_reporting_tasks": _simple("Internal\\s*Reporting\\s*Tasks", "Berichtsaufgaben", "internal_reporting_tasks"),
-    "performance_tasks": _simple("Performance\\s*Tasks", "Leistungsaufgaben", "performance_tasks"),
-    "innovation_tasks": _simple("Innovation\\s*Tasks", "Innovationsaufgaben", "innovation_tasks"),
-    "task_prioritization": _simple("Task\\s*Prioritization", "Aufgabenpriorisierung", "task_prioritization"),
+    "key_responsibilities": _simple(
+        "Key\\s*Responsibilities", "Hauptverantwortlichkeiten", "key_responsibilities"
+    ),
+    "technical_tasks": _simple(
+        "Technical\\s*Tasks?", "Technische\\s*Aufgaben", "technical_tasks"
+    ),
+    "managerial_tasks": _simple(
+        "Managerial\\s*Tasks?", "Führungsaufgaben", "managerial_tasks"
+    ),
+    "administrative_tasks": _simple(
+        "Administrative\\s*Tasks?", "Verwaltungsaufgaben", "administrative_tasks"
+    ),
+    "customer_facing_tasks": _simple(
+        "Customer[-\\s]?Facing\\s*Tasks?",
+        "Kundenkontaktaufgaben",
+        "customer_facing_tasks",
+    ),
+    "internal_reporting_tasks": _simple(
+        "Internal\\s*Reporting\\s*Tasks", "Berichtsaufgaben", "internal_reporting_tasks"
+    ),
+    "performance_tasks": _simple(
+        "Performance\\s*Tasks", "Leistungsaufgaben", "performance_tasks"
+    ),
+    "innovation_tasks": _simple(
+        "Innovation\\s*Tasks", "Innovationsaufgaben", "innovation_tasks"
+    ),
+    "task_prioritization": _simple(
+        "Task\\s*Prioritization", "Aufgabenpriorisierung", "task_prioritization"
+    ),
     # Skills
-    "must_have_skills": _simple("Must[-\\s]?Have\\s*Skills?", "Erforderliche\\s*Kenntnisse", "must_have_skills"),
-    "nice_to_have_skills": _simple("Nice[-\\s]?to[-\\s]?Have\\s*Skills?", "Wünschenswert", "nice_to_have_skills"),
+    "must_have_skills": _simple(
+        "Must[-\\s]?Have\\s*Skills?", "Erforderliche\\s*Kenntnisse", "must_have_skills"
+    ),
+    "nice_to_have_skills": _simple(
+        "Nice[-\\s]?to[-\\s]?Have\\s*Skills?", "Wünschenswert", "nice_to_have_skills"
+    ),
     "hard_skills": _simple("Hard\\s*Skills", "Fachkenntnisse", "hard_skills"),
     "soft_skills": _simple("Soft\\s*Skills", "Soziale\\s*Kompetenzen?", "soft_skills"),
-    "certifications_required": _simple("Certifications?\\s*Required", "Zertifikate", "certifications_required"),
-    "language_requirements": _simple("Language\\s*Requirements", "Sprachanforderungen", "language_requirements"),
-    "languages_optional": _simple("Languages\\s*Optional", "Weitere\\s*Sprachen", "languages_optional"),
-    "analytical_skills": _simple("Analytical\\s*Skills", "Analytische\\s*Fähigkeiten", "analytical_skills"),
-    "communication_skills": _simple("Communication\\s*Skills", "Kommunikationsfähigkeiten", "communication_skills"),
-    "project_management_skills": _simple("Project\\s*Management\\s*Skills", "Projektmanagementskills?", "project_management_skills"),
-    "tool_proficiency": _simple("Tool\\s*Proficiency", "Toolkenntnisse", "tool_proficiency"),
-    "tech_stack": _simple("Tech(ology)?\\s*Stack", "Technologien?", "tech_stack"),  # duplicate name OK
-    "domain_expertise": _simple("Domain\\s*Expertise", "Fachgebiet", "domain_expertise"),
-    "leadership_competencies": _simple("Leadership\\s*Competencies", "Führungskompetenzen?", "leadership_competencies"),
-    "industry_experience": _simple("Industry\\s*Experience", "Branchenerfahrung", "industry_experience"),
-    "soft_requirement_details": _simple("Soft\\s*Requirement\\s*Details", "Weitere\\s*Anforderungen", "soft_requirement_details"),
-    "years_experience_min": _simple("Years\\s*Experience", "Berufserfahrung", "years_experience_min"),
+    "certifications_required": _simple(
+        "Certifications?\\s*Required", "Zertifikate", "certifications_required"
+    ),
+    "language_requirements": _simple(
+        "Language\\s*Requirements", "Sprachanforderungen", "language_requirements"
+    ),
+    "languages_optional": _simple(
+        "Languages\\s*Optional", "Weitere\\s*Sprachen", "languages_optional"
+    ),
+    "analytical_skills": _simple(
+        "Analytical\\s*Skills", "Analytische\\s*Fähigkeiten", "analytical_skills"
+    ),
+    "communication_skills": _simple(
+        "Communication\\s*Skills", "Kommunikationsfähigkeiten", "communication_skills"
+    ),
+    "project_management_skills": _simple(
+        "Project\\s*Management\\s*Skills",
+        "Projektmanagementskills?",
+        "project_management_skills",
+    ),
+    "tool_proficiency": _simple(
+        "Tool\\s*Proficiency", "Toolkenntnisse", "tool_proficiency"
+    ),
+    "domain_expertise": _simple(
+        "Domain\\s*Expertise", "Fachgebiet", "domain_expertise"
+    ),
+    "leadership_competencies": _simple(
+        "Leadership\\s*Competencies", "Führungskompetenzen?", "leadership_competencies"
+    ),
+    "industry_experience": _simple(
+        "Industry\\s*Experience", "Branchenerfahrung", "industry_experience"
+    ),
+    "soft_requirement_details": _simple(
+        "Soft\\s*Requirement\\s*Details",
+        "Weitere\\s*Anforderungen",
+        "soft_requirement_details",
+    ),
+    "years_experience_min": _simple(
+        "Years\\s*Experience", "Berufserfahrung", "years_experience_min"
+    ),
     "it_skills": _simple("IT\\s*Skills", "IT[-\\s]?Kenntnisse", "it_skills"),
-    "visa_sponsorship": _simple("Visa\\s*Sponsorship", "Visasponsoring", "visa_sponsorship"),
+    "visa_sponsorship": _simple(
+        "Visa\\s*Sponsorship", "Visasponsoring", "visa_sponsorship"
+    ),
     # Compensation
     "salary_currency": _simple("Currency", "Währung", "salary_currency"),
     "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|to|–)\s*\d{4,6})",
     "salary_range_min": r"(?P<salary_range_min>\d{4,6})\s*(?:-|to|–)\s*\d{4,6}",
     "salary_range_max": r"\d{4,6}\s*(?:-|to|–)\s*(?P<salary_range_max>\d{4,6})",
-    "bonus_scheme": _simple("Bonus\\s*Scheme|Bonus\\s*Model", "Bonusregelung", "bonus_scheme"),
-    "commission_structure": _simple("Commission\\s*Structure", "Provisionsmodell", "commission_structure"),
-    "variable_comp": _simple("Variable\\s*Comp", "Variable\\s*Vergütung", "variable_comp"),
+    "bonus_scheme": _simple(
+        "Bonus\\s*Scheme|Bonus\\s*Model", "Bonusregelung", "bonus_scheme"
+    ),
+    "commission_structure": _simple(
+        "Commission\\s*Structure", "Provisionsmodell", "commission_structure"
+    ),
+    "variable_comp": _simple(
+        "Variable\\s*Comp", "Variable\\s*Vergütung", "variable_comp"
+    ),
     "vacation_days": _simple("Vacation\\s*Days", "Urlaubstage", "vacation_days"),
-    "remote_policy": _simple("Remote\\s*Policy", "Home\\s*Office\\s*Regelung", "remote_policy"),
-    "flexible_hours": _simple("Flexible\\s*Hours|Gleitzeit", "Gleitzeit", "flexible_hours"),
-    "relocation_support": _simple("Relocation\\s*Support", "Umzugshilfe", "relocation_support"),
-    "childcare_support": _simple("Childcare\\s*Support", "Kinderbetreuung", "childcare_support"),
-    "learning_budget": _simple("Learning\\s*Budget", "Weiterbildungsbudget", "learning_budget"),
+    "remote_policy": _simple(
+        "Remote\\s*Policy", "Home\\s*Office\\s*Regelung", "remote_policy"
+    ),
+    "flexible_hours": _simple(
+        "Flexible\\s*Hours|Gleitzeit", "Gleitzeit", "flexible_hours"
+    ),
+    "relocation_support": _simple(
+        "Relocation\\s*Support", "Umzugshilfe", "relocation_support"
+    ),
+    "childcare_support": _simple(
+        "Childcare\\s*Support", "Kinderbetreuung", "childcare_support"
+    ),
+    "learning_budget": _simple(
+        "Learning\\s*Budget", "Weiterbildungsbudget", "learning_budget"
+    ),
     "company_car": _simple("Company\\s*Car", "Firmenwagen", "company_car"),
-    "sabbatical_option": _simple("Sabbatical\\s*Option", "Auszeitmodell", "sabbatical_option"),
-    "health_insurance": _simple("Health\\s*Insurance", "Krankenversicherung", "health_insurance"),
+    "sabbatical_option": _simple(
+        "Sabbatical\\s*Option", "Auszeitmodell", "sabbatical_option"
+    ),
+    "health_insurance": _simple(
+        "Health\\s*Insurance", "Krankenversicherung", "health_insurance"
+    ),
     "pension_plan": _simple("Pension\\s*Plan", "Altersvorsorge", "pension_plan"),
     "stock_options": _simple("Stock\\s*Options", "Aktienoptionen", "stock_options"),
     "other_perks": _simple("Other\\s*Perks", "Weitere\\s*Benefits", "other_perks"),
     "pay_frequency": r"(?P<pay_frequency>monthly|annual|yearly|hourly|quarterly)",
     # Recruitment
     "recruitment_contact_email": r"(?P<recruitment_contact_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "recruitment_contact_phone": _simple("Contact\\s*Phone", "Telefon", "recruitment_contact_phone"),
-    "recruitment_steps": _simple("Recruitment\\s*Steps", "Bewerbungsprozess", "recruitment_steps"),
-    "recruitment_timeline": _simple("Recruitment\\s*Timeline", "Bewerbungszeitplan", "recruitment_timeline"),
-    "number_of_interviews": _simple("Number\\s*of\\s*Interviews", "Anzahl\\s*Interviews", "number_of_interviews"),
-    "interview_format": _simple("Interview\\s*Format", "Interviewformat", "interview_format"),
-    "interview_stage_count": _simple("Interview\\s*Stages?", "Bewerbungsgespräche", "interview_stage_count"),
-    "interview_docs_required": _simple("Interview\\s*Docs\\s*Required", "Unterlagen", "interview_docs_required"),
-    "assessment_tests": _simple("Assessment\\s*Tests?", "Einstellungstests?", "assessment_tests"),
-    "interview_notes": _simple("Interview\\s*Notes", "Interviewnotizen", "interview_notes"),
-    "onboarding_process": _simple("Onboarding\\s*Process", "Einarbeitung", "onboarding_process"),
-    "onboarding_process_overview": _simple("Onboarding\\s*Overview", "Einarbeitungsüberblick", "onboarding_process_overview"),
+    "recruitment_contact_phone": _simple(
+        "Contact\\s*Phone", "Telefon", "recruitment_contact_phone"
+    ),
+    "recruitment_steps": _simple(
+        "Recruitment\\s*Steps", "Bewerbungsprozess", "recruitment_steps"
+    ),
+    "recruitment_timeline": _simple(
+        "Recruitment\\s*Timeline", "Bewerbungszeitplan", "recruitment_timeline"
+    ),
+    "number_of_interviews": _simple(
+        "Number\\s*of\\s*Interviews", "Anzahl\\s*Interviews", "number_of_interviews"
+    ),
+    "interview_format": _simple(
+        "Interview\\s*Format", "Interviewformat", "interview_format"
+    ),
+    "interview_stage_count": _simple(
+        "Interview\\s*Stages?", "Bewerbungsgespräche", "interview_stage_count"
+    ),
+    "interview_docs_required": _simple(
+        "Interview\\s*Docs\\s*Required", "Unterlagen", "interview_docs_required"
+    ),
+    "assessment_tests": _simple(
+        "Assessment\\s*Tests?", "Einstellungstests?", "assessment_tests"
+    ),
+    "interview_notes": _simple(
+        "Interview\\s*Notes", "Interviewnotizen", "interview_notes"
+    ),
+    "onboarding_process": _simple(
+        "Onboarding\\s*Process", "Einarbeitung", "onboarding_process"
+    ),
+    "onboarding_process_overview": _simple(
+        "Onboarding\\s*Overview",
+        "Einarbeitungsüberblick",
+        "onboarding_process_overview",
+    ),
     "probation_period": _simple("Probation\\s*Period", "Probezeit", "probation_period"),
-    "mentorship_program": _simple("Mentorship\\s*Program", "Mentorenprogramm", "mentorship_program"),
-    "welcome_package": _simple("Welcome\\s*Package", "Willkommenspaket", "welcome_package"),
-    "application_instructions": _simple("Application\\s*Instructions", "Bewerbungshinweise", "application_instructions"),
+    "mentorship_program": _simple(
+        "Mentorship\\s*Program", "Mentorenprogramm", "mentorship_program"
+    ),
+    "welcome_package": _simple(
+        "Welcome\\s*Package", "Willkommenspaket", "welcome_package"
+    ),
+    "application_instructions": _simple(
+        "Application\\s*Instructions", "Bewerbungshinweise", "application_instructions"
+    ),
     # Key contacts
-    "line_manager_name": _simple("Line\\s*Manager", "Fachvorgesetzte?r", "line_manager_name"),
+    "line_manager_name": _simple(
+        "Line\\s*Manager", "Fachvorgesetzte?r", "line_manager_name"
+    ),
     "line_manager_email": r"(?P<line_manager_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "line_manager_recv_cv": _simple("Receives\\s*CV", "Erhält\\s*CV", "line_manager_recv_cv"),
+    "line_manager_recv_cv": _simple(
+        "Receives\\s*CV", "Erhält\\s*CV", "line_manager_recv_cv"
+    ),
     "hr_poc_name": _simple("HR\\s*POC", "Ansprechpartner\\s*HR", "hr_poc_name"),
     "hr_poc_email": r"(?P<hr_poc_email>[\w\.-]+@[\w\.-]+\.\w+)",
     "hr_poc_recv_cv": _simple("Receives\\s*CV", "Erhält\\s*CV", "hr_poc_recv_cv"),
-    "finance_poc_name": _simple("Finance\\s*POC", "Ansprechpartner\\s*Finance", "finance_poc_name"),
+    "finance_poc_name": _simple(
+        "Finance\\s*POC", "Ansprechpartner\\s*Finance", "finance_poc_name"
+    ),
     "finance_poc_email": r"(?P<finance_poc_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "finance_poc_recv_offer": _simple("Receives\\s*Offer", "Erhält\\s*Angebot", "finance_poc_recv_offer"),
+    "finance_poc_recv_offer": _simple(
+        "Receives\\s*Offer", "Erhält\\s*Angebot", "finance_poc_recv_offer"
+    ),
 }
 
 
@@ -307,13 +424,16 @@ LLM_PROMPT = (
     'with fields "value" (string|null) and "confidence" (0-1).'
 )
 
+
 # ── Utility dataclass ─────────────────────────────────────────────────────────
 @dataclass
 class ExtractResult:
     value: str | None = None
     confidence: float = 0.0
 
+
 # HTML-to-text helper
+
 
 def html_text(html: str) -> str:
     """Return visible text only."""
@@ -321,6 +441,7 @@ def html_text(html: str) -> str:
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
     return " ".join(soup.stripped_strings)
+
 
 # ── Regex search --------------------------------------------------------------
 def pattern_search(text: str, key: str, pat: str) -> ExtractResult | None:
@@ -341,19 +462,22 @@ def pattern_search(text: str, key: str, pat: str) -> ExtractResult | None:
 
 
 # ── Cached loaders ------------------------------------------------------------
-@st.cache_data(ttl=24*60*60)
+@st.cache_data(ttl=24 * 60 * 60)
 def http_text(url: str) -> str:
     html = httpx.get(url, timeout=20).text
     return html_text(html)
+
 
 @st.cache_data(ttl=24 * 60 * 60)
 def pdf_text(data: BytesIO) -> str:
     reader = PdfReader(data)
     return "\n".join(p.extract_text() for p in reader.pages if p.extract_text())
 
+
 @st.cache_data(ttl=24 * 60 * 60)
 def docx_text(data: BytesIO) -> str:
     return "\n".join(p.text for p in docx.Document(data).paragraphs)
+
 
 # ── GPT fill ------------------------------------------------------------------
 async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResult]:
@@ -379,7 +503,7 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
             response_format={"type": "json_object"},
         )
 
-        raw = safe_json_load(chat.choices[0].message.content)
+        raw = safe_json_load(chat.choices[0].message.content or "")
         for k in subset:
             node = raw.get(k, {})
             val = node.get("value") if isinstance(node, dict) else node
@@ -387,10 +511,13 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
             out[k] = ExtractResult(val, float(conf) if val else 0.0)
     return out
 
+
 # ── Extraction orchestrator ---------------------------------------------------
 async def extract(text: str) -> dict[str, ExtractResult]:
     interim: dict[str, ExtractResult] = {
-        k: res for k, pat in REGEX_PATTERNS.items() if (res := pattern_search(text, k, pat))
+        k: res
+        for k, pat in REGEX_PATTERNS.items()
+        if (res := pattern_search(text, k, pat))
     }
 
     # salary merge
@@ -400,20 +527,25 @@ async def extract(text: str) -> dict[str, ExtractResult]:
     ):
         interim["salary_range"] = ExtractResult(
             f"{interim['salary_range_min'].value} – {interim['salary_range_max'].value}",
-            min(interim["salary_range_min"].confidence, interim["salary_range_max"].confidence),
+            min(
+                interim["salary_range_min"].confidence,
+                interim["salary_range_max"].confidence,
+            ),
         )
 
     missing = [k for k in REGEX_PATTERNS.keys() if k not in interim]
     interim.update(await llm_fill(missing, text))
     return interim
 
+
 # ── UI helpers ----------------------------------------------------------------
 def show_input(key, default, meta):
     field_type = meta.get("field_type", meta.get("field", "text_input"))
     helptext = meta.get("helptext", "")
     required = str(meta.get("is_must", "0")) == "1"
-    label = ("★ " if required else "") + meta.get("label", key.replace("_", " ").title())
-
+    label = ("★ " if required else "") + meta.get(
+        "label", key.replace("_", " ").title()
+    )
     # Extract value
     val = getattr(default, "value", default)
 
@@ -467,14 +599,17 @@ def show_input(key, default, meta):
     st.session_state["data"][key] = val
 
 
-
 def display_extracted_values_editable(extracted: dict, keys: list[str], step_name: str):
     """
     Zeigt extrahierte Werte an und ermöglicht Edit per Icon.
     Änderungen landen direkt in ss["data"].
     """
     chunk_size = 5
-    labels = [(k, v) for k, v in ((k, extracted.get(k)) for k in keys) if v and getattr(v, "value", None)]
+    labels = [
+        (k, v)
+        for k, v in ((k, extracted.get(k)) for k in keys)
+        if v and getattr(v, "value", None)
+    ]
     if not labels:
         st.info("Keine Werte extrahiert.")
         return
@@ -485,7 +620,7 @@ def display_extracted_values_editable(extracted: dict, keys: list[str], step_nam
     if "edit_values" not in ss:
         ss["edit_values"] = {}  # Dict[str, str]
 
-    chunks = [labels[i:i + chunk_size] for i in range(0, len(labels), chunk_size)]
+    chunks = [labels[i : i + chunk_size] for i in range(0, len(labels), chunk_size)]
     cols = st.columns(len(chunks))
 
     for col, chunk in zip(cols, chunks):
@@ -504,13 +639,22 @@ def display_extracted_values_editable(extracted: dict, keys: list[str], step_nam
                         unsafe_allow_html=True,
                     )
                     # Icon as button (for accessibility)
-                    if st.button("✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True):
+                    if st.button(
+                        "✏️",
+                        key=f"{edit_key}_btn",
+                        help="Bearbeiten",
+                        use_container_width=True,
+                    ):
                         ss["edit_state"][edit_key] = True
                         ss["edit_values"][edit_val_key] = val
                         st.rerun()  # Sofort umschalten!
                 else:
                     # Edit mode
-                    new_val = st.text_input(f"{label} bearbeiten", value=ss["edit_values"].get(edit_val_key, val), key=f"{edit_val_key}_input")
+                    new_val = st.text_input(
+                        f"{label} bearbeiten",
+                        value=ss["edit_values"].get(edit_val_key, val),
+                        key=f"{edit_val_key}_input",
+                    )
                     col1, col2 = st.columns([2, 1])
                     with col1:
                         if st.button("✔️ Speichern", key=f"{edit_key}_save"):
@@ -521,6 +665,7 @@ def display_extracted_values_editable(extracted: dict, keys: list[str], step_nam
                         if st.button("❌ Abbrechen", key=f"{edit_key}_cancel"):
                             ss["edit_state"][edit_key] = False
                             st.rerun()
+
 
 def display_missing_fields(meta_fields, extracted: dict, step_name: str):
     # Felder, die NICHT in extracted sind oder keinen Wert haben
@@ -547,14 +692,23 @@ def display_missing_fields(meta_fields, extracted: dict, step_name: str):
         val = ss["data"].get(k, "")
         if not ss["edit_state"].get(edit_key, False):
             # Zeile mit Icon
-            st.markdown(f"<b>{label}:</b> <span style='color:#888'>{val or '(leer)'}</span>", unsafe_allow_html=True)
-            if st.button("✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True):
+            st.markdown(
+                f"<b>{label}:</b> <span style='color:#888'>{val or '(leer)'}</span>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True
+            ):
                 ss["edit_state"][edit_key] = True
                 ss["edit_values"][edit_val_key] = val
                 st.rerun()
         else:
             # Edit-Input
-            new_val = st.text_input(f"{label} eingeben", value=ss["edit_values"].get(edit_val_key, val), key=f"{edit_val_key}_input")
+            new_val = st.text_input(
+                f"{label} eingeben",
+                value=ss["edit_values"].get(edit_val_key, val),
+                key=f"{edit_val_key}_input",
+            )
             col1, col2 = st.columns([2, 1])
             with col1:
                 if st.button("✔️ Speichern", key=f"{edit_key}_save"):
@@ -569,16 +723,19 @@ def display_missing_fields(meta_fields, extracted: dict, step_name: str):
 
 img_path = Path("images/AdobeStock_506577005.jpeg")
 
+
 # Bild als Base64 laden (damit es im CSS eingebettet werden kann)
 def get_base64_image(img_path):
     with open(img_path, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
     return f"data:image/jpeg;base64,{encoded}"
 
+
 # CSS-Block für halbtransparentes Hintergrundbild
 def set_background(image_path: Path, opacity=0.5):
     img_url = get_base64_image(image_path)
-    st.markdown(f"""
+    st.markdown(
+        f"""
         <style>
         .stApp {{
             background: linear-gradient(rgba(255, 255, 255, {1-opacity}), rgba(255, 255, 255, {0-opacity})), 
@@ -588,7 +745,10 @@ def set_background(image_path: Path, opacity=0.5):
             background-repeat: no-repeat;
         }}
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 # Hintergrund aktivieren
 set_background(img_path, opacity=0.5)
@@ -641,6 +801,7 @@ STEP_SUBTITLES = {
 
 # AI-Functions
 
+
 # --- a) Jobad-Generator mit DSGVO, SEO, Edit, PDF ---
 async def generate_jobad(data: dict) -> str:
     """
@@ -659,10 +820,11 @@ async def generate_jobad(data: dict) -> str:
         max_tokens=1500,
         messages=[
             {"role": "system", "content": "Du bist HR- und SEO-Textexperte."},
-            {"role": "user", "content": prompt}
-        ]
+            {"role": "user", "content": prompt},
+        ],
     )
-    return chat.choices[0].message.content.strip()
+    return (chat.choices[0].message.content or "").strip()
+
 
 def download_as_pdf(text: str, filename: str = "jobad.pdf"):
     """
@@ -670,15 +832,18 @@ def download_as_pdf(text: str, filename: str = "jobad.pdf"):
     """
     import fpdf  # oder reportlab, pdfkit etc.
     from fpdf import FPDF
+    
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_font("Arial", size=12)
     for line in text.splitlines():
-        pdf.cell(0, 10, txt=line, ln=1)
+        pdf.cell(0, 10, text=line, new_y="NEXT")
     pdf.output(filename)
     with open(filename, "rb") as f:
-        st.download_button("Download PDF", f, file_name=filename, mime="application/pdf")
+        st.download_button(
+            "Download PDF", f, file_name=filename, mime="application/pdf"
+        )
 
 # --- b) Interview-Vorbereitungs-Sheet ---
 async def generate_interview_sheet(data: dict) -> str:
@@ -696,11 +861,15 @@ async def generate_interview_sheet(data: dict) -> str:
         temperature=0.5,
         max_tokens=800,
         messages=[
-            {"role": "system", "content": "Du bist Interviewcoach für HR und Linemanager."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "Du bist Interviewcoach für HR und Linemanager.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
-    return chat.choices[0].message.content.strip()
+    return (chat.choices[0].message.content or "").strip()
+
 
 # --- c) Boolean Searchstring ---
 async def generate_boolean_search(data: dict) -> str:
@@ -718,10 +887,11 @@ async def generate_boolean_search(data: dict) -> str:
         max_tokens=300,
         messages=[
             {"role": "system", "content": "Du bist Sourcing-Experte."},
-            {"role": "user", "content": prompt}
-        ]
+            {"role": "user", "content": prompt},
+        ],
     )
-    return chat.choices[0].message.content.strip()
+    return (chat.choices[0].message.content or "").strip()
+
 
 # --- d) Arbeitsvertrag-Generator ---
 async def generate_contract(data: dict) -> str:
@@ -739,11 +909,15 @@ async def generate_contract(data: dict) -> str:
         temperature=0.4,
         max_tokens=1200,
         messages=[
-            {"role": "system", "content": "Du bist Vertragsgenerator für HR (keine Rechtsberatung)."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "Du bist Vertragsgenerator für HR (keine Rechtsberatung).",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
-    return chat.choices[0].message.content.strip()
+    return (chat.choices[0].message.content or "").strip()
+
 
 # ── Streamlit main ------------------------------------------------------------
 def main():
@@ -766,17 +940,20 @@ def main():
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
         # Schönes Welcome-Design!
-        st.markdown("""
+        st.markdown(
+            """
         <div class="black-text">
             <h2>Recruitment Need Analysis 🧭</h2>
             <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
             <p>Upload a Job Advert or paste a URL. All relevant information will be extracted and preprocessed automatically.</p>
             <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
         </div>
-        """, unsafe_allow_html=True)
-
+        """,
+            unsafe_allow_html=True,
+        )
+        
         st.divider()
-                # Job title input field
+        # Job title input field
         job_title_default = ss["data"].get("job_title")
         if not job_title_default:
             extr_title = ss.get("extracted", {}).get("job_title")
@@ -787,7 +964,9 @@ def main():
         if job_title and not ss.get("extracted", {}).get("job_title"):
             ss["extracted"]["job_title"] = ExtractResult(job_title, 1.0)
 
-        up = st.file_uploader("Upload Job Description (PDF or DOCX)", type=["pdf", "docx"])
+        up = st.file_uploader(
+            "Upload Job Description (PDF or DOCX)", type=["pdf", "docx"]
+        )
         url = st.text_input("…or paste a Job Ad URL")
 
         extract_btn = st.button("Extract Vacancy Data", disabled=not (up or url))
@@ -804,19 +983,25 @@ def main():
 
         st.button("Next →", disabled=not job_title, on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
-    elif 1 <= step < len(STEPS)+1:
+    elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
         step_name = ORDER[step_idx]
-        meta_fields = SCHEMA[step_name]   # <-- Zuerst setzen!
+        meta_fields = SCHEMA[step_name]  # <-- Zuerst setzen!
         fields = [item["key"] for item in meta_fields]
         extr: dict[str, ExtractResult] = ss["extracted"]
 
         # Headline & Subtitle
-        st.markdown(f"<h2 style='text-align:center'>{step_name.title()}</h2>", unsafe_allow_html=True)
+        st.markdown(
+            f"<h2 style='text-align:center'>{step_name.title()}</h2>",
+            unsafe_allow_html=True,
+        )
         subtitle = STEP_SUBTITLES.get(step_name, "")
         if subtitle:
-            st.markdown(f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>", unsafe_allow_html=True)
-
+            st.markdown(
+                f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>",
+                unsafe_allow_html=True,
+            )
+            
         # Extrahierte Werte mit Editierfunktion
         display_extracted_values_editable(extr, fields, step_name)
 
@@ -833,33 +1018,40 @@ def main():
                 with left:
                     show_input(key, result, meta)
             else:
-                with right.expander(meta["key"].replace("_", " ").title(), expanded=False):
-                    show_input(key, result, meta)
+                with right.expander(
+                    meta["key"].replace("_", " ").title(), expanded=False
+                ):
+                        show_input(key, result, meta)
 
         prev, nxt = st.columns(2)
         prev.button("← Back", disabled=step == 1, on_click=lambda: goto(step - 1))
-        required_keys = [meta["key"] for meta in meta_fields if meta.get("is_must", "0") == "1"]
+        required_keys = [
+            meta["key"] for meta in meta_fields if meta.get("is_must", "0") == "1"
+        ]
         ok = all(ss["data"].get(k) for k in required_keys)
         nxt.button("Next →", disabled=not ok, on_click=lambda: goto(step + 1))
 
-
-
     # ----------- Summary / Abschluss ----------
-    elif step == len(STEPS)+1:
+    elif step == len(STEPS) + 1:
         st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
-        action = st.selectbox("Wählen Sie eine Aktion:", [
-            "Jobad generieren",
-            "Interviewvorbereitung erstellen",
-            "Boolean Searchstring generieren",
-            "Arbeitsvertrag generieren"
-        ])
+        action = st.selectbox(
+            "Wählen Sie eine Aktion:",
+            [
+                "Jobad generieren",
+                "Interviewvorbereitung erstellen",
+                "Boolean Searchstring generieren",
+                "Arbeitsvertrag generieren",
+            ],
+        )
 
         if st.button("Ausführen"):
             with st.spinner("Generiere Output…"):
                 if action == "Jobad generieren":
                     jobad = asyncio.run(generate_jobad(ss["data"]))
                     st.markdown(jobad)
-                    st.info("Du kannst den Text jetzt anpassen und als PDF exportieren.")
+                    st.info(
+                        "Du kannst den Text jetzt anpassen und als PDF exportieren."
+                    )
                     if st.button("PDF Download"):
                         download_as_pdf(jobad)
                 elif action == "Interviewvorbereitung erstellen":
@@ -873,6 +1065,7 @@ def main():
                     st.markdown(contract)
 
         st.button("← Edit", on_click=lambda: goto(len(STEPS)))  # zurück zu letztem Step
+
 
 if __name__ == "__main__":
     main()
