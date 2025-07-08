@@ -968,6 +968,9 @@ def main():
             [2, 20, 6, 20, 2]
         )
 
+        with col_left:
+            url = st.text_input("Job Ad URL", key="job_url")
+
         with col_job:
             job_title = st.text_input(
                 "Job Title",
@@ -1000,12 +1003,12 @@ def main():
                     text = http_text(url)
                 ss["extracted"] = asyncio.run(extract(text))
                 title_res = ss["extracted"].get("job_title")
-                if isinstance(title_res, ExtractResult) and not st.session_state.get(
-                    "job_title"
-                ):
-                    st.session_state.job_title = title_res.value or ""
+                if isinstance(title_res, ExtractResult) and title_res.value:
+                    if not st.session_state.get("job_title"):
+                        st.session_state.job_title = title_res.value
                     ss["data"]["job_title"] = st.session_state.job_title
-                    st.experimental_rerun()
+                    ss["extracted"]["job_title"] = title_res
+                st.experimental_rerun()
 
         st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
