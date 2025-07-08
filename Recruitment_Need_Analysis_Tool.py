@@ -775,6 +775,9 @@ def display_extracted_values_editable(
         key=f"{step_name}_extr_editor",
         hide_index=True,
         num_rows="fixed",
+        column_config={
+            "Feld": st.column_config.TextColumn(disabled=True),
+        },
     )
 
     for i, row in edited.iterrows():
@@ -1299,15 +1302,14 @@ def main():
         # Prominent fehlende Felder abfragen
         display_missing_inputs(step_name, meta_fields, extr)
 
-        with st.expander("Alle Felder bearbeiten", expanded=False):
-            left, right = st.columns(2)
-            for meta in meta_fields:
-                key = meta["key"]
-                result = extr.get(key) if key in extr else ExtractResult()
-                is_required = meta.get("is_must", "0") == "1"
-                target_col = left if is_required else right
-                with target_col:
-                    show_input(key, result, meta, widget_prefix=step_name)
+        left, right = st.columns(2)
+        for meta in meta_fields:
+            key = meta["key"]
+            result = extr.get(key) if key in extr else ExtractResult()
+            is_required = meta.get("is_must", "0") == "1"
+            target_col = left if is_required else right
+            with target_col:
+                show_input(key, result, meta, widget_prefix=step_name)
 
         if step_name == "SKILLS":
             if "hard_skill_suggestions" not in ss:
