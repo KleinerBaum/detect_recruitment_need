@@ -28,3 +28,13 @@ def test_pattern_search_confidence_and_value():
     assert res is not None
     assert res.value == "Alice"
     assert res.confidence == 0.9
+
+
+def test_http_text_handles_http_error(monkeypatch):
+    tool = load_tool_module()
+
+    def raise_error(*args, **kwargs):
+        raise tool.httpx.HTTPError("fail")
+
+    monkeypatch.setattr(tool.httpx, "get", raise_error)
+    assert tool.http_text("http://example.com") == ""
