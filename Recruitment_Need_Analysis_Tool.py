@@ -879,37 +879,34 @@ def display_interview_section() -> None:
         st.markdown("### Need")
         st.write(f"**Line Manager Name:** {val('line_manager_name')}")
         st.write(f"**Line Manager Email:** {val('line_manager_email')}")
-        sel = st.multiselect(
+        st.multiselect(
             "Involvement",
             options,
             default=ss.get("line_manager_involve", []),
             key="line_manager_involve",
         )
-        ss["line_manager_involve"] = sel
 
     with col2:
         st.markdown("### Authority")
         st.write(f"**HR POC Name:** {val('hr_poc_name')}")
         st.write(f"**HR POC Email:** {val('hr_poc_email')}")
-        sel = st.multiselect(
+        st.multiselect(
             "Involvement",
             options,
             default=ss.get("hr_poc_involve", []),
             key="hr_poc_involve",
         )
-        ss["hr_poc_involve"] = sel
 
     with col3:
         st.markdown("### Money")
         st.write(f"**Finance POC Name:** {val('finance_poc_name')}")
         st.write(f"**Finance POC Email:** {val('finance_poc_email')}")
-        sel = st.multiselect(
+        st.multiselect(
             "Involvement",
             options,
             default=ss.get("finance_poc_involve", []),
             key="finance_poc_involve",
         )
-        ss["finance_poc_involve"] = sel
 
 
 img_path = Path("images/AdobeStock_506577005.jpeg")
