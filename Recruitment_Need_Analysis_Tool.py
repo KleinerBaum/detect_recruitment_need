@@ -957,26 +957,37 @@ def main():
         )
 
         st.divider()
-        # Job title input field
+        # Job title input field + uploader in a single row
         job_title_default = ss["data"].get("job_title")
         if not job_title_default:
             extr_title = ss.get("extracted", {}).get("job_title")
             if isinstance(extr_title, ExtractResult):
                 job_title_default = extr_title.value or ""
-        job_title = st.text_input(
-            "Job Title",
-            value=job_title_default or "",
-            key="job_title",
+
+        col_left, col_job, col_space, col_upload, col_right = st.columns(
+            [5, 24, 2, 4, 5]
         )
+
+        with col_job:
+            job_title = st.text_input(
+                "Job Title",
+                value=job_title_default or "",
+                key="job_title",
+            )
+
+        with col_upload:
+            up = st.file_uploader(
+                "Upload Job Description (PDF or DOCX)", type=["pdf", "docx"]
+            )
+
         ss["data"]["job_title"] = st.session_state.job_title
         if st.session_state.job_title and not ss.get("extracted", {}).get("job_title"):
             ss["extracted"]["job_title"] = ExtractResult(
                 st.session_state.job_title, 1.0
             )
 
-        up = st.file_uploader(
-            "Upload Job Description (PDF or DOCX)", type=["pdf", "docx"]
-        )
+        col_space.empty()  # visual spacing between input and upload
+
         url = st.text_input("…or paste a Job Ad URL")
 
         extract_btn = st.button("Extract Vacancy Data", disabled=not (up or url))
