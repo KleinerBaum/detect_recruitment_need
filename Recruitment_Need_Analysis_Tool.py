@@ -738,7 +738,7 @@ def display_summary() -> None:
                 show_input(key, result, meta)
 
 
-img_path = Path("images/AdobeStock_506577005.jpeg")
+img_path = Path("images/AdobeStock_288526357.jpeg")
 
 
 # Bild als Base64 laden (damit es im CSS eingebettet werden kann)
