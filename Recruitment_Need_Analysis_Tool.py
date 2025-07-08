@@ -997,6 +997,54 @@ def calculate_total_compensation(
     return total
 
 
+def predict_annual_salary(
+    job_title: str | None,
+    role_description: str | None,
+    task_list: str | None,
+    location: str | None,
+    skills: list[str] | None,
+) -> tuple[int, dict[str, int]]:
+    """Estimate annual salary and contribution of each component."""
+
+    base = 30000
+    contrib = {
+        "job_title": 0,
+        "role_description": 0,
+        "task_list": 0,
+        "location": 0,
+        "skills": 0,
+    }
+
+    if job_title:
+        title = job_title.lower()
+        if "data scientist" in title:
+            contrib["job_title"] += 30000
+        elif "engineer" in title or "developer" in title:
+            contrib["job_title"] += 25000
+        elif "manager" in title:
+            contrib["job_title"] += 20000
+        else:
+            contrib["job_title"] += 15000
+
+    if role_description:
+        contrib["role_description"] += min(10000, len(role_description.split()) * 20)
+
+    if task_list:
+        contrib["task_list"] += min(8000, len(task_list.split()) * 15)
+
+    if location:
+        if location.lower() in ["berlin", "munich", "hamburg", "frankfurt"]:
+            contrib["location"] += 5000
+        else:
+            contrib["location"] += 2000
+
+    if skills:
+        contrib["skills"] += len(skills) * 1000
+
+    total = base + sum(contrib.values())
+    return total, contrib
+
+
 # ── Streamlit main ------------------------------------------------------------
 def main():
     st.set_page_config(
@@ -1165,6 +1213,23 @@ def main():
                 if sk not in current_soft:
                     current_soft.append(sk)
             ss["data"]["soft_skills"] = ", ".join(current_soft)
+
+            # Salary prediction chart
+            total, parts = predict_annual_salary(
+                ss["data"].get("job_title"),
+                ss["data"].get("role_description"),
+                ss["data"].get("task_list"),
+                ss["data"].get("city"),
+                hard_sel + soft_sel,
+            )
+            st.subheader(f"Erwartetes Jahresgehalt: {total} €")
+            chart_df = pd.DataFrame(
+                {
+                    "Component": list(parts.keys()),
+                    "Contribution": list(parts.values()),
+                }
+            ).set_index("Component")
+            st.bar_chart(chart_df)
 
         prev, nxt = st.columns(2)
         prev.button("← Back", disabled=step == 1, on_click=lambda: goto(step - 1))
