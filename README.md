@@ -15,7 +15,9 @@ streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
 
 The **SKILLS** step suggests additional hard and soft skills via OpenAI and shows
-them using your current job title for easier selection.
+them using your current job title for easier selection. It also displays a
+dynamic salary chart that predicts the annual salary based on your selected
+skills and other role information.
 
 ## Wizard Steps
 

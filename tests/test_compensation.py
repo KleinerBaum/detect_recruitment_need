@@ -25,3 +25,16 @@ def test_calculate_total_compensation():
         (50000, 60000), ["Company Car", "Health Insurance"]
     )
     assert total == 65500
+
+
+def test_predict_annual_salary_breakdown():
+    tool = load_tool_module()
+    salary, parts = tool.predict_annual_salary(
+        "Engineer",
+        "desc words",
+        "tasks list",
+        "Berlin",
+        ["Python", "SQL"],
+    )
+    assert salary == 30000 + sum(parts.values())
+    assert parts["skills"] == 2000
