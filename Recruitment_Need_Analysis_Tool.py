@@ -605,6 +605,57 @@ async def suggest_soft_skills(data: dict) -> list[str]:
     return await _suggest_skills(data, "soft", 5)
 
 
+async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
+    """Return a list of benefits based on the provided mode."""
+
+    job_title = data.get("job_title", "")
+    location = data.get("city") or data.get("work_location_city", "")
+
+    if mode == "title":
+        prefix = f"for the job title '{job_title}'"
+    elif mode == "location":
+        prefix = f"commonly offered by employers in {location}"
+    else:
+        prefix = f"competitors usually offer for similar '{job_title}' roles"
+
+    prompt = (
+        f"List up to {count} employee benefits {prefix}. "
+        'Return JSON object {"benefits": [..]} with one benefit per list item.'
+    )
+
+    chat = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        max_tokens=300,
+        messages=[
+            {"role": "system", "content": "You are an expert HR assistant."},
+            {"role": "user", "content": prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    raw = safe_json_load(chat.choices[0].message.content or "")
+    return [b.strip() for b in raw.get("benefits", []) if b]
+
+
+async def suggest_benefits_by_title(data: dict, count: int) -> list[str]:
+    """Suggest benefits tailored to the job title."""
+
+    return await _suggest_benefits(data, "title", count)
+
+
+async def suggest_benefits_by_location(data: dict, count: int) -> list[str]:
+    """Suggest benefits typical for the given location."""
+
+    return await _suggest_benefits(data, "location", count)
+
+
+async def suggest_benefits_competitors(data: dict, count: int) -> list[str]:
+    """Suggest benefits that competitors offer for similar roles."""
+
+    return await _suggest_benefits(data, "competitors", count)
+
+
 # ── GPT fill ------------------------------------------------------------------
 async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResult]:
     if not missing_keys:
@@ -865,6 +916,8 @@ def display_summary_overview() -> None:
         st.write(f"**Childcare Support:** {val('childcare_support')}")
         st.write(f"**Learning Budget (EUR):** {val('learning_budget')}")
         st.write(f"**Other Perks:** {val('other_perks')}")
+        if ss.get("benefit_list"):
+            st.write(f"**Selected Benefits:** {', '.join(ss['benefit_list'])}")
 
 
 def display_interview_section() -> None:
@@ -1205,6 +1258,7 @@ def main():
     ss.setdefault("step", 0)
     ss.setdefault("data", {})
     ss.setdefault("extracted", {})
+    ss.setdefault("benefit_list", [])
 
     def goto(i: int):
         ss["step"] = i
@@ -1375,6 +1429,99 @@ def main():
                 }
             ).set_index("Component")
             st.bar_chart(chart_df)
+
+        if step_name == "BENEFITS":
+            st.subheader("AI Benefit Suggestions")
+
+            cols = st.columns(3)
+            counts = [
+                st.number_input(
+                    "Count for Job Title",
+                    1,
+                    50,
+                    5,
+                    key="count_benefit_title",
+                ),
+                st.number_input(
+                    "Count for Location",
+                    1,
+                    50,
+                    5,
+                    key="count_benefit_loc",
+                ),
+                st.number_input(
+                    "Count for Competitors",
+                    1,
+                    50,
+                    5,
+                    key="count_benefit_comp",
+                ),
+            ]
+
+            if cols[0].button("Generate", key="gen_benefit_title"):
+                with st.spinner("Generiere…"):
+                    try:
+                        ss["benefit_suggestions_title"] = asyncio.run(
+                            suggest_benefits_by_title(ss["data"], int(counts[0]))
+                        )
+                    except Exception as e:
+                        logging.error("benefit suggestion failed: %s", e)
+                        ss["benefit_suggestions_title"] = []
+
+            if cols[1].button("Generate", key="gen_benefit_loc"):
+                with st.spinner("Generiere…"):
+                    try:
+                        ss["benefit_suggestions_location"] = asyncio.run(
+                            suggest_benefits_by_location(ss["data"], int(counts[1]))
+                        )
+                    except Exception as e:
+                        logging.error("benefit suggestion failed: %s", e)
+                        ss["benefit_suggestions_location"] = []
+
+            if cols[2].button("Generate", key="gen_benefit_comp"):
+                with st.spinner("Generiere…"):
+                    try:
+                        ss["benefit_suggestions_competitors"] = asyncio.run(
+                            suggest_benefits_competitors(ss["data"], int(counts[2]))
+                        )
+                    except Exception as e:
+                        logging.error("benefit suggestion failed: %s", e)
+                        ss["benefit_suggestions_competitors"] = []
+
+            selections = {
+                "title": ss.get("selected_benefits_title", []),
+                "location": ss.get("selected_benefits_location", []),
+                "competitors": ss.get("selected_benefits_competitors", []),
+            }
+
+            st.write("### Job Title")
+            sel_title = []
+            for b in ss.get("benefit_suggestions_title", []):
+                if st.checkbox(
+                    b, key=f"benefit_title_{b}", value=b in selections["title"]
+                ):
+                    sel_title.append(b)
+            ss["selected_benefits_title"] = sel_title
+
+            st.write("### Location")
+            sel_loc = []
+            for b in ss.get("benefit_suggestions_location", []):
+                if st.checkbox(
+                    b, key=f"benefit_loc_{b}", value=b in selections["location"]
+                ):
+                    sel_loc.append(b)
+            ss["selected_benefits_location"] = sel_loc
+
+            st.write("### Competitors")
+            sel_comp = []
+            for b in ss.get("benefit_suggestions_competitors", []):
+                if st.checkbox(
+                    b, key=f"benefit_comp_{b}", value=b in selections["competitors"]
+                ):
+                    sel_comp.append(b)
+            ss["selected_benefits_competitors"] = sel_comp
+
+            ss["benefit_list"] = list({*sel_title, *sel_loc, *sel_comp})
 
         prev, nxt = st.columns(2)
         prev.button("← Back", disabled=step == 1, on_click=lambda: goto(step - 1))
