@@ -289,41 +289,44 @@ benefits: BenefitsDict = {
 # ---------------------------------------------------------------------------
 
 
-def render_benefits(title: str, items: List[str], show_top: int = 8) -> None:
-    """Render top benefits plus full list in expander using bullet points."""
+def render_benefits(title: str, items: List[str]) -> None:
+    """Render all benefits as bullet list."""
 
     st.subheader(title)
-
-    for benefit in items[:show_top]:
+    for benefit in items:
         st.markdown(f"- **{benefit}**")
-
-    if len(items) > show_top:
-        with st.expander(
-            (
-                f"Alle {len(items)} Vorteile anzeigen"
-                if lang == "Deutsch"
-                else f"Show all {len(items)} advantages"
-            ),
-            expanded=False,
-        ):
-            for benefit in items[show_top:]:
-                st.markdown(f"- {benefit}")
 
 
 # ---------------------------------------------------------------------------
 # Titel & Intro (sprachabhängig)
 # ---------------------------------------------------------------------------
 
-title_de = "🚀 Vorteile von **Vacalyser**"
+title_de = "🚀 Vorteile der **AI-gestützten Bedarfsanalyse**"
 intro_de = (
-    "Wähle deine Perspektive und entdecke die spezifischen Mehrwerte. "
-    "Nutze die *Alle Vorteile anzeigen*-Schaltfläche, um die komplette Liste zu sehen."
+    "Die Bedarfsanalyse hilft dir, den wichtigsten Schritt jeder Einstellung richtig zu machen – "
+    "die Vakanz vollständig zu beschreiben. Durch das Hochladen vorhandener Daten und "
+    "dynamische Rückfragen via OpenAI oder lokalem LLM entsteht ein lückenloses Anforderungsprofil. "
+    "So vermeidest du Informationsverlust, sparst Zeit und gibst Kandidat:innen ein klares Bild."
 )
 
-title_en = "🚀 Advantages of **Vacalyser**"
+title_en = "🚀 Advantages of **Vacancy Need Analysis**"
 intro_en = (
-    "Choose your perspective and discover the specific benefits. "
-    "Use the *Show all advantages*-button to reveal the full list."
+    "Our Vacancy Need Analysis helps you nail the first step of any hiring process – describing the vacancy. "
+    "Upload your material and let dynamic OpenAI questions uncover missing details. "
+    "The result is a complete profile that prevents information loss, saves time and gives candidates a clear picture."
+)
+
+finish_de = (
+    "Auf Basis dieser Daten kannst du DSGVO-geprüfte Stellenanzeigen, Boolean-Suchstrings, "
+    "Verträge oder Interviewleitfäden erstellen. Vacalyser lässt sich lokal betreiben, um "
+    "sensible Daten zu schützen, und der Gehaltsrechner unterstützt bei der Definition von "
+    "Must- und Nice-to-have-Skills."
+)
+
+finish_en = (
+    "Use the collected data to create GDPR-safe job ads, boolean search strings, contracts "
+    "or interview guides. Run Vacalyser locally to keep information secure while the salary "
+    "calculator helps define must-have and nice-to-have skills."
 )
 
 st.title(title_de if lang == "Deutsch" else title_en)
@@ -351,6 +354,8 @@ with tabs[1]:
 with tabs[2]:
     label_key = "Unternehmen" if lang == "Deutsch" else "Company"
     render_benefits(labels[2], benefits[lang][label_key])
+
+st.markdown(finish_de if lang == "Deutsch" else finish_en)
 
 # ---------------------------------------------------------------------------
 # Footer Hinweis
