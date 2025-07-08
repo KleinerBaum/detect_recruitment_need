@@ -823,6 +823,28 @@ STEP_SUBTITLES = {
 # AI-Functions
 
 
+async def generate_text(
+    prompt: str,
+    *,
+    system_msg: str = "",
+    model: str = "gpt-4o",
+    temperature: float = 0.7,
+    max_tokens: int = 1000,
+) -> str:
+    """Return LLM output for the given prompt."""
+
+    chat = await client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    return (chat.choices[0].message.content or "").strip()
+
+
 # --- a) Jobad-Generator mit DSGVO, SEO, Edit, PDF ---
 async def generate_jobad(data: dict) -> str:
     """
@@ -866,50 +888,32 @@ def download_as_pdf(text: str, filename: str = "jobad.pdf"):
 
 # --- b) Interview-Vorbereitungs-Sheet ---
 async def generate_interview_sheet(data: dict) -> str:
-    """
-    Erstellt ein kompaktes, tabellarisches Vorbereitungsblatt für Line und HR auf Basis der wichtigsten Anforderungen, Aufgaben und Wunschkriterien.
-    Rückgabe: Markdown- oder HTML-Tabelle.
-    """
+    """Generate a compact interview preparation sheet."""
+
     prompt = (
-        "Erstelle eine übersichtliche Interviewvorbereitung für Fachbereich und HR. "
-        "Stelle Schlüsselkriterien, Muss- und Wunsch-Skills sowie Frageempfehlungen tabellarisch dar. "
-        f"Basisdaten: {json.dumps(data, ensure_ascii=False)}"
+        "Prepare an interview briefing for the hiring team. "
+        "Tabulate key role criteria, must-have vs nice-to-have skills, and suggested interview questions based on the role profile.\n"
+        f"Profile Data: {json.dumps(data, ensure_ascii=False)}"
     )
-    chat = await client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0.5,
-        max_tokens=800,
-        messages=[
-            {
-                "role": "system",
-                "content": "Du bist Interviewcoach für HR und Linemanager.",
-            },
-            {"role": "user", "content": prompt},
-        ],
+    system_msg = "You are an expert interview coach for HR and hiring managers."
+    return await generate_text(
+        prompt, system_msg=system_msg, model="gpt-4o", temperature=0.5
     )
-    return (chat.choices[0].message.content or "").strip()
 
 
 # --- c) Boolean Searchstring ---
 async def generate_boolean_search(data: dict) -> str:
-    """
-    Erstellt einen professionellen, auf die Vakanz optimierten Boolean Searchstring für Jobbörsen, LinkedIn, XING etc.
-    """
+    """Generate a Boolean search string for sourcing candidates."""
+
     prompt = (
-        "Erstelle einen prägnanten, suchmaschinenoptimierten Boolean Searchstring für Active Sourcing. "
-        "Nutze Aufgaben, Anforderungen und Skills als Grundlage. "
-        f"Stellenprofil: {json.dumps(data, ensure_ascii=False)}"
+        "Create a concise, optimized Boolean search string for this vacancy, "
+        "using key responsibilities, requirements, and skills as the basis.\n"
+        f"Role Profile: {json.dumps(data, ensure_ascii=False)}"
     )
-    chat = await client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0.3,
-        max_tokens=300,
-        messages=[
-            {"role": "system", "content": "Du bist Sourcing-Experte."},
-            {"role": "user", "content": prompt},
-        ],
+    system_msg = "You are an expert in talent sourcing and boolean search."
+    return await generate_text(
+        prompt, system_msg=system_msg, model="gpt-4o", temperature=0.3
     )
-    return (chat.choices[0].message.content or "").strip()
 
 
 # --- d) Arbeitsvertrag-Generator ---
@@ -936,6 +940,49 @@ async def generate_contract(data: dict) -> str:
         ],
     )
     return (chat.choices[0].message.content or "").strip()
+
+
+def estimate_salary_range(job_title: str, seniority: str) -> str:
+    """Estimate salary range in EUR per year."""
+
+    base: float = 50000
+    title = job_title.lower()
+    if "data scientist" in title:
+        base = 80000
+    elif "software engineer" in title or "developer" in title:
+        base = 75000
+    elif "project manager" in title:
+        base = 90000
+
+    level = seniority.lower() if seniority else ""
+    if "junior" in level:
+        base *= 0.8
+    elif "senior" in level:
+        base *= 1.2
+    elif "lead" in level or "head" in level:
+        base *= 1.5
+
+    lower = int(base * 0.9)
+    upper = int(base * 1.1)
+    return f"{lower}–{upper} €"
+
+
+def calculate_total_compensation(
+    salary_range: tuple[int, int], benefits: list[str]
+) -> int:
+    """Calculate annual compensation cost including benefits."""
+
+    benefit_costs = {
+        "Health Insurance": 500,
+        "Company Car": 5000,
+        "Flexible Hours": 100,
+        "Home Office Options": 200,
+        "Training Budget": 800,
+        "Pension Plan": 1000,
+    }
+    extra_cost = sum(benefit_costs.get(b, 0) for b in benefits)
+    total = (salary_range[1] if salary_range else 0) + extra_cost
+    return total
 
 
 # ── Streamlit main ------------------------------------------------------------
@@ -1124,7 +1171,7 @@ def main():
         )
         display_summary()
         st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
             if st.button("Jobad generieren"):
                 with st.spinner("Generiere Jobad…"):
@@ -1150,6 +1197,32 @@ def main():
                 with st.spinner("Generiere Vertrag…"):
                     contract = asyncio.run(generate_contract(ss["data"]))
                     st.markdown(contract)
+        with col5:
+            if st.button("Gehaltsspanne schätzen"):
+                title = cast(str, ss["data"].get("job_title", ""))
+                level = cast(str, ss["data"].get("seniority_level", ""))
+                st.write(estimate_salary_range(title, level))
+        with col6:
+            if st.button("Gesamtkosten berechnen"):
+                rng_str = cast(str | None, ss["data"].get("salary_range"))
+                m = re.search(r"(\d{4,6})\D+(\d{4,6})", rng_str or "")
+                salary_tuple = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+                benefit_map = {
+                    "health_insurance": "Health Insurance",
+                    "company_car": "Company Car",
+                    "flexible_hours": "Flexible Hours",
+                    "remote_policy": "Home Office Options",
+                    "learning_budget": "Training Budget",
+                    "pension_plan": "Pension Plan",
+                }
+                benefits = [
+                    name
+                    for key, name in benefit_map.items()
+                    if ss["data"].get(key)
+                    and str(ss["data"].get(key)).lower() not in {"no", "false", "0"}
+                ]
+                total = calculate_total_compensation(salary_tuple, benefits)
+                st.write(f"{total} €")
 
         step_labels = [name.title().replace("_", " ") for name, _ in STEPS]
         target = st.selectbox("Zu Schritt springen:", step_labels)
