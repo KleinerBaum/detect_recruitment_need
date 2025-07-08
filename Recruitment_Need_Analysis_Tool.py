@@ -722,6 +722,18 @@ def display_missing_fields(meta_fields, extracted: dict, step_name: str):
                     st.rerun()
 
 
+def display_summary() -> None:
+    """Show all collected data grouped by step with inline editing."""
+    for step_name in ORDER:
+        if step_name not in SCHEMA:
+            continue
+        with st.expander(step_name.title(), expanded=False):
+            for meta in SCHEMA[step_name]:
+                key = meta["key"]
+                result = ExtractResult(ss["data"].get(key), 1.0)
+                show_input(key, result, meta)
+
+
 img_path = Path("images/AdobeStock_506577005.jpeg")
 
 
@@ -1032,20 +1044,15 @@ def main():
 
     # ----------- Summary / Abschluss ----------
     elif step == len(STEPS) + 1:
-        st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
-        action = st.selectbox(
-            "Wählen Sie eine Aktion:",
-            [
-                "Jobad generieren",
-                "Interviewvorbereitung erstellen",
-                "Boolean Searchstring generieren",
-                "Arbeitsvertrag generieren",
-            ],
+        st.markdown(
+            "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
-
-        if st.button("Ausführen"):
-            with st.spinner("Generiere Output…"):
-                if action == "Jobad generieren":
+        display_summary()
+        st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            if st.button("Jobad generieren"):
+                with st.spinner("Generiere Jobad…"):
                     jobad = asyncio.run(generate_jobad(ss["data"]))
                     st.markdown(jobad)
                     st.info(
@@ -1053,17 +1060,26 @@ def main():
                     )
                     if st.button("PDF Download"):
                         download_as_pdf(jobad)
-                elif action == "Interviewvorbereitung erstellen":
-                    interview_sheet = asyncio.run(generate_interview_sheet(ss["data"]))
-                    st.markdown(interview_sheet)
-                elif action == "Boolean Searchstring generieren":
+        with col2:
+            if st.button("Interviewvorbereitung erstellen"):
+                with st.spinner("Generiere Interviewvorbereitung…"):
+                    sheet = asyncio.run(generate_interview_sheet(ss["data"]))
+                    st.markdown(sheet)
+        with col3:
+            if st.button("Boolean Searchstring generieren"):
+                with st.spinner("Generiere Suchstring…"):
                     boolean_str = asyncio.run(generate_boolean_search(ss["data"]))
                     st.code(boolean_str)
-                elif action == "Arbeitsvertrag generieren":
+        with col4:
+            if st.button("Arbeitsvertrag generieren"):
+                with st.spinner("Generiere Vertrag…"):
                     contract = asyncio.run(generate_contract(ss["data"]))
                     st.markdown(contract)
 
-        st.button("← Edit", on_click=lambda: goto(len(STEPS)))  # zurück zu letztem Step
+        step_labels = [name.title().replace("_", " ") for name, _ in STEPS]
+        target = st.selectbox("Zu Schritt springen:", step_labels)
+        if st.button("Wechseln"):
+            goto(step_labels.index(target) + 1)
 
 
 if __name__ == "__main__":
