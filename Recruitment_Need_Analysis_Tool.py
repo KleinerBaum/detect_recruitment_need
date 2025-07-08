@@ -1305,17 +1305,19 @@ def main():
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
         # Schönes Welcome-Design!
-        st.image(
-            "images/color1_logo_transparent_background.png",
-            width=200,
-        )
+        with open("images/color1_logo_transparent_background.png", "rb") as img_file:
+            logo_b64 = base64.b64encode(img_file.read()).decode()
+
         st.markdown(
-            """
-        <div class="black-text">
-            <h2>Recruitment Need Analysis 🧭</h2>
-            <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
-            <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
-            <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
+            f"""
+        <div style="position:relative;">
+            <img src="data:image/png;base64,{logo_b64}" style="position:absolute; top:0; right:0; width:200px;" />
+            <div class="black-text" style="text-align:center;">
+                <h2 style="font-size:26pt;">Recruitment Need Analysis 🧭</h2>
+                <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
+                <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
+                <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
+            </div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -1349,7 +1351,8 @@ def main():
             )
 
             st.markdown(
-                "Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success"
+                "<p style='text-align:center; font-size:calc(1rem + 2pt);'>Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success</p>",
+                unsafe_allow_html=True,
             )
 
             btn_left, btn_right = st.columns(2)
