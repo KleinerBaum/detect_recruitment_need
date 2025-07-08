@@ -62,6 +62,28 @@ if not api_key:
 client = AsyncOpenAI(api_key=api_key)
 
 
+async def generate_text(
+    prompt: str,
+    *,
+    model: str = "gpt-4o",
+    temperature: float = 0.5,
+    max_tokens: int = 800,
+    system_msg: str = "You are a helpful assistant.",
+) -> str:
+    """Send a prompt to OpenAI and return the reply."""
+
+    chat = await client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    return (chat.choices[0].message.content or "").strip()
+
+
 # ── JSON helpers ──────────────────────────────────────────────────────────────
 def brute_force_brace_fix(s: str) -> str:
     opens, closes = s.count("{") - s.count("}"), s.count("[") - s.count("]")
@@ -871,23 +893,18 @@ async def generate_interview_sheet(data: dict) -> str:
     Rückgabe: Markdown- oder HTML-Tabelle.
     """
     prompt = (
-        "Erstelle eine übersichtliche Interviewvorbereitung für Fachbereich und HR. "
-        "Stelle Schlüsselkriterien, Muss- und Wunsch-Skills sowie Frageempfehlungen tabellarisch dar. "
-        f"Basisdaten: {json.dumps(data, ensure_ascii=False)}"
+        "Prepare an interview briefing for the hiring team. "
+        "Tabulate key role criteria, must-have vs nice-to-have skills, and suggested interview questions based on the role profile.\n"
+        f"Profile Data: {json.dumps(data, ensure_ascii=False)}"
     )
-    chat = await client.chat.completions.create(
+    system_msg = "You are an expert interview coach for HR and hiring managers."
+    return await generate_text(
+        prompt,
         model="gpt-4o",
         temperature=0.5,
         max_tokens=800,
-        messages=[
-            {
-                "role": "system",
-                "content": "Du bist Interviewcoach für HR und Linemanager.",
-            },
-            {"role": "user", "content": prompt},
-        ],
+        system_msg=system_msg,
     )
-    return (chat.choices[0].message.content or "").strip()
 
 
 # --- c) Boolean Searchstring ---
@@ -896,20 +913,18 @@ async def generate_boolean_search(data: dict) -> str:
     Erstellt einen professionellen, auf die Vakanz optimierten Boolean Searchstring für Jobbörsen, LinkedIn, XING etc.
     """
     prompt = (
-        "Erstelle einen prägnanten, suchmaschinenoptimierten Boolean Searchstring für Active Sourcing. "
-        "Nutze Aufgaben, Anforderungen und Skills als Grundlage. "
-        f"Stellenprofil: {json.dumps(data, ensure_ascii=False)}"
+        "Create a concise, optimized Boolean search string for this vacancy, "
+        "using key responsibilities, requirements, and skills as the basis.\n"
+        f"Role Profile: {json.dumps(data, ensure_ascii=False)}"
     )
-    chat = await client.chat.completions.create(
+    system_msg = "You are an expert in talent sourcing and boolean search."
+    return await generate_text(
+        prompt,
         model="gpt-4o",
         temperature=0.3,
         max_tokens=300,
-        messages=[
-            {"role": "system", "content": "Du bist Sourcing-Experte."},
-            {"role": "user", "content": prompt},
-        ],
+        system_msg=system_msg,
     )
-    return (chat.choices[0].message.content or "").strip()
 
 
 # --- d) Arbeitsvertrag-Generator ---
@@ -936,6 +951,50 @@ async def generate_contract(data: dict) -> str:
         ],
     )
     return (chat.choices[0].message.content or "").strip()
+
+
+def estimate_salary_range(job_title: str, seniority: str) -> str:
+    """Estimate salary range (per year in EUR) based on job title and seniority level."""
+
+    base: float = 50000
+    title = job_title.lower()
+    if "data scientist" in title:
+        base = 80000
+    elif "software engineer" in title or "developer" in title:
+        base = 75000
+    elif "project manager" in title:
+        base = 90000
+
+    level = seniority.lower() if seniority else ""
+    if "junior" in level:
+        base *= 0.8
+    elif "senior" in level:
+        base *= 1.2
+    elif "lead" in level or "head" in level:
+        base *= 1.5
+
+    lower = int(base * 0.9)
+    upper = int(base * 1.1)
+    return f"{lower}–{upper} €"
+
+
+def calculate_total_compensation(
+    salary_range: tuple[int, int], benefits: list[str]
+) -> int:
+    """Rough calculation of annual compensation cost given salary range and selected benefits."""
+
+    benefit_costs = {
+        "Health Insurance": 500,
+        "Company Car": 5000,
+        "Flexible Hours": 100,
+        "Home Office Options": 200,
+        "Training Budget": 800,
+        "Pension Plan": 1000,
+    }
+
+    extra_cost = sum(benefit_costs.get(b, 0) for b in benefits)
+    total = (salary_range[1] if salary_range else 0) + extra_cost
+    return total
 
 
 # ── Streamlit main ------------------------------------------------------------
@@ -1124,7 +1183,7 @@ def main():
         )
         display_summary()
         st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
             if st.button("Stellenanzeige erstellen"):
                 with st.spinner("Generiere Jobad…"):
@@ -1150,6 +1209,35 @@ def main():
                 with st.spinner("Generiere Vertrag…"):
                     contract = asyncio.run(generate_contract(ss["data"]))
                     st.markdown(contract)
+        with col5:
+            if st.button("Gehaltsband schätzen"):
+                salary = estimate_salary_range(
+                    cast(str, ss["data"].get("job_title", "")),
+                    cast(str, ss["data"].get("seniority_level", "")),
+                )
+                st.info(f"Geschätztes Gehaltsband: {salary}")
+        with col6:
+            if st.button("Gesamtkosten berechnen"):
+                match = re.findall(r"\d+", str(ss["data"].get("salary_range", "")))
+                if len(match) >= 2:
+                    rng = (int(match[0]), int(match[1]))
+                else:
+                    rng = (0, int(match[0])) if match else (0, 0)
+                benefits = []
+                if ss["data"].get("health_insurance"):
+                    benefits.append("Health Insurance")
+                if ss["data"].get("company_car"):
+                    benefits.append("Company Car")
+                if ss["data"].get("flexible_hours"):
+                    benefits.append("Flexible Hours")
+                if ss["data"].get("remote_policy"):
+                    benefits.append("Home Office Options")
+                if ss["data"].get("learning_budget"):
+                    benefits.append("Training Budget")
+                if ss["data"].get("pension_plan"):
+                    benefits.append("Pension Plan")
+                total = calculate_total_compensation(rng, benefits)
+                st.info(f"Gesamtkosten: {total} €")
 
         step_labels = [name.title().replace("_", " ") for name, _ in STEPS]
         target = st.selectbox("Zu Schritt springen:", step_labels)

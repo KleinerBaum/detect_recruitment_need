@@ -31,3 +31,8 @@ The wizard collects data in the following order:
 8. TARGET_GROUP
 9. INTERVIEW
 10. SUMMARY
+
+In the final **SUMMARY** step you can generate a job advertisement, an interview
+guide, a Boolean search string and a draft contract. New buttons also let you
+estimate the salary range and calculate the total annual compensation based on
+selected benefits.
