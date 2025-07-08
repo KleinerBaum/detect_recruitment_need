@@ -1074,8 +1074,13 @@ def main():
                         ss["hard_skill_suggestions"] = []
                         ss["soft_skill_suggestions"] = []
 
+            job_title = cast(str | None, ss["data"].get("job_title"))
+            if job_title:
+                hard_label = f"AI-Suggested Hard Skills for your {job_title} Vacancy"
+            else:
+                hard_label = "AI-Suggested Hard Skills"
             hard_sel = st.multiselect(
-                "AI-Suggested Hard Skills",
+                hard_label,
                 ss.get("hard_skill_suggestions", []),
                 default=ss.get("selected_hard_skills", []),
             )
@@ -1086,8 +1091,12 @@ def main():
                     current_hard.append(sk)
             ss["data"]["hard_skills"] = ", ".join(current_hard)
 
+            if job_title:
+                soft_label = f"AI-Suggested Soft Skills for your {job_title} Vacancy"
+            else:
+                soft_label = "AI-Suggested Soft Skills"
             soft_sel = st.multiselect(
-                "AI-Suggested Soft Skills",
+                soft_label,
                 ss.get("soft_skill_suggestions", []),
                 default=ss.get("selected_soft_skills", []),
             )
