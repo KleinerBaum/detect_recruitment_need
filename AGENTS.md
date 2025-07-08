@@ -5,9 +5,9 @@ This guide describes how Codex agents should operate in this repository.
 ## Code requirements
 - **Python** `>=3.10` with type hints.
 - Frameworks: **Streamlit** for the UI, **Pydantic v2**, **OpenAI SDK** and **FAISS**.
-- Follow **PEP 8** and ensure clean runs of `ruff`, `black` and `mypy`.
+- Follow **PEP 8**.
 - Use Google‑style docstrings for all classes and functions.
-- External dependencies are declared in `requirements.txt` and installed via `pip`.
+- External dependencies are declared in `requirements.txt`.
 
 ## Project structure
 - Streamlit entry point: `Recruitment_Need_Analysis_Tool.py`.
