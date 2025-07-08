@@ -965,7 +965,7 @@ def main():
                 job_title_default = extr_title.value or ""
 
         col_left, col_job, col_space, col_upload, col_right = st.columns(
-            [5, 24, 2, 4, 5]
+            [2, 20, 6, 20, 2]
         )
 
         with col_job:
