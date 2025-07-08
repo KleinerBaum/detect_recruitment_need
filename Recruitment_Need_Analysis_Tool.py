@@ -563,6 +563,44 @@ def parse_skill_list(raw: str | list[str] | None) -> list[str]:
     return [s.strip() for s in items if s and s.strip()]
 
 
+def selectable_buttons(
+    options: list[str], label: str, session_key: str, cols: int = 3
+) -> list[str]:
+    """Render options as toggleable buttons and store selections.
+
+    Args:
+        options: Suggestions to present.
+        label: Section label shown above the buttons.
+        session_key: Key used in :mod:`streamlit.session_state`.
+        cols: Number of columns used for layout.
+
+    Returns:
+        The updated list of selected options.
+    """
+
+    st.write(label)
+    selected = cast(list[str], ss.setdefault(session_key, []))
+    columns = st.columns(cols)
+    for idx, opt in enumerate(options):
+        col = columns[idx % cols]
+        is_selected = opt in selected
+        btn_type = "primary" if is_selected else "secondary"
+        btn_label = f"✓ {opt}" if is_selected else opt
+        if col.button(
+            btn_label,
+            key=f"{session_key}_{idx}",
+            type=btn_type,
+            use_container_width=True,
+        ):
+            if is_selected:
+                selected.remove(opt)
+            else:
+                selected.append(opt)
+
+    ss[session_key] = selected
+    return selected
+
+
 async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
     existing: list[str] = []
     for key in [
@@ -1400,12 +1438,11 @@ def main():
                 hard_label = f"AI-Suggested Hard Skills for your {job_title} Vacancy"
             else:
                 hard_label = "AI-Suggested Hard Skills"
-            hard_sel = st.multiselect(
-                hard_label,
+            hard_sel = selectable_buttons(
                 ss.get("hard_skill_suggestions", []),
-                default=ss.get("selected_hard_skills", []),
+                hard_label,
+                "selected_hard_skills",
             )
-            ss["selected_hard_skills"] = hard_sel
             current_hard = parse_skill_list(ss["data"].get("hard_skills"))
             for sk in hard_sel:
                 if sk not in current_hard:
@@ -1416,12 +1453,11 @@ def main():
                 soft_label = f"AI-Suggested Soft Skills for your {job_title} Vacancy"
             else:
                 soft_label = "AI-Suggested Soft Skills"
-            soft_sel = st.multiselect(
-                soft_label,
+            soft_sel = selectable_buttons(
                 ss.get("soft_skill_suggestions", []),
-                default=ss.get("selected_soft_skills", []),
+                soft_label,
+                "selected_soft_skills",
             )
-            ss["selected_soft_skills"] = soft_sel
             current_soft = parse_skill_list(ss["data"].get("soft_skills"))
             for sk in soft_sel:
                 if sk not in current_soft:
@@ -1503,38 +1539,26 @@ def main():
                         logging.error("benefit suggestion failed: %s", e)
                         ss["benefit_suggestions_competitors"] = []
 
-            selections = {
-                "title": ss.get("selected_benefits_title", []),
-                "location": ss.get("selected_benefits_location", []),
-                "competitors": ss.get("selected_benefits_competitors", []),
-            }
+            sel_title = selectable_buttons(
+                ss.get("benefit_suggestions_title", []),
+                "### Job Title",
+                "selected_benefits_title",
+                cols=4,
+            )
 
-            st.write("### Job Title")
-            sel_title = []
-            for b in ss.get("benefit_suggestions_title", []):
-                if st.checkbox(
-                    b, key=f"benefit_title_{b}", value=b in selections["title"]
-                ):
-                    sel_title.append(b)
-            ss["selected_benefits_title"] = sel_title
+            sel_loc = selectable_buttons(
+                ss.get("benefit_suggestions_location", []),
+                "### Location",
+                "selected_benefits_location",
+                cols=4,
+            )
 
-            st.write("### Location")
-            sel_loc = []
-            for b in ss.get("benefit_suggestions_location", []):
-                if st.checkbox(
-                    b, key=f"benefit_loc_{b}", value=b in selections["location"]
-                ):
-                    sel_loc.append(b)
-            ss["selected_benefits_location"] = sel_loc
-
-            st.write("### Competitors")
-            sel_comp = []
-            for b in ss.get("benefit_suggestions_competitors", []):
-                if st.checkbox(
-                    b, key=f"benefit_comp_{b}", value=b in selections["competitors"]
-                ):
-                    sel_comp.append(b)
-            ss["selected_benefits_competitors"] = sel_comp
+            sel_comp = selectable_buttons(
+                ss.get("benefit_suggestions_competitors", []),
+                "### Competitors",
+                "selected_benefits_competitors",
+                cols=4,
+            )
 
             ss["benefit_list"] = list({*sel_title, *sel_loc, *sel_comp})
 
