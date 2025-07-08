@@ -465,7 +465,11 @@ def pattern_search(text: str, key: str, pat: str) -> ExtractResult | None:
 # ── Cached loaders ------------------------------------------------------------
 @st.cache_data(ttl=24 * 60 * 60)
 def http_text(url: str) -> str:
-    html = httpx.get(url, timeout=20).text
+    try:
+        html = httpx.get(url, timeout=20).text
+    except httpx.HTTPError as e:
+        logging.error("HTTP request failed: %s", e)
+        return ""
     return html_text(html)
 
 
