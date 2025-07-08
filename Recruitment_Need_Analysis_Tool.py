@@ -1005,10 +1005,8 @@ def main():
                 ):
                     st.session_state.job_title = title_res.value or ""
                     ss["data"]["job_title"] = st.session_state.job_title
-                    st.experimental_rerun()
+                    st.rerun()
 
-        if not job_title:
-            st.warning("Job Title fehlt – Felder können später ergänzt werden.")
         st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
