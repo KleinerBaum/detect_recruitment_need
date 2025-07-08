@@ -13,3 +13,5 @@ pip install -r requirements.txt
 ```bash
 streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
+
+The main interface uses `images/AdobeStock_288526357.jpeg` as its background.
