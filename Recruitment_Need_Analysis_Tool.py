@@ -1002,7 +1002,7 @@ def main():
                 if isinstance(title_res, ExtractResult) and title_res.value:
                     ss["extracted"]["job_title"] = title_res
                     ss["data"]["job_title"] = title_res.value
-                st.experimental_rerun()
+                st.rerun()
 
         st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
