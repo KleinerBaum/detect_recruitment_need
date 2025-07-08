@@ -963,10 +963,16 @@ def main():
             extr_title = ss.get("extracted", {}).get("job_title")
             if isinstance(extr_title, ExtractResult):
                 job_title_default = extr_title.value or ""
-        job_title = st.text_input("Job Title", value=job_title_default or "")
-        ss["data"]["job_title"] = job_title
-        if job_title and not ss.get("extracted", {}).get("job_title"):
-            ss["extracted"]["job_title"] = ExtractResult(job_title, 1.0)
+        job_title = st.text_input(
+            "Job Title",
+            value=job_title_default or "",
+            key="job_title",
+        )
+        ss["data"]["job_title"] = st.session_state.job_title
+        if st.session_state.job_title and not ss.get("extracted", {}).get("job_title"):
+            ss["extracted"]["job_title"] = ExtractResult(
+                st.session_state.job_title, 1.0
+            )
 
         up = st.file_uploader(
             "Upload Job Description (PDF or DOCX)", type=["pdf", "docx"]
@@ -984,6 +990,13 @@ def main():
                 else:
                     text = http_text(url)
                 ss["extracted"] = asyncio.run(extract(text))
+                title_res = ss["extracted"].get("job_title")
+                if isinstance(title_res, ExtractResult) and not st.session_state.get(
+                    "job_title"
+                ):
+                    st.session_state.job_title = title_res.value or ""
+                    ss["data"]["job_title"] = st.session_state.job_title
+                    st.experimental_rerun()
 
         if not job_title:
             st.warning("Job Title fehlt – Felder können später ergänzt werden.")
