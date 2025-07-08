@@ -74,48 +74,50 @@ SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere An
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
 SKILLS,visa_sponsorship,selectbox,0,Visa Sponsorship,"No;Yes;Optional",Visa möglich?
-COMPENSATION,salary_currency,selectbox,1,Salary Currency,"EUR;USD;GBP;CHF;PLN;Other",Währung
-COMPENSATION,salary_range,text_input,1,Salary Range (EUR),,"Bsp.: 50000–65000"
-COMPENSATION,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt
-COMPENSATION,salary_range_max,number_input,0,Salary Range Max (EUR),,Maximalgehalt
-COMPENSATION,bonus_scheme,text_area,0,Bonus Scheme,,Bonusregelung
-COMPENSATION,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
-COMPENSATION,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
-COMPENSATION,vacation_days,number_input,0,Vacation Days,,Urlaubstage
-COMPENSATION,remote_policy,selectbox,0,Remote Policy,"Onsite;Remote;Hybrid;Flexible;Home Office;After Probation",Homeoffice-Regelung
-COMPENSATION,flexible_hours,selectbox,0,Flexible Hours,"No;Yes;After Probation;By Arrangement",Flexible Arbeitszeiten
-COMPENSATION,relocation_support,selectbox,0,Relocation Support,"No;Yes;Optional",Umzugshilfe
-COMPENSATION,childcare_support,selectbox,0,Childcare Support,"No;Yes;Optional",Kinderbetreuung
-COMPENSATION,learning_budget,number_input,0,Learning Budget (EUR),,Weiterbildungsbudget
-COMPENSATION,company_car,checkbox,0,Company Car,,Firmenwagen
-COMPENSATION,sabbatical_option,checkbox,0,Sabbatical Option,,Sabbatical möglich?
-COMPENSATION,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
-COMPENSATION,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
-COMPENSATION,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
-COMPENSATION,other_perks,text_area,0,Other Perks,,Weitere Benefits
-COMPENSATION,pay_frequency,selectbox,1,Pay Frequency,"Monthly;Yearly;Weekly;Bi-Weekly;Quarterly",Zahlungsintervall
-RECRUITMENT,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
-RECRUITMENT,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Telefonnummer für Bewerbungen
-RECRUITMENT,recruitment_steps,text_area,0,Recruitment Steps,,Bewerbungsprozess
-RECRUITMENT,recruitment_timeline,text_area,0,Recruitment Timeline,,Ablauf/Zeitrahmen
-RECRUITMENT,number_of_interviews,number_input,0,Number of Interviews,,Anzahl Interviews
-RECRUITMENT,interview_format,selectbox,0,Interview Format,"Onsite;Remote;Hybrid;Phone",Interview-Format
-RECRUITMENT,interview_stage_count,number_input,0,Interview Stages,,Stufen im Auswahlprozess
-RECRUITMENT,interview_docs_required,text_area,0,Interview Docs Required,,Erforderliche Unterlagen
-RECRUITMENT,assessment_tests,checkbox,0,Assessment Tests,,Einstellungstests?
-RECRUITMENT,interview_notes,text_area,0,Interview Notes,,Notizen zu Gesprächen
-RECRUITMENT,onboarding_process,text_area,0,Onboarding Process,,Einarbeitungsprozess
-RECRUITMENT,onboarding_process_overview,text_area,0,Onboarding Process Overview,,Überblick Einarbeitung
-RECRUITMENT,probation_period,number_input,0,Probation Period (Months),,Dauer Probezeit (Monate)
-RECRUITMENT,mentorship_program,checkbox,0,Mentorship Program,,Mentorenprogramm?
-RECRUITMENT,welcome_package,checkbox,0,Welcome Package,,Willkommenspaket?
-RECRUITMENT,application_instructions,text_area,0,Application Instructions,,Bewerbungshinweise
-RECRUITMENT,line_manager_name,text_input,0,Line Manager Name,,Fachvorgesetzter Name
-RECRUITMENT,line_manager_email,text_input,0,Line Manager Email,,Fachvorgesetzter Email
-RECRUITMENT,line_manager_recv_cv,checkbox,0,Line Manager Receives CV,,Erhält CV?
-RECRUITMENT,hr_poc_name,text_input,0,HR POC Name,,HR-Ansprechpartner Name
-RECRUITMENT,hr_poc_email,text_input,0,HR POC Email,,HR-Ansprechpartner Email
-RECRUITMENT,hr_poc_recv_cv,checkbox,0,HR POC Receives CV,,Erhält CV?
-RECRUITMENT,finance_poc_name,text_input,0,Finance POC Name,,Finance-Ansprechpartner Name
-RECRUITMENT,finance_poc_email,text_input,0,Finance POC Email,,Finance-Ansprechpartner Email
-RECRUITMENT,finance_poc_recv_offer,checkbox,0,Finance POC Receives Offer,,Erhält Angebot?
+BENEFITS,salary_currency,selectbox,1,Salary Currency,"EUR;USD;GBP;CHF;PLN;Other",Währung
+BENEFITS,salary_range,text_input,1,Salary Range (EUR),,"Bsp.: 50000–65000"
+BENEFITS,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt
+BENEFITS,salary_range_max,number_input,0,Salary Range Max (EUR),,Maximalgehalt
+BENEFITS,bonus_scheme,text_area,0,Bonus Scheme,,Bonusregelung
+BENEFITS,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
+BENEFITS,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
+BENEFITS,vacation_days,number_input,0,Vacation Days,,Urlaubstage
+BENEFITS,remote_policy,selectbox,0,Remote Policy,"Onsite;Remote;Hybrid;Flexible;Home Office;After Probation",Homeoffice-Regelung
+BENEFITS,flexible_hours,selectbox,0,Flexible Hours,"No;Yes;After Probation;By Arrangement",Flexible Arbeitszeiten
+BENEFITS,relocation_support,selectbox,0,Relocation Support,"No;Yes;Optional",Umzugshilfe
+BENEFITS,childcare_support,selectbox,0,Childcare Support,"No;Yes;Optional",Kinderbetreuung
+BENEFITS,learning_budget,number_input,0,Learning Budget (EUR),,Weiterbildungsbudget
+BENEFITS,company_car,checkbox,0,Company Car,,Firmenwagen
+BENEFITS,sabbatical_option,checkbox,0,Sabbatical Option,,Sabbatical möglich?
+BENEFITS,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
+BENEFITS,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
+BENEFITS,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
+BENEFITS,other_perks,text_area,0,Other Perks,,Weitere Benefits
+BENEFITS,pay_frequency,selectbox,1,Pay Frequency,"Monthly;Yearly;Weekly;Bi-Weekly;Quarterly",Zahlungsintervall
+TARGET_GROUP,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
+TARGET_GROUP,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
+INTERVIEW,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
+INTERVIEW,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Telefonnummer für Bewerbungen
+INTERVIEW,recruitment_steps,text_area,0,Recruitment Steps,,Bewerbungsprozess
+INTERVIEW,recruitment_timeline,text_area,0,Recruitment Timeline,,Ablauf/Zeitrahmen
+INTERVIEW,number_of_interviews,number_input,0,Number of Interviews,,Anzahl Interviews
+INTERVIEW,interview_format,selectbox,0,Interview Format,"Onsite;Remote;Hybrid;Phone",Interview-Format
+INTERVIEW,interview_stage_count,number_input,0,Interview Stages,,Stufen im Auswahlprozess
+INTERVIEW,interview_docs_required,text_area,0,Interview Docs Required,,Erforderliche Unterlagen
+INTERVIEW,assessment_tests,checkbox,0,Assessment Tests,,Einstellungstests?
+INTERVIEW,interview_notes,text_area,0,Interview Notes,,Notizen zu Gesprächen
+INTERVIEW,onboarding_process,text_area,0,Onboarding Process,,Einarbeitungsprozess
+INTERVIEW,onboarding_process_overview,text_area,0,Onboarding Process Overview,,Überblick Einarbeitung
+INTERVIEW,probation_period,number_input,0,Probation Period (Months),,Dauer Probezeit (Monate)
+INTERVIEW,mentorship_program,checkbox,0,Mentorship Program,,Mentorenprogramm?
+INTERVIEW,welcome_package,checkbox,0,Welcome Package,,Willkommenspaket?
+INTERVIEW,application_instructions,text_area,0,Application Instructions,,Bewerbungshinweise
+INTERVIEW,line_manager_name,text_input,0,Line Manager Name,,Fachvorgesetzter Name
+INTERVIEW,line_manager_email,text_input,0,Line Manager Email,,Fachvorgesetzter Email
+INTERVIEW,line_manager_recv_cv,checkbox,0,Line Manager Receives CV,,Erhält CV?
+INTERVIEW,hr_poc_name,text_input,0,HR POC Name,,HR-Ansprechpartner Name
+INTERVIEW,hr_poc_email,text_input,0,HR POC Email,,HR-Ansprechpartner Email
+INTERVIEW,hr_poc_recv_cv,checkbox,0,HR POC Receives CV,,Erhält CV?
+INTERVIEW,finance_poc_name,text_input,0,Finance POC Name,,Finance-Ansprechpartner Name
+INTERVIEW,finance_poc_email,text_input,0,Finance POC Email,,Finance-Ansprechpartner Email
+INTERVIEW,finance_poc_recv_offer,checkbox,0,Finance POC Receives Offer,,Erhält Angebot?
