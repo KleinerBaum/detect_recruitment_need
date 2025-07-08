@@ -1133,7 +1133,7 @@ async def generate_interview_sheet(data: dict) -> str:
     prompt = (
         "Prepare an interview briefing for the hiring team. "
         "Tabulate key role criteria, must-have vs nice-to-have skills, and suggested interview questions based on the role profile.\n"
-        f"Profile Data: {json.dumps(data, ensure_ascii=False)}"
+        f"Profile Data: {json.dumps(data, ensure_ascii=False, default=str)}"
     )
     system_msg = "You are an expert interview coach for HR and hiring managers."
     return await generate_text(
@@ -1153,7 +1153,7 @@ async def generate_boolean_search(data: dict) -> str:
     prompt = (
         "Create a concise, optimized Boolean search string for this vacancy, "
         "using key responsibilities, requirements, and skills as the basis.\n"
-        f"Role Profile: {json.dumps(data, ensure_ascii=False)}"
+        f"Role Profile: {json.dumps(data, ensure_ascii=False, default=str)}"
     )
     system_msg = "You are an expert in talent sourcing and boolean search."
     return await generate_text(
