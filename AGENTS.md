@@ -13,15 +13,6 @@ This guide describes how Codex agents should operate in this repository.
 - Streamlit entry point: `Recruitment_Need_Analysis_Tool.py`.
 - Additional pages live in `pages/`.
 
-## Testing and static checks
-Run the following before committing:
-```bash
-ruff .
-black --check .
-mypy .
-pytest
-```
-
 ## Git workflow
 - Use feature branches (`feat/...`) and open PRs against `dev`.
 - Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:` …) with a short summary (max 60 characters).
