@@ -3,8 +3,7 @@
 This guide describes how Codex agents should operate in this repository.
 
 ## Code requirements
-- **Python** `>=3.10` with type hints.
-- Frameworks: **Streamlit** for the UI, **Pydantic v2**, **OpenAI SDK** and **FAISS**.
+- **Python** `>=3.10` with detailed type hints.
 - Follow **PEP 8**.
 - External dependencies are declared in `requirements.txt`.
 
@@ -13,7 +12,6 @@ This guide describes how Codex agents should operate in this repository.
 - Additional pages live in `pages/`.
 
 ## Git workflow
-- Use feature branches (`feat/...`) and open PRs against `dev`.
 - Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:` …) with a short summary (max 60 characters).
 
 ## LLM‑specific guidelines
