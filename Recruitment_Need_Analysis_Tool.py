@@ -484,6 +484,60 @@ def docx_text(data: BytesIO) -> str:
     return "\n".join(p.text for p in docx.Document(data).paragraphs)
 
 
+# ── Skill helpers -------------------------------------------------------------
+def parse_skill_list(raw: str | list[str] | None) -> list[str]:
+    """Return a cleaned list of skills from various input formats."""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        items = raw
+    else:
+        items = re.split(r"[;,\n]+", str(raw))
+    return [s.strip() for s in items if s and s.strip()]
+
+
+async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
+    existing: list[str] = []
+    for key in [
+        "must_have_skills",
+        "nice_to_have_skills",
+        "hard_skills",
+        "soft_skills",
+    ]:
+        existing.extend(parse_skill_list(data.get(key)))
+
+    prompt = (
+        f"List the top {count} {kind} skills for a job titled '{data.get('job_title', '')}'. "
+        f"Consider role type '{data.get('role_type', '')}', role description '{data.get('role_description', '')}' "
+        f"and tasks '{data.get('task_list', '')}'. Exclude: {', '.join(existing)}. "
+        'Return JSON object {"skills": [..]} with one skill per list item.'
+    )
+
+    chat = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        max_tokens=300,
+        messages=[
+            {"role": "system", "content": "You are an expert HR assistant."},
+            {"role": "user", "content": prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    raw = safe_json_load(chat.choices[0].message.content or "")
+    return [s.strip() for s in raw.get("skills", []) if s]
+
+
+async def suggest_hard_skills(data: dict) -> list[str]:
+    """Suggest up to 10 relevant hard skills."""
+    return await _suggest_skills(data, "hard", 10)
+
+
+async def suggest_soft_skills(data: dict) -> list[str]:
+    """Suggest up to 5 relevant soft skills."""
+    return await _suggest_skills(data, "soft", 5)
+
+
 # ── GPT fill ------------------------------------------------------------------
 async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResult]:
     if not missing_keys:
@@ -1043,6 +1097,45 @@ def main():
                     meta["key"].replace("_", " ").title(), expanded=False
                 ):
                     show_input(key, result, meta)
+
+        if step_name == "SKILLS":
+            if "hard_skill_suggestions" not in ss:
+                with st.spinner("AI analysiert Skills…"):
+                    try:
+                        ss["hard_skill_suggestions"] = asyncio.run(
+                            suggest_hard_skills(ss["data"])
+                        )
+                        ss["soft_skill_suggestions"] = asyncio.run(
+                            suggest_soft_skills(ss["data"])
+                        )
+                    except Exception as e:
+                        logging.error("skill suggestion failed: %s", e)
+                        ss["hard_skill_suggestions"] = []
+                        ss["soft_skill_suggestions"] = []
+
+            hard_sel = st.multiselect(
+                "AI-Suggested Hard Skills",
+                ss.get("hard_skill_suggestions", []),
+                default=ss.get("selected_hard_skills", []),
+            )
+            ss["selected_hard_skills"] = hard_sel
+            current_hard = parse_skill_list(ss["data"].get("hard_skills"))
+            for sk in hard_sel:
+                if sk not in current_hard:
+                    current_hard.append(sk)
+            ss["data"]["hard_skills"] = ", ".join(current_hard)
+
+            soft_sel = st.multiselect(
+                "AI-Suggested Soft Skills",
+                ss.get("soft_skill_suggestions", []),
+                default=ss.get("selected_soft_skills", []),
+            )
+            ss["selected_soft_skills"] = soft_sel
+            current_soft = parse_skill_list(ss["data"].get("soft_skills"))
+            for sk in soft_sel:
+                if sk not in current_soft:
+                    current_soft.append(sk)
+            ss["data"]["soft_skills"] = ", ".join(current_soft)
 
         prev, nxt = st.columns(2)
         prev.button("← Back", disabled=step == 1, on_click=lambda: goto(step - 1))
