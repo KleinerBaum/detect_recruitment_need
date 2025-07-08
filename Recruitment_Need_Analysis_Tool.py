@@ -19,13 +19,21 @@ from bs4 import BeautifulSoup
 import httpx
 import streamlit as st
 from openai import AsyncOpenAI
-from PyPDF2 import PdfReader
-import docx
+import importlib.util
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
 import datetime as dt
 import csv
 import base64
+
+_spec = importlib.util.spec_from_file_location(
+    "file_tools", Path(__file__).with_name("file_tools.py")
+)
+assert _spec is not None
+_file_tools = importlib.util.module_from_spec(_spec)
+assert _spec.loader is not None
+_spec.loader.exec_module(_file_tools)
+extract_text_from_file = _file_tools.extract_text_from_file
 
 SCHEMA: dict[str, list[dict[str, str]]] = {}
 with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
@@ -470,14 +478,15 @@ def html_text(html: str) -> str:
 
 
 # ── Regex search --------------------------------------------------------------
-def pattern_search(text: str, key: str, pat: str) -> ExtractResult | None:
-    """
-    Sucht Pattern, säubert gängige Präfixe („Name:“, „City:“ …) und liefert
-    ein ExtractResult mit fixer Regex-Confidence 0.9.
+def pattern_search(text: str, key: str, pat: str) -> ExtractResult:
+    """Return a :class:`ExtractResult` for the first regex match.
+
+    Common prefixes such as ``Name:`` or ``City:`` are stripped from the
+    resulting value. A confidence of ``0.9`` is returned for regex matches.
     """
     m = re.search(pat, text, flags=re.IGNORECASE | re.MULTILINE)
     if not (m and m.group(key)):
-        return None
+        return ExtractResult(None, 0.0)
 
     val = m.group(key).strip()
 
@@ -500,13 +509,17 @@ def http_text(url: str) -> str:
 
 @st.cache_data(ttl=24 * 60 * 60)
 def pdf_text(data: BytesIO) -> str:
-    reader = PdfReader(data)
-    return "\n".join(p.extract_text() for p in reader.pages if p.extract_text())
+    """Cached wrapper around :func:`extract_text_from_file` for PDFs."""
+    return extract_text_from_file(data.getvalue(), "application/pdf")
 
 
 @st.cache_data(ttl=24 * 60 * 60)
 def docx_text(data: BytesIO) -> str:
-    return "\n".join(p.text for p in docx.Document(data).paragraphs)
+    """Cached wrapper around :func:`extract_text_from_file` for DOCX."""
+    return extract_text_from_file(
+        data.getvalue(),
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 # ── Skill helpers -------------------------------------------------------------
@@ -601,7 +614,7 @@ async def extract(text: str) -> dict[str, ExtractResult]:
     interim: dict[str, ExtractResult] = {
         k: res
         for k, pat in REGEX_PATTERNS.items()
-        if (res := pattern_search(text, k, pat))
+        if (res := pattern_search(text, k, pat)).value
     }
 
     # salary merge
@@ -1118,10 +1131,8 @@ def main():
         extract_btn = st.button("Extract Vacancy Data", disabled=not up)
         if extract_btn and up:
             with st.spinner("Extracting…"):
-                if up.type == "application/pdf":
-                    text = pdf_text(BytesIO(up.read()))
-                else:
-                    text = docx_text(BytesIO(up.read()))
+                file_bytes = up.read()
+                text = extract_text_from_file(file_bytes, up.type)
                 ss["extracted"] = asyncio.run(extract(text))
                 title_res = ss["extracted"].get("job_title")
                 if isinstance(title_res, ExtractResult) and title_res.value:
