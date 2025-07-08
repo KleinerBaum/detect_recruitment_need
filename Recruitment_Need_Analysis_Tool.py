@@ -11,7 +11,7 @@ import ast
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from io import BytesIO
 from pathlib import Path
@@ -589,7 +589,7 @@ def selectable_buttons(
         if col.button(
             btn_label,
             key=f"{session_key}_{idx}",
-            type=btn_type,
+            type=cast(Literal["primary", "secondary", "tertiary"], btn_type),
             use_container_width=True,
         ):
             if is_selected:
@@ -964,7 +964,6 @@ def display_interview_section() -> None:
     def val(field: str) -> str:
         return str(ss["data"].get(field, ""))
 
-    st.subheader("Interview")
     col1, col2, col3 = st.columns(3)
 
     options = ["Receive CVs", "Receive IV-Invites", "Receive offer"]
@@ -1403,6 +1402,9 @@ def main():
                 unsafe_allow_html=True,
             )
 
+        if step_name == "INTERVIEW":
+            display_interview_section()
+
         # Extrahierte Werte kompakt darstellen
         display_extracted_values_editable(extr, fields, step_name)
 
@@ -1578,7 +1580,6 @@ def main():
             "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
         display_summary_overview()
-        display_interview_section()
         with st.expander("Alle Daten", expanded=False):
             display_summary()
 
