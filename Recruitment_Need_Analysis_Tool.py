@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+
 from streamlit import session_state as ss
+import pandas as pd  # type: ignore
 
 import asyncio
 import json
@@ -658,126 +660,55 @@ def show_input(key, default, meta):
     st.session_state["data"][key] = val
 
 
-def display_extracted_values_editable(extracted: dict, keys: list[str], step_name: str):
-    """
-    Zeigt extrahierte Werte an und ermöglicht Edit per Icon.
-    Änderungen landen direkt in ss["data"].
-    """
-    chunk_size = 5
-    labels = [
-        (k, v)
-        for k, v in ((k, extracted.get(k)) for k in keys)
-        if v and getattr(v, "value", None)
-    ]
-    if not labels:
+def display_extracted_values_editable(
+    extracted: dict[str, ExtractResult], keys: list[str], step_name: str
+) -> None:
+    """Show extracted values in a compact editable table."""
+
+    rows = []
+    for k in keys:
+        res = extracted.get(k)
+        if res and getattr(res, "value", None):
+            rows.append(
+                {"_key": k, "Feld": k.replace("_", " ").title(), "Wert": res.value}
+            )
+
+    if not rows:
         st.info("Keine Werte extrahiert.")
         return
 
-    # --- Edit-Handling ---
-    if "edit_state" not in ss:
-        ss["edit_state"] = {}  # Dict[str, bool]
-    if "edit_values" not in ss:
-        ss["edit_values"] = {}  # Dict[str, str]
+    df = pd.DataFrame(rows).drop(columns="_key")
+    edited = st.data_editor(
+        df,
+        key=f"{step_name}_extr_editor",
+        hide_index=True,
+        num_rows="fixed",
+    )
 
-    chunks = [labels[i : i + chunk_size] for i in range(0, len(labels), chunk_size)]
-    cols = st.columns(len(chunks))
-
-    for col, chunk in zip(cols, chunks):
-        with col:
-            for k, res in chunk:
-                label = k.replace("_", " ").title()
-                val = res.value
-                confidence = int(res.confidence * 100)
-                edit_key = f"{step_name}_{k}_edit"
-                edit_val_key = f"{step_name}_{k}_editval"
-                # --- Standardanzeige mit Icon ---
-                if not ss["edit_state"].get(edit_key, False):
-                    st.markdown(
-                        f"<b>{label}:</b> {val} <span style='color:#888'>({confidence}%)</span> "
-                        f"<span style='cursor:pointer;'>&nbsp;</span>",
-                        unsafe_allow_html=True,
-                    )
-                    # Icon as button (for accessibility)
-                    if st.button(
-                        "✏️",
-                        key=f"{edit_key}_btn",
-                        help="Bearbeiten",
-                        use_container_width=True,
-                    ):
-                        ss["edit_state"][edit_key] = True
-                        ss["edit_values"][edit_val_key] = val
-                        st.rerun()  # Sofort umschalten!
-                else:
-                    # Edit mode
-                    new_val = st.text_input(
-                        f"{label} bearbeiten",
-                        value=ss["edit_values"].get(edit_val_key, val),
-                        key=f"{edit_val_key}_input",
-                    )
-                    col1, col2 = st.columns([2, 1])
-                    with col1:
-                        if st.button("✔️ Speichern", key=f"{edit_key}_save"):
-                            ss["data"][k] = new_val
-                            ss["edit_state"][edit_key] = False
-                            st.rerun()
-                    with col2:
-                        if st.button("❌ Abbrechen", key=f"{edit_key}_cancel"):
-                            ss["edit_state"][edit_key] = False
-                            st.rerun()
+    for i, row in edited.iterrows():
+        key = rows[i]["_key"]
+        ss["data"][key] = row["Wert"]
 
 
-def display_missing_fields(meta_fields, extracted: dict, step_name: str):
-    # Felder, die NICHT in extracted sind oder keinen Wert haben
-    missing = []
-    for meta in meta_fields:
-        k = meta["key"]
-        # Wert fehlt, oder leer
-        if not (k in extracted and getattr(extracted[k], "value", None)):
-            missing.append(meta)
+def display_missing_inputs(meta_fields: list[dict[str, str]], extracted: dict) -> None:
+    """Show prominent inputs for fields without extracted values."""
+
+    missing = [
+        m
+        for m in meta_fields
+        if not (
+            m["key"] in extracted and getattr(extracted.get(m["key"]), "value", None)
+        )
+    ]
+
     if not missing:
         return
 
-    st.subheader("Noch offene Felder")
-    if "edit_state" not in ss:
-        ss["edit_state"] = {}
-    if "edit_values" not in ss:
-        ss["edit_values"] = {}
-
+    st.subheader("Fehlende Angaben")
     for meta in missing:
         k = meta["key"]
-        label = meta.get("label", k.replace("_", " ").title())
-        edit_key = f"{step_name}_{k}_manualedit"
-        edit_val_key = f"{step_name}_{k}_manualval"
-        val = ss["data"].get(k, "")
-        if not ss["edit_state"].get(edit_key, False):
-            # Zeile mit Icon
-            st.markdown(
-                f"<b>{label}:</b> <span style='color:#888'>{val or '(leer)'}</span>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "✏️", key=f"{edit_key}_btn", help="Bearbeiten", use_container_width=True
-            ):
-                ss["edit_state"][edit_key] = True
-                ss["edit_values"][edit_val_key] = val
-                st.rerun()
-        else:
-            # Edit-Input
-            new_val = st.text_input(
-                f"{label} eingeben",
-                value=ss["edit_values"].get(edit_val_key, val),
-                key=f"{edit_val_key}_input",
-            )
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                if st.button("✔️ Speichern", key=f"{edit_key}_save"):
-                    ss["data"][k] = new_val
-                    ss["edit_state"][edit_key] = False
-                    st.rerun()
-            with col2:
-                if st.button("❌ Abbrechen", key=f"{edit_key}_cancel"):
-                    ss["edit_state"][edit_key] = False
-                    st.rerun()
+        result = ExtractResult(ss["data"].get(k), 1.0)
+        show_input(k, result, meta)
 
 
 def display_summary() -> None:
@@ -1077,25 +1008,20 @@ def main():
                 unsafe_allow_html=True,
             )
 
-        # Extrahierte Werte mit Editierfunktion
+        # Extrahierte Werte kompakt darstellen
         display_extracted_values_editable(extr, fields, step_name)
 
-        # Sektion für Felder ohne Wert, Edit per Icon
-        display_missing_fields(meta_fields, extr, step_name)
+        # Prominent fehlende Felder abfragen
+        display_missing_inputs(meta_fields, extr)
 
-        # Formfelder (Pflicht/Optional wie gehabt)
-        left, right = st.columns(2)
-        for meta in meta_fields:
-            key = meta["key"]
-            result = extr.get(key) if key in extr else ExtractResult()
-            is_required = meta.get("is_must", "0") == "1"
-            if is_required:
-                with left:
-                    show_input(key, result, meta)
-            else:
-                with right.expander(
-                    meta["key"].replace("_", " ").title(), expanded=False
-                ):
+        with st.expander("Alle Felder bearbeiten", expanded=False):
+            left, right = st.columns(2)
+            for meta in meta_fields:
+                key = meta["key"]
+                result = extr.get(key) if key in extr else ExtractResult()
+                is_required = meta.get("is_must", "0") == "1"
+                target_col = left if is_required else right
+                with target_col:
                     show_input(key, result, meta)
 
         if step_name == "SKILLS":
