@@ -15,3 +15,4 @@ streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
 
 The main interface uses `images/AdobeStock_288526357.jpeg` as its background.
+The application logo is `images/color1_logo_transparent_background.png`.

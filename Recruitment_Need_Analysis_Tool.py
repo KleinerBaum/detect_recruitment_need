@@ -938,7 +938,7 @@ async def generate_contract(data: dict) -> str:
 def main():
     st.set_page_config(
         page_title="Recruitment Need Analysis Tool",
-        page_icon="🧭",
+        page_icon="images/color1_logo_transparent_background.png",
         layout="wide",
     )
 
@@ -955,6 +955,10 @@ def main():
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
         # Schönes Welcome-Design!
+        st.image(
+            "images/color1_logo_transparent_background.png",
+            width=200,
+        )
         st.markdown(
             """
         <div class="black-text">
