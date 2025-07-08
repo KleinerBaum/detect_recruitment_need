@@ -1123,7 +1123,7 @@ def main():
             "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
         display_summary()
-        st.header("Nächste Schritte – Nutzen Sie die gesammelten Daten!")
+        st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             if st.button("Jobad generieren"):
@@ -1141,7 +1141,7 @@ def main():
                     sheet = asyncio.run(generate_interview_sheet(ss["data"]))
                     st.markdown(sheet)
         with col3:
-            if st.button("Boolean Searchstring generieren"):
+            if st.button("Boolean Search für bessere Search-Engine Findings"):
                 with st.spinner("Generiere Suchstring…"):
                     boolean_str = asyncio.run(generate_boolean_search(ss["data"]))
                     st.code(boolean_str)
