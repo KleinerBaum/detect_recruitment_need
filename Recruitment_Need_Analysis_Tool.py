@@ -11,7 +11,7 @@ import ast
 import logging
 import os
 from dataclasses import dataclass
-from typing import cast
+from typing import Any, cast
 
 from io import BytesIO
 from pathlib import Path
@@ -601,7 +601,18 @@ async def extract(text: str) -> dict[str, ExtractResult]:
 
 
 # ── UI helpers ----------------------------------------------------------------
-def show_input(key, default, meta):
+def show_input(
+    key: str, default: Any, meta: dict[str, Any], widget_prefix: str = ""
+) -> None:
+    """Render a widget for the given field.
+
+    Args:
+        key: Field name used for session state.
+        default: Default value or :class:`ExtractResult`.
+        meta: Metadata describing the field.
+        widget_prefix: Prefix for the Streamlit widget key.
+    """
+
     field_type = meta.get("field_type", meta.get("field", "text_input"))
     helptext = meta.get("helptext", "")
     required = str(meta.get("is_must", "0")) == "1"
@@ -612,8 +623,9 @@ def show_input(key, default, meta):
     val = getattr(default, "value", default)
 
     # Field logic
+    widget_key = f"{widget_prefix}_{key}" if widget_prefix else key
     if field_type == "text_area":
-        val = st.text_area(label, value=val or "", help=helptext)
+        val = st.text_area(label, value=val or "", help=helptext, key=widget_key)
 
     elif field_type == "selectbox":
         options = meta.get("options", []) or []
@@ -621,6 +633,7 @@ def show_input(key, default, meta):
             label,
             options=options,
             index=options.index(val) if val in options else 0,
+            key=widget_key,
             help=helptext,
         )
 
@@ -630,6 +643,7 @@ def show_input(key, default, meta):
             label,
             options=options,
             default=[v for v in (val or []) if v in options],
+            key=widget_key,
             help=helptext,
         )
 
@@ -642,20 +656,22 @@ def show_input(key, default, meta):
             match = re.search(r"[-+]?\d*\.\d+|\d+", str(val))
             numeric_val = float(match.group()) if match else 0.0
 
-        val = st.number_input(label, value=numeric_val, help=helptext)
+        val = st.number_input(label, value=numeric_val, key=widget_key, help=helptext)
 
     elif field_type == "date_input":
         try:
             date_val = dateparser.parse(str(val)).date() if val else dt.date.today()
         except Exception:
             date_val = dt.date.today()
-        val = st.date_input(label, value=date_val, help=helptext)
+        val = st.date_input(label, value=date_val, key=widget_key, help=helptext)
 
     elif field_type == "checkbox":
-        val = st.checkbox(label, value=str(val).lower() == "true", help=helptext)
+        val = st.checkbox(
+            label, value=str(val).lower() == "true", key=widget_key, help=helptext
+        )
 
     else:
-        val = st.text_input(label, value=val or "", help=helptext)
+        val = st.text_input(label, value=val or "", key=widget_key, help=helptext)
 
     # Save to session state
     st.session_state["data"][key] = val
@@ -691,7 +707,9 @@ def display_extracted_values_editable(
         ss["data"][key] = row["Wert"]
 
 
-def display_missing_inputs(meta_fields: list[dict[str, str]], extracted: dict) -> None:
+def display_missing_inputs(
+    step_name: str, meta_fields: list[dict[str, str]], extracted: dict
+) -> None:
     """Show prominent inputs for fields without extracted values."""
 
     missing = [
@@ -709,7 +727,7 @@ def display_missing_inputs(meta_fields: list[dict[str, str]], extracted: dict) -
     for meta in missing:
         k = meta["key"]
         result = ExtractResult(ss["data"].get(k), 1.0)
-        show_input(k, result, meta)
+        show_input(k, result, meta, widget_prefix=f"missing_{step_name}")
 
 
 def display_summary() -> None:
@@ -721,7 +739,7 @@ def display_summary() -> None:
             for meta in SCHEMA[step_name]:
                 key = meta["key"]
                 result = ExtractResult(ss["data"].get(key), 1.0)
-                show_input(key, result, meta)
+                show_input(key, result, meta, widget_prefix=f"summary_{step_name}")
 
 
 img_path = Path("images/AdobeStock_506577005.jpeg")
@@ -1029,7 +1047,7 @@ def main():
         display_extracted_values_editable(extr, fields, step_name)
 
         # Prominent fehlende Felder abfragen
-        display_missing_inputs(meta_fields, extr)
+        display_missing_inputs(step_name, meta_fields, extr)
 
         with st.expander("Alle Felder bearbeiten", expanded=False):
             left, right = st.columns(2)
@@ -1039,7 +1057,7 @@ def main():
                 is_required = meta.get("is_must", "0") == "1"
                 target_col = left if is_required else right
                 with target_col:
-                    show_input(key, result, meta)
+                    show_input(key, result, meta, widget_prefix=step_name)
 
         if step_name == "SKILLS":
             if "hard_skill_suggestions" not in ss:
