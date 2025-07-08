@@ -225,7 +225,8 @@ REGEX_PATTERNS = {
     ),
     "innovation_expected": _simple(
         "Innovation\\s*Expected", "Innovationsgrad", "innovation_expected"
-    ),    "daily_tools": _simple("Daily\\s*Tools", "Tägliche\\s*Tools?", "daily_tools"),
+    ),
+    "daily_tools": _simple("Daily\\s*Tools", "Tägliche\\s*Tools?", "daily_tools"),
     # Tasks
     "task_list": _simple("Task\\s*List", "Aufgabenliste", "task_list"),
     "key_responsibilities": _simple(
@@ -827,12 +828,9 @@ async def generate_jobad(data: dict) -> str:
 
 
 def download_as_pdf(text: str, filename: str = "jobad.pdf"):
-    """
-    Konvertiert einen gegebenen Text zu PDF und stellt ihn als Download bereit.
-    """
-    import fpdf  # oder reportlab, pdfkit etc.
+    """Convert text to a downloadable PDF."""
     from fpdf import FPDF
-    
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -844,6 +842,7 @@ def download_as_pdf(text: str, filename: str = "jobad.pdf"):
         st.download_button(
             "Download PDF", f, file_name=filename, mime="application/pdf"
         )
+
 
 # --- b) Interview-Vorbereitungs-Sheet ---
 async def generate_interview_sheet(data: dict) -> str:
@@ -951,7 +950,7 @@ def main():
         """,
             unsafe_allow_html=True,
         )
-        
+
         st.divider()
         # Job title input field
         job_title_default = ss["data"].get("job_title")
@@ -1001,7 +1000,7 @@ def main():
                 f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>",
                 unsafe_allow_html=True,
             )
-            
+
         # Extrahierte Werte mit Editierfunktion
         display_extracted_values_editable(extr, fields, step_name)
 
@@ -1021,7 +1020,7 @@ def main():
                 with right.expander(
                     meta["key"].replace("_", " ").title(), expanded=False
                 ):
-                        show_input(key, result, meta)
+                    show_input(key, result, meta)
 
         prev, nxt = st.columns(2)
         prev.button("← Back", disabled=step == 1, on_click=lambda: goto(step - 1))

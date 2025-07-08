@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def load_tool_module():
-    path = Path(__file__).resolve().parents[1] / "🧭 Recruitment_Need_Analysis_Tool.py"
+    path = Path(__file__).resolve().parents[1] / "Recruitment_Need_Analysis_Tool.py"
     spec = importlib.util.spec_from_file_location("tool", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
