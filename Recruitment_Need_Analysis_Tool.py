@@ -988,7 +988,7 @@ def main():
 
         col_space.empty()  # visual spacing between input and upload
 
-        extract_btn = st.button("Extract Vacancy Data", disabled=not (up or url))
+        extract_btn = st.button("Extract Vacancy Data", disabled=not (up))
         if extract_btn:
             with st.spinner("Extracting…"):
                 if up:
