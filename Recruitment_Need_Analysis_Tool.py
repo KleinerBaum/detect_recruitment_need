@@ -11,6 +11,7 @@ import ast
 import logging
 import os
 from dataclasses import dataclass
+from typing import cast
 
 from io import BytesIO
 from pathlib import Path
@@ -686,7 +687,7 @@ def display_extracted_values_editable(
     )
 
     for i, row in edited.iterrows():
-        key = rows[i]["_key"]
+        key = rows[cast(int, i)]["_key"]
         ss["data"][key] = row["Wert"]
 
 
@@ -949,7 +950,7 @@ def main():
         <div class="black-text">
             <h2>Recruitment Need Analysis 🧭</h2>
             <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
-            <p>Upload a Job Advert or paste a URL. All relevant information will be extracted and preprocessed automatically.</p>
+            <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
             <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
         </div>
         """,
@@ -964,15 +965,10 @@ def main():
             if isinstance(extr_title, ExtractResult):
                 job_title_default = extr_title.value or ""
 
-        col_left, col_job, col_space, col_upload, col_right = st.columns(
-            [2, 20, 6, 20, 2]
-        )
-
-        with col_left:
-            url = st.text_input("Job Ad URL", key="job_url")
+        col_left, col_job, col_space, col_upload = st.columns([2, 20, 6, 20])
 
         with col_job:
-            job_title = st.text_input(
+            st.text_input(
                 "Job Title",
                 value=job_title_default or "",
                 key="job_title",
@@ -991,16 +987,13 @@ def main():
 
         col_space.empty()  # visual spacing between input and upload
 
-        extract_btn = st.button("Extract Vacancy Data", disabled=not (up))
-        if extract_btn:
+        extract_btn = st.button("Extract Vacancy Data", disabled=not up)
+        if extract_btn and up:
             with st.spinner("Extracting…"):
-                if up:
-                    if up.type == "application/pdf":
-                        text = pdf_text(BytesIO(up.read()))
-                    else:
-                        text = docx_text(BytesIO(up.read()))
+                if up.type == "application/pdf":
+                    text = pdf_text(BytesIO(up.read()))
                 else:
-                    text = http_text(url)
+                    text = docx_text(BytesIO(up.read()))
                 ss["extracted"] = asyncio.run(extract(text))
                 title_res = ss["extracted"].get("job_title")
                 if isinstance(title_res, ExtractResult) and title_res.value:
