@@ -980,7 +980,9 @@ def main():
                     text = http_text(url)
                 ss["extracted"] = asyncio.run(extract(text))
 
-        st.button("Next →", disabled=not job_title, on_click=lambda: goto(1))
+        if not job_title:
+            st.warning("Job Title fehlt – Felder können später ergänzt werden.")
+        st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
@@ -1028,7 +1030,9 @@ def main():
             meta["key"] for meta in meta_fields if meta.get("is_must", "0") == "1"
         ]
         ok = all(ss["data"].get(k) for k in required_keys)
-        nxt.button("Next →", disabled=not ok, on_click=lambda: goto(step + 1))
+        if not ok:
+            st.warning("Einige Pflichtfelder sind noch leer.")
+        nxt.button("Next →", on_click=lambda: goto(step + 1))
 
     # ----------- Summary / Abschluss ----------
     elif step == len(STEPS) + 1:
