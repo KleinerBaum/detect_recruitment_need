@@ -1286,7 +1286,7 @@ def predict_annual_salary(
 # ── Streamlit main ------------------------------------------------------------
 def main():
     st.set_page_config(
-        page_title="Recruitment Need Analysis Tool",
+        page_title="🧭 Recruitment Need Analysis Tool",
         page_icon="🧭",
         layout="wide",
     )
