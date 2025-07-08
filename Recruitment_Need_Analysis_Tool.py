@@ -817,6 +817,101 @@ def display_summary() -> None:
                 show_input(key, result, meta, widget_prefix=f"summary_{step_name}")
 
 
+def display_summary_overview() -> None:
+    """Render the most important fields in four columns."""
+
+    def val(field: str) -> str:
+        return str(ss["data"].get(field, ""))
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown("### Vacancy Details")
+        st.write(f"**Job Title:** {val('job_title')}")
+        st.write(f"**Company Name:** {val('company_name')}")
+        st.write(f"**Start Date Target:** {val('date_of_employment_start')}")
+        st.write(f"**Place of Work:** {val('place_of_work')}")
+        st.write(f"**Contract Type:** {val('contract_type')}")
+        st.write(f"**Work Schedule:** {val('work_schedule')}")
+
+    with col2:
+        st.markdown("### About the Role")
+        st.write(f"**Role Description:** {val('role_description')}")
+        st.write(f"**Task List:** {val('task_list')}")
+        st.write(f"**Technical Tasks:** {val('technical_tasks')}")
+        st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
+        st.write(f"**Role Keywords:** {val('role_keywords')}")
+
+    with col3:
+        st.markdown("### Skills")
+        st.write(f"**Hard Skills:** {val('hard_skills')}")
+        st.write(f"**Must Have Skills:** {val('must_have_skills')}")
+        st.write(f"**Nice to Have Skills:** {val('nice_to_have_skills')}")
+        st.write(f"**Soft Skills:** {val('soft_skills')}")
+        st.write(f"**Certifications Required:** {val('certifications_required')}")
+        st.write(f"**Domain Expertise:** {val('domain_expertise')}")
+        st.write(f"**Language Requirements:** {val('language_requirements')}")
+
+    with col4:
+        st.markdown("### Benefits")
+        st.write(f"**Salary Range (EUR):** {val('salary_range')}")
+        st.write(f"**Variable Comp:** {val('variable_comp')}")
+        st.write(f"**Vacation Days:** {val('vacation_days')}")
+        st.write(f"**Remote Policy:** {val('remote_policy')}")
+        st.write(f"**Flexible Hours:** {val('flexible_hours')}")
+        st.write(f"**Childcare Support:** {val('childcare_support')}")
+        st.write(f"**Learning Budget (EUR):** {val('learning_budget')}")
+        st.write(f"**Other Perks:** {val('other_perks')}")
+
+
+def display_interview_section() -> None:
+    """Show interview contacts and involvement."""
+
+    def val(field: str) -> str:
+        return str(ss["data"].get(field, ""))
+
+    st.subheader("Interview")
+    col1, col2, col3 = st.columns(3)
+
+    options = ["Receive CVs", "Receive IV-Invites", "Receive offer"]
+
+    with col1:
+        st.markdown("### Need")
+        st.write(f"**Line Manager Name:** {val('line_manager_name')}")
+        st.write(f"**Line Manager Email:** {val('line_manager_email')}")
+        sel = st.multiselect(
+            "Involvement",
+            options,
+            default=ss.get("line_manager_involve", []),
+            key="line_manager_involve",
+        )
+        ss["line_manager_involve"] = sel
+
+    with col2:
+        st.markdown("### Authority")
+        st.write(f"**HR POC Name:** {val('hr_poc_name')}")
+        st.write(f"**HR POC Email:** {val('hr_poc_email')}")
+        sel = st.multiselect(
+            "Involvement",
+            options,
+            default=ss.get("hr_poc_involve", []),
+            key="hr_poc_involve",
+        )
+        ss["hr_poc_involve"] = sel
+
+    with col3:
+        st.markdown("### Money")
+        st.write(f"**Finance POC Name:** {val('finance_poc_name')}")
+        st.write(f"**Finance POC Email:** {val('finance_poc_email')}")
+        sel = st.multiselect(
+            "Involvement",
+            options,
+            default=ss.get("finance_poc_involve", []),
+            key="finance_poc_involve",
+        )
+        ss["finance_poc_involve"] = sel
+
+
 img_path = Path("images/AdobeStock_506577005.jpeg")
 
 
@@ -1297,63 +1392,77 @@ def main():
         st.markdown(
             "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
-        display_summary()
+        display_summary_overview()
+        display_interview_section()
+        with st.expander("Alle Daten", expanded=False):
+            display_summary()
+
         st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        with col1:
-            if st.button("Stellenanzeige erstellen"):
-                with st.spinner("Generiere Jobad…"):
-                    jobad = asyncio.run(generate_jobad(ss["data"]))
-                    st.markdown(jobad)
-                    st.info(
-                        "Du kannst den Text jetzt anpassen und als PDF exportieren."
-                    )
-                    if st.button("PDF Download"):
-                        download_as_pdf(jobad)
-        with col2:
-            if st.button("Guide Vorstellungsgespräch"):
-                with st.spinner("Generiere Interviewvorbereitung…"):
-                    sheet = asyncio.run(generate_interview_sheet(ss["data"]))
-                    st.markdown(sheet)
-        with col3:
-            if st.button("Boolean Search für bessere Search-Engine Findings"):
-                with st.spinner("Generiere Suchstring…"):
-                    boolean_str = asyncio.run(generate_boolean_search(ss["data"]))
-                    st.code(boolean_str)
-        with col4:
-            if st.button("Arbeitsvertrag erstellen"):
-                with st.spinner("Generiere Vertrag…"):
-                    contract = asyncio.run(generate_contract(ss["data"]))
-                    st.markdown(contract)
-        with col5:
-            if st.button("Gehaltsband schätzen"):
-                salary = estimate_salary_range(
-                    cast(str, ss["data"].get("job_title", "")),
-                    cast(str, ss["data"].get("seniority_level", "")),
+
+        btn_cols = st.columns(6)
+        actions = [
+            ("Stellenanzeige erstellen", "jobad", generate_jobad),
+            ("Guide Vorstellungsgespräch", "interview", generate_interview_sheet),
+            (
+                "Boolean Search für bessere Search-Engine Findings",
+                "boolean",
+                generate_boolean_search,
+            ),
+            ("Arbeitsvertrag erstellen", "contract", generate_contract),
+            ("Gehaltsband schätzen", "salary", None),
+            ("Gesamtkosten berechnen", "total", None),
+        ]
+
+        for col, (label, key, func) in zip(btn_cols, actions):
+            with col:
+                if st.button(label, key=f"btn_{key}"):
+                    if func:
+                        with st.spinner("Generiere…"):
+                            ss[f"out_{key}"] = asyncio.run(func(ss["data"]))
+                    else:
+                        if key == "salary":
+                            ss[f"out_{key}"] = estimate_salary_range(
+                                cast(str, ss["data"].get("job_title", "")),
+                                cast(str, ss["data"].get("seniority_level", "")),
+                            )
+                        elif key == "total":
+                            match = re.findall(
+                                r"\d+", str(ss["data"].get("salary_range", ""))
+                            )
+                            if len(match) >= 2:
+                                rng = (int(match[0]), int(match[1]))
+                            else:
+                                rng = (0, int(match[0])) if match else (0, 0)
+                            benefits = []
+                            if ss["data"].get("health_insurance"):
+                                benefits.append("Health Insurance")
+                            if ss["data"].get("company_car"):
+                                benefits.append("Company Car")
+                            if ss["data"].get("flexible_hours"):
+                                benefits.append("Flexible Hours")
+                            if ss["data"].get("remote_policy"):
+                                benefits.append("Home Office Options")
+                            if ss["data"].get("learning_budget"):
+                                benefits.append("Training Budget")
+                            if ss["data"].get("pension_plan"):
+                                benefits.append("Pension Plan")
+                            ss[f"out_{key}"] = str(
+                                calculate_total_compensation(rng, benefits)
+                            )
+
+        for label, key, _ in actions:
+            if f"out_{key}" in ss:
+                ss[f"out_{key}"] = st.text_area(
+                    label,
+                    value=str(ss.get(f"out_{key}", "")),
+                    key=f"txt_{key}",
+                    height=200,
                 )
-                st.info(f"Geschätztes Gehaltsband: {salary}")
-        with col6:
-            if st.button("Gesamtkosten berechnen"):
-                match = re.findall(r"\d+", str(ss["data"].get("salary_range", "")))
-                if len(match) >= 2:
-                    rng = (int(match[0]), int(match[1]))
-                else:
-                    rng = (0, int(match[0])) if match else (0, 0)
-                benefits = []
-                if ss["data"].get("health_insurance"):
-                    benefits.append("Health Insurance")
-                if ss["data"].get("company_car"):
-                    benefits.append("Company Car")
-                if ss["data"].get("flexible_hours"):
-                    benefits.append("Flexible Hours")
-                if ss["data"].get("remote_policy"):
-                    benefits.append("Home Office Options")
-                if ss["data"].get("learning_budget"):
-                    benefits.append("Training Budget")
-                if ss["data"].get("pension_plan"):
-                    benefits.append("Pension Plan")
-                total = calculate_total_compensation(rng, benefits)
-                st.info(f"Gesamtkosten: {total} €")
+                change = st.text_area("Change Request", key=f"chg_{key}", value="")
+                if st.button("Apply", key=f"apply_{key}"):
+                    if change:
+                        ss[f"out_{key}"] = change
+                    st.session_state[f"txt_{key}"] = ss[f"out_{key}"]
 
         step_labels = [name.title().replace("_", " ") for name, _ in STEPS]
         target = st.selectbox("Zu Schritt springen:", step_labels)
