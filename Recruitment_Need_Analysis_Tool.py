@@ -1250,7 +1250,7 @@ def predict_annual_salary(
 def main():
     st.set_page_config(
         page_title="Recruitment Need Analysis Tool",
-        page_icon="images/color1_logo_transparent_background.png",
+        page_icon="🧭",
         layout="wide",
     )
 
@@ -1285,7 +1285,6 @@ def main():
         )
 
         st.divider()
-        # Job title input field + uploader in a single row
         job_title_default = ss["data"].get("job_title")
         if not job_title_default:
             extr_title = ss.get("extracted", {}).get("job_title")
@@ -1295,19 +1294,40 @@ def main():
         if not st.session_state.get("job_title") and job_title_default:
             st.session_state.job_title = job_title_default
 
-        col_left, col_job, col_space, col_upload = st.columns([2, 20, 6, 20])
+        up = None
+        extract_btn = False
+        left_pad, center_col, right_pad = st.columns([15, 70, 15])
 
-        with col_job:
+        with center_col:
             st.text_input(
                 "Job Title",
                 value=job_title_default or "",
                 key="job_title",
+                label_visibility="visible",
             )
 
-        with col_upload:
             up = st.file_uploader(
-                "Upload Job Description (PDF or DOCX)", type=["pdf", "docx"]
+                "Upload Job Description (PDF or DOCX)",
+                type=["pdf", "docx"],
             )
+
+            st.markdown(
+                "Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success"
+            )
+
+            btn_left, btn_right = st.columns(2)
+            with btn_left:
+                extract_btn = st.button(
+                    "Extract Vacancy Data",
+                    disabled=not up,
+                    use_container_width=True,
+                )
+            with btn_right:
+                st.button(
+                    "Next →",
+                    on_click=lambda: goto(1),
+                    use_container_width=True,
+                )
 
         ss["data"]["job_title"] = st.session_state.job_title
         if st.session_state.job_title and not ss.get("extracted", {}).get("job_title"):
@@ -1315,9 +1335,6 @@ def main():
                 st.session_state.job_title, 1.0
             )
 
-        col_space.empty()  # visual spacing between input and upload
-
-        extract_btn = st.button("Extract Vacancy Data", disabled=not up)
         if extract_btn and up:
             with st.spinner("Extracting…"):
                 file_bytes = up.read()
@@ -1328,8 +1345,6 @@ def main():
                     ss["extracted"]["job_title"] = title_res
                     ss["data"]["job_title"] = title_res.value
                 st.rerun()
-
-        st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
