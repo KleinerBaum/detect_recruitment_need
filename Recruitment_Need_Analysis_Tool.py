@@ -1005,7 +1005,7 @@ def main():
                 ):
                     st.session_state.job_title = title_res.value or ""
                     ss["data"]["job_title"] = st.session_state.job_title
-                    st.rerun()
+                    st.experimental_rerun()
 
         st.button("Next →", on_click=lambda: goto(1))
     # ----------- 1..n: Wizard -----------
