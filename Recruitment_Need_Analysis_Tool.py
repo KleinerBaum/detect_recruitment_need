@@ -454,9 +454,38 @@ REGEX_PATTERNS = {
 
 
 LLM_PROMPT = (
+    "You parse German or English job ads. "
     "Return ONLY valid JSON where every key maps to an object "
     'with fields "value" (string|null) and "confidence" (0-1).'
 )
+
+# Additional lightweight patterns without explicit labels
+FALLBACK_PATTERNS: dict[str, str] = {
+    "employment_type": r"(?P<employment_type>Vollzeit|Teilzeit|Full[-\s]?time|Part[-\s]?time)",
+    "contract_type": r"(?P<contract_type>unbefristet|befristet|permanent|temporary|contract)",
+    "seniority_level": r"(?P<seniority_level>Junior|Mid|Senior|Lead|Head|Manager|Einsteiger|Berufserfahren)",
+    "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|bis|to|–)\s*\d{4,6})",
+}
+
+
+def search_company_name(text: str) -> ExtractResult | None:
+    pat_bei = (
+        r"(?<=bei\s)"
+        r"(?P<company_name>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&., \-]{2,}\s*(?:GmbH|AG|KG|SE|Inc\.|Ltd\.|LLC|e\.V\.))"
+        r"(?=\s|$)"
+    )
+    m = re.search(pat_bei, text)
+    if m:
+        return ExtractResult(m.group("company_name"), 0.8)
+
+    pat_generic = (
+        r"(?P<company_name>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&., \-]{2,}\s*(?:GmbH|AG|KG|SE|Inc\.|Ltd\.|LLC|e\.V\.))"
+        r"(?=\s|$)"
+    )
+    m = re.search(pat_generic, text)
+    if m:
+        return ExtractResult(m.group("company_name"), 0.7)
+    return None
 
 
 # ── Utility dataclass ─────────────────────────────────────────────────────────
@@ -616,6 +645,17 @@ async def extract(text: str) -> dict[str, ExtractResult]:
         for k, pat in REGEX_PATTERNS.items()
         if (res := pattern_search(text, k, pat)).value
     }
+
+    if "company_name" not in interim:
+        guess = search_company_name(text)
+        if guess:
+            interim["company_name"] = guess
+
+    for k, pat in FALLBACK_PATTERNS.items():
+        if k not in interim:
+            res = pattern_search(text, k, pat)
+            if res.value:
+                interim[k] = res
 
     # salary merge
     if (
