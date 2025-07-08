@@ -965,6 +965,9 @@ def main():
             if isinstance(extr_title, ExtractResult):
                 job_title_default = extr_title.value or ""
 
+        if not st.session_state.get("job_title") and job_title_default:
+            st.session_state.job_title = job_title_default
+
         col_left, col_job, col_space, col_upload = st.columns([2, 20, 6, 20])
 
         with col_job:
@@ -997,10 +1000,8 @@ def main():
                 ss["extracted"] = asyncio.run(extract(text))
                 title_res = ss["extracted"].get("job_title")
                 if isinstance(title_res, ExtractResult) and title_res.value:
-                    if not st.session_state.get("job_title"):
-                        st.session_state.job_title = title_res.value
-                    ss["data"]["job_title"] = st.session_state.job_title
                     ss["extracted"]["job_title"] = title_res
+                    ss["data"]["job_title"] = title_res.value
                 st.experimental_rerun()
 
         st.button("Next →", on_click=lambda: goto(1))
