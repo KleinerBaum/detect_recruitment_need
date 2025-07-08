@@ -1126,7 +1126,7 @@ def main():
         st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if st.button("Jobad generieren"):
+            if st.button("Stellenanzeige erstellen"):
                 with st.spinner("Generiere Jobad…"):
                     jobad = asyncio.run(generate_jobad(ss["data"]))
                     st.markdown(jobad)
@@ -1136,7 +1136,7 @@ def main():
                     if st.button("PDF Download"):
                         download_as_pdf(jobad)
         with col2:
-            if st.button("Interviewvorbereitung erstellen"):
+            if st.button("Guide Vorstellungsgespräch"):
                 with st.spinner("Generiere Interviewvorbereitung…"):
                     sheet = asyncio.run(generate_interview_sheet(ss["data"]))
                     st.markdown(sheet)
@@ -1146,7 +1146,7 @@ def main():
                     boolean_str = asyncio.run(generate_boolean_search(ss["data"]))
                     st.code(boolean_str)
         with col4:
-            if st.button("Arbeitsvertrag generieren"):
+            if st.button("Arbeitsvertrag erstellen"):
                 with st.spinner("Generiere Vertrag…"):
                     contract = asyncio.run(generate_contract(ss["data"]))
                     st.markdown(contract)
