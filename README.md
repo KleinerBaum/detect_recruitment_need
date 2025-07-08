@@ -14,15 +14,13 @@ pip install -r requirements.txt
 streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
 
-The **SKILLS** step suggests additional hard and soft skills via OpenAI and shows
-them using your current job title for easier selection. It also displays a
-dynamic salary chart that predicts the annual salary based on your selected
-skills and other role information.
+The **SKILLS** step suggests additional hard and soft skills via OpenAI and
+presents them as selectable buttons. Chosen suggestions are stored in your
+profile. A dynamic salary chart visualises the impact of your selected skills.
 
-The **BENEFITS** step can now generate benefit suggestions based on the job
-title, the company location and typical competitor offerings. Specify how many
-ideas you want (up to 50) and toggle the ones you like to add them to your
-benefit list.
+The **BENEFITS** step generates benefit suggestions based on the job title, the
+company location and typical competitor offerings. Each suggestion appears as a
+button that you can toggle to add it to your benefit list.
 
 ## Wizard Steps
 
