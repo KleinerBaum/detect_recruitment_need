@@ -988,8 +988,6 @@ def main():
 
         col_space.empty()  # visual spacing between input and upload
 
-        url = st.text_input("…or paste a Job Ad URL")
-
         extract_btn = st.button("Extract Vacancy Data", disabled=not (up or url))
         if extract_btn:
             with st.spinner("Extracting…"):
