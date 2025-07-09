@@ -1869,6 +1869,178 @@ def main():
                 widget_prefix=step_name,
             )
 
+        elif step_name == "ROLE":
+            meta_map = {m["key"]: m for m in meta_fields}
+
+            st.subheader("Role Summary")
+            show_input(
+                "role_description",
+                extr.get("role_description", ExtractResult()),
+                meta_map["role_description"],
+                widget_prefix=step_name,
+            )
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "role_type",
+                    extr.get("role_type", ExtractResult()),
+                    meta_map["role_type"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "role_keywords",
+                    extr.get("role_keywords", ExtractResult()),
+                    meta_map["role_keywords"],
+                    widget_prefix=step_name,
+                )
+
+            st.subheader("Responsibilities")
+            show_input(
+                "primary_responsibilities",
+                extr.get("primary_responsibilities", ExtractResult()),
+                meta_map["primary_responsibilities"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "key_responsibilities",
+                extr.get("key_responsibilities", ExtractResult()),
+                meta_map["key_responsibilities"],
+                widget_prefix=step_name,
+            )
+
+            with st.expander("Projects & Metrics", expanded=False):
+                show_input(
+                    "role_priority_projects",
+                    extr.get("role_priority_projects", ExtractResult()),
+                    meta_map["role_priority_projects"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "key_deliverables",
+                    extr.get("key_deliverables", ExtractResult()),
+                    meta_map["key_deliverables"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "role_performance_metrics",
+                    extr.get("role_performance_metrics", ExtractResult()),
+                    meta_map["role_performance_metrics"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "success_metrics",
+                    extr.get("success_metrics", ExtractResult()),
+                    meta_map["success_metrics"],
+                    widget_prefix=step_name,
+                )
+
+            st.subheader("Tasks")
+            show_input(
+                "task_list",
+                extr.get("task_list", ExtractResult()),
+                meta_map["task_list"],
+                widget_prefix=step_name,
+            )
+            with st.expander("Detailed Task Categories", expanded=False):
+                show_input(
+                    "technical_tasks",
+                    extr.get("technical_tasks", ExtractResult()),
+                    meta_map["technical_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "managerial_tasks",
+                    extr.get("managerial_tasks", ExtractResult()),
+                    meta_map["managerial_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "administrative_tasks",
+                    extr.get("administrative_tasks", ExtractResult()),
+                    meta_map["administrative_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "customer_facing_tasks",
+                    extr.get("customer_facing_tasks", ExtractResult()),
+                    meta_map["customer_facing_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "internal_reporting_tasks",
+                    extr.get("internal_reporting_tasks", ExtractResult()),
+                    meta_map["internal_reporting_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "performance_tasks",
+                    extr.get("performance_tasks", ExtractResult()),
+                    meta_map["performance_tasks"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "innovation_tasks",
+                    extr.get("innovation_tasks", ExtractResult()),
+                    meta_map["innovation_tasks"],
+                    widget_prefix=step_name,
+                )
+
+            st.subheader("Additional Requirements")
+            cols = st.columns(3)
+            with cols[0]:
+                show_input(
+                    "task_prioritization",
+                    extr.get("task_prioritization", ExtractResult()),
+                    meta_map["task_prioritization"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "decision_authority",
+                    extr.get("decision_authority", ExtractResult()),
+                    meta_map["decision_authority"],
+                    widget_prefix=step_name,
+                )
+            with cols[2]:
+                show_input(
+                    "process_improvement",
+                    extr.get("process_improvement", ExtractResult()),
+                    meta_map["process_improvement"],
+                    widget_prefix=step_name,
+                )
+
+            cols = st.columns(3)
+            with cols[0]:
+                show_input(
+                    "innovation_expected",
+                    extr.get("innovation_expected", ExtractResult()),
+                    meta_map["innovation_expected"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "on_call",
+                    extr.get("on_call", ExtractResult()),
+                    meta_map["on_call"],
+                    widget_prefix=step_name,
+                )
+            with cols[2]:
+                show_input(
+                    "physical_duties",
+                    extr.get("physical_duties", ExtractResult()),
+                    meta_map["physical_duties"],
+                    widget_prefix=step_name,
+                )
+            cols = st.columns(3)
+            with cols[0]:
+                show_input(
+                    "travel_required",
+                    extr.get("travel_required", ExtractResult()),
+                    meta_map["travel_required"],
+                    widget_prefix=step_name,
+                )
+
         else:
             current_cols = 2
             cols = st.columns(current_cols)
