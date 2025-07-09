@@ -2041,6 +2041,144 @@ def main():
                     widget_prefix=step_name,
                 )
 
+        elif step_name == "SKILLS":
+            meta_map = {m["key"]: m for m in meta_fields}
+
+            # Core skills
+            show_input(
+                "must_have_skills",
+                extr.get("must_have_skills", ExtractResult()),
+                meta_map["must_have_skills"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "nice_to_have_skills",
+                extr.get("nice_to_have_skills", ExtractResult()),
+                meta_map["nice_to_have_skills"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "hard_skills",
+                extr.get("hard_skills", ExtractResult()),
+                meta_map["hard_skills"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "soft_skills",
+                extr.get("soft_skills", ExtractResult()),
+                meta_map["soft_skills"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "certifications_required",
+                extr.get("certifications_required", ExtractResult()),
+                meta_map["certifications_required"],
+                widget_prefix=step_name,
+            )
+
+            st.subheader("Language Skills")
+            show_input(
+                "language_requirements",
+                extr.get("language_requirements", ExtractResult()),
+                meta_map["language_requirements"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "languages_optional",
+                extr.get("languages_optional", ExtractResult()),
+                meta_map["languages_optional"],
+                widget_prefix=step_name,
+            )
+
+            st.subheader("Key Competencies")
+            comp_cols = st.columns(2)
+            with comp_cols[0]:
+                show_input(
+                    "analytical_skills",
+                    extr.get("analytical_skills", ExtractResult()),
+                    meta_map["analytical_skills"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "project_management_skills",
+                    extr.get("project_management_skills", ExtractResult()),
+                    meta_map["project_management_skills"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "industry_experience",
+                    extr.get("industry_experience", ExtractResult()),
+                    meta_map["industry_experience"],
+                    widget_prefix=step_name,
+                )
+            with comp_cols[1]:
+                show_input(
+                    "communication_skills",
+                    extr.get("communication_skills", ExtractResult()),
+                    meta_map["communication_skills"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "leadership_competencies",
+                    extr.get("leadership_competencies", ExtractResult()),
+                    meta_map["leadership_competencies"],
+                    widget_prefix=step_name,
+                )
+
+            st.subheader("Technical Environment")
+            show_input(
+                "tool_proficiency",
+                extr.get("tool_proficiency", ExtractResult()),
+                meta_map["tool_proficiency"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "tech_stack",
+                extr.get("tech_stack", ExtractResult()),
+                meta_map["tech_stack"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "it_skills",
+                extr.get("it_skills", ExtractResult()),
+                meta_map["it_skills"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "domain_expertise",
+                extr.get("domain_expertise", ExtractResult()),
+                meta_map["domain_expertise"],
+                widget_prefix=step_name,
+            )
+
+            show_input(
+                "soft_requirement_details",
+                extr.get("soft_requirement_details", ExtractResult()),
+                meta_map["soft_requirement_details"],
+                widget_prefix=step_name,
+            )
+
+            st.subheader("Other Requirements")
+            other_cols = st.columns(2)
+            with other_cols[0]:
+                years_val = int(ss.get("data", {}).get("years_experience_min", 0))
+                years_val = st.number_input(
+                    meta_map["years_experience_min"]["label"],
+                    value=years_val,
+                    step=1,
+                    format="%d",
+                    key=f"{step_name}_years_experience_min",
+                    help=meta_map["years_experience_min"].get("helptext", ""),
+                )
+                ss["data"]["years_experience_min"] = int(years_val)
+            with other_cols[1]:
+                show_input(
+                    "visa_sponsorship",
+                    extr.get("visa_sponsorship", ExtractResult()),
+                    meta_map["visa_sponsorship"],
+                    widget_prefix=step_name,
+                )
+
         else:
             current_cols = 2
             cols = st.columns(current_cols)
