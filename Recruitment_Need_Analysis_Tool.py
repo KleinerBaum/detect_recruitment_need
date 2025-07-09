@@ -1561,81 +1561,82 @@ def main():
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
 
-            cols = st.columns(3)
-            counts = [
-                st.number_input(
-                    "Count for Job Title",
-                    1,
-                    50,
-                    5,
+            title_header = ss["data"].get("job_title") or "this role"
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.markdown(f"#### Benefits for {title_header}")
+                s1, b1 = st.columns([2, 1])
+                count_title = s1.selectbox(
+                    label="",
+                    options=[3, 5, 10],
+                    index=1,
                     key="count_benefit_title",
-                ),
-                st.number_input(
-                    "Count for Location",
-                    1,
-                    50,
-                    5,
+                )
+                if b1.button("Generate Title Benefits", key="gen_benefit_title"):
+                    with st.spinner("Generiere…"):
+                        try:
+                            ss["benefit_suggestions_title"] = asyncio.run(
+                                suggest_benefits_by_title(ss["data"], int(count_title))
+                            )
+                        except Exception as e:
+                            logging.error("benefit suggestion failed: %s", e)
+                            ss["benefit_suggestions_title"] = []
+                sel_title = selectable_buttons(
+                    ss.get("benefit_suggestions_title", []),
+                    "",
+                    "selected_benefits_title",
+                )
+
+            with col2:
+                st.markdown("#### Local Benefits")
+                s2, b2 = st.columns([2, 1])
+                count_loc = s2.selectbox(
+                    label="",
+                    options=[3, 5, 10],
+                    index=1,
                     key="count_benefit_loc",
-                ),
-                st.number_input(
-                    "Count for Competitors",
-                    1,
-                    50,
-                    5,
+                )
+                if b2.button("Generate Local Benefits", key="gen_benefit_loc"):
+                    with st.spinner("Generiere…"):
+                        try:
+                            ss["benefit_suggestions_location"] = asyncio.run(
+                                suggest_benefits_by_location(ss["data"], int(count_loc))
+                            )
+                        except Exception as e:
+                            logging.error("benefit suggestion failed: %s", e)
+                            ss["benefit_suggestions_location"] = []
+                sel_loc = selectable_buttons(
+                    ss.get("benefit_suggestions_location", []),
+                    "",
+                    "selected_benefits_location",
+                )
+
+            with col3:
+                st.markdown("#### Competitor Benefits")
+                s3, b3 = st.columns([2, 1])
+                count_comp = s3.selectbox(
+                    label="",
+                    options=[3, 5, 10],
+                    index=1,
                     key="count_benefit_comp",
-                ),
-            ]
-
-            if cols[0].button("Generate", key="gen_benefit_title"):
-                with st.spinner("Generiere…"):
-                    try:
-                        ss["benefit_suggestions_title"] = asyncio.run(
-                            suggest_benefits_by_title(ss["data"], int(counts[0]))
-                        )
-                    except Exception as e:
-                        logging.error("benefit suggestion failed: %s", e)
-                        ss["benefit_suggestions_title"] = []
-
-            if cols[1].button("Generate", key="gen_benefit_loc"):
-                with st.spinner("Generiere…"):
-                    try:
-                        ss["benefit_suggestions_location"] = asyncio.run(
-                            suggest_benefits_by_location(ss["data"], int(counts[1]))
-                        )
-                    except Exception as e:
-                        logging.error("benefit suggestion failed: %s", e)
-                        ss["benefit_suggestions_location"] = []
-
-            if cols[2].button("Generate", key="gen_benefit_comp"):
-                with st.spinner("Generiere…"):
-                    try:
-                        ss["benefit_suggestions_competitors"] = asyncio.run(
-                            suggest_benefits_competitors(ss["data"], int(counts[2]))
-                        )
-                    except Exception as e:
-                        logging.error("benefit suggestion failed: %s", e)
-                        ss["benefit_suggestions_competitors"] = []
-
-            sel_title = selectable_buttons(
-                ss.get("benefit_suggestions_title", []),
-                "### Job Title",
-                "selected_benefits_title",
-                cols=4,
-            )
-
-            sel_loc = selectable_buttons(
-                ss.get("benefit_suggestions_location", []),
-                "### Location",
-                "selected_benefits_location",
-                cols=4,
-            )
-
-            sel_comp = selectable_buttons(
-                ss.get("benefit_suggestions_competitors", []),
-                "### Competitors",
-                "selected_benefits_competitors",
-                cols=4,
-            )
+                )
+                if b3.button("Generate Competitor Benefits", key="gen_benefit_comp"):
+                    with st.spinner("Generiere…"):
+                        try:
+                            ss["benefit_suggestions_competitors"] = asyncio.run(
+                                suggest_benefits_competitors(
+                                    ss["data"], int(count_comp)
+                                )
+                            )
+                        except Exception as e:
+                            logging.error("benefit suggestion failed: %s", e)
+                            ss["benefit_suggestions_competitors"] = []
+                sel_comp = selectable_buttons(
+                    ss.get("benefit_suggestions_competitors", []),
+                    "",
+                    "selected_benefits_competitors",
+                )
 
             ss["benefit_list"] = list({*sel_title, *sel_loc, *sel_comp})
 
