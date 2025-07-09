@@ -840,7 +840,13 @@ def show_input(
     # Field logic
     widget_key = f"{widget_prefix}_{key}" if widget_prefix else key
     if field_type == "text_area":
-        val = st.text_area(label, value=val or "", help=helptext, key=widget_key)
+        val = st.text_area(
+            label,
+            value=val or "",
+            help=helptext,
+            key=widget_key,
+            height=100,
+        )
 
     elif field_type == "selectbox":
         options = meta.get("options", []) or []
@@ -1461,14 +1467,33 @@ def main():
         # Prominent fehlende Felder abfragen
         display_missing_inputs(step_name, meta_fields, extr)
 
-        left, right = st.columns(2)
+        current_cols = 2
+        cols = st.columns(current_cols)
+        col_idx = 0
+
         for meta in meta_fields:
             key = meta["key"]
             result = extr.get(key) if key in extr else ExtractResult()
-            is_required = meta.get("is_must", "0") == "1"
-            target_col = left if is_required else right
-            with target_col:
+            field_type = meta.get("field_type", meta.get("field", "text_input"))
+
+            if field_type == "text_area":
+                cols = st.columns(1)
+                with cols[0]:
+                    show_input(key, result, meta, widget_prefix=step_name)
+                cols = st.columns(current_cols)
+                col_idx = 0
+                continue
+
+            needed = 3 if field_type == "checkbox" else 2
+            if needed != current_cols or col_idx >= needed:
+                cols = st.columns(needed)
+                current_cols = needed
+                col_idx = 0
+
+            with cols[col_idx]:
                 show_input(key, result, meta, widget_prefix=step_name)
+
+            col_idx += 1
 
         if step_name == "SKILLS":
             if "hard_skill_suggestions" not in ss:
