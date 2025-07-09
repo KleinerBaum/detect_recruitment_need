@@ -850,13 +850,18 @@ def show_input(
 
     elif field_type == "selectbox":
         options = meta.get("options", []) or []
+        if not required:
+            options = ["Select…", *options]
+        index = options.index(val) if val in options else 0
         val = st.selectbox(
             label,
             options=options,
-            index=options.index(val) if val in options else 0,
+            index=index,
             key=widget_key,
             help=helptext,
         )
+        if not required and val == "Select…":
+            val = ""
 
     elif field_type == "multiselect":
         options = meta.get("options", []) or []
@@ -1467,33 +1472,99 @@ def main():
         # Prominent fehlende Felder abfragen
         display_missing_inputs(step_name, meta_fields, extr)
 
-        current_cols = 2
-        cols = st.columns(current_cols)
-        col_idx = 0
+        if step_name == "BASIC":
+            meta_map = {m["key"]: m for m in meta_fields}
+            show_input(
+                "job_title",
+                extr.get("job_title", ExtractResult()),
+                meta_map["job_title"],
+                widget_prefix=step_name,
+            )
 
-        for meta in meta_fields:
-            key = meta["key"]
-            result = extr.get(key) if key in extr else ExtractResult()
-            field_type = meta.get("field_type", meta.get("field", "text_input"))
+            cols = st.columns(3)
+            with cols[0]:
+                show_input(
+                    "employment_type",
+                    extr.get("employment_type", ExtractResult()),
+                    meta_map["employment_type"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "contract_type",
+                    extr.get("contract_type", ExtractResult()),
+                    meta_map["contract_type"],
+                    widget_prefix=step_name,
+                )
+            with cols[2]:
+                show_input(
+                    "seniority_level",
+                    extr.get("seniority_level", ExtractResult()),
+                    meta_map["seniority_level"],
+                    widget_prefix=step_name,
+                )
 
-            if field_type == "text_area":
-                cols = st.columns(1)
-                with cols[0]:
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "date_of_employment_start",
+                    extr.get("date_of_employment_start", ExtractResult()),
+                    meta_map["date_of_employment_start"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "work_schedule",
+                    extr.get("work_schedule", ExtractResult()),
+                    meta_map["work_schedule"],
+                    widget_prefix=step_name,
+                )
+                if ss.get("data", {}).get("work_schedule") == "Hybrid":
+                    default_pct = int(ss.get("data", {}).get("onsite_percentage", 50))
+                    pct = st.slider(
+                        "% Onsite vs Remote",
+                        min_value=0,
+                        max_value=100,
+                        value=default_pct,
+                        step=5,
+                        key="onsite_percentage",
+                    )
+                    ss["data"]["onsite_percentage"] = pct
+
+            show_input(
+                "work_location_city",
+                extr.get("work_location_city", ExtractResult()),
+                meta_map["work_location_city"],
+                widget_prefix=step_name,
+            )
+        else:
+            current_cols = 2
+            cols = st.columns(current_cols)
+            col_idx = 0
+
+            for meta in meta_fields:
+                key = meta["key"]
+                result = extr.get(key) if key in extr else ExtractResult()
+                field_type = meta.get("field_type", meta.get("field", "text_input"))
+
+                if field_type == "text_area":
+                    cols = st.columns(1)
+                    with cols[0]:
+                        show_input(key, result, meta, widget_prefix=step_name)
+                    cols = st.columns(current_cols)
+                    col_idx = 0
+                    continue
+
+                needed = 3 if field_type == "checkbox" else 2
+                if needed != current_cols or col_idx >= needed:
+                    cols = st.columns(needed)
+                    current_cols = needed
+                    col_idx = 0
+
+                with cols[col_idx]:
                     show_input(key, result, meta, widget_prefix=step_name)
-                cols = st.columns(current_cols)
-                col_idx = 0
-                continue
 
-            needed = 3 if field_type == "checkbox" else 2
-            if needed != current_cols or col_idx >= needed:
-                cols = st.columns(needed)
-                current_cols = needed
-                col_idx = 0
-
-            with cols[col_idx]:
-                show_input(key, result, meta, widget_prefix=step_name)
-
-            col_idx += 1
+                col_idx += 1
 
         if step_name == "SKILLS":
             if "hard_skill_suggestions" not in ss:
