@@ -39,7 +39,7 @@ The wizard collects data in the following order:
 4. SKILLS
 5. BENEFITS
 6. TARGET_GROUP
-7. INTERVIEW
+7. INTERVIEW – contact roles are grouped by Line Manager, HR and Finance. Application details and onboarding options are arranged side by side.
 8. SUMMARY
 
 In the final **SUMMARY** step you can generate a job advertisement, an interview

@@ -114,10 +114,7 @@ INTERVIEW,welcome_package,checkbox,0,Welcome Package,,Willkommenspaket?
 INTERVIEW,application_instructions,text_area,0,Application Instructions,,Bewerbungshinweise
 INTERVIEW,line_manager_name,text_input,0,Line Manager Name,,Fachvorgesetzter Name
 INTERVIEW,line_manager_email,text_input,0,Line Manager Email,,Fachvorgesetzter Email
-INTERVIEW,line_manager_recv_cv,checkbox,0,Line Manager Receives CV,,Erhält CV?
 INTERVIEW,hr_poc_name,text_input,0,HR POC Name,,HR-Ansprechpartner Name
 INTERVIEW,hr_poc_email,text_input,0,HR POC Email,,HR-Ansprechpartner Email
-INTERVIEW,hr_poc_recv_cv,checkbox,0,HR POC Receives CV,,Erhält CV?
 INTERVIEW,finance_poc_name,text_input,0,Finance POC Name,,Finance-Ansprechpartner Name
 INTERVIEW,finance_poc_email,text_input,0,Finance POC Email,,Finance-Ansprechpartner Email
-INTERVIEW,finance_poc_recv_offer,checkbox,0,Finance POC Receives Offer,,Erhält Angebot?
