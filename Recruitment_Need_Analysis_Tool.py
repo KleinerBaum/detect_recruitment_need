@@ -36,6 +36,7 @@ _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
 
 SCHEMA: dict[str, list[dict[str, str]]] = {}
+KEY_TO_STEP: dict[str, str] = {}
 with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
     for row in csv.DictReader(f):
         step = row["step"]
@@ -45,6 +46,7 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         options = row["options"].split(";") if row["options"].strip() else None
         row["options"] = options
         SCHEMA[step].append(row)
+        KEY_TO_STEP[row["key"]] = step
 
 DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
 
@@ -158,6 +160,21 @@ STEPS: list[tuple[str, list[str]]] = [
 ]
 
 
+def group_by_step(
+    extracted: dict[str, "ExtractResult"],
+) -> dict[str, dict[str, "ExtractResult"]]:
+    """Group flat extraction results by wizard step."""
+
+    grouped: dict[str, dict[str, ExtractResult]] = {
+        step: {} for step in ORDER if step in SCHEMA
+    }
+    for key, res in extracted.items():
+        step = KEY_TO_STEP.get(key)
+        if step:
+            grouped.setdefault(step, {})[key] = res
+    return grouped
+
+
 # ──────────────────────────────────────────────
 # REGEX PATTERNS
 # (complete list incl. addons for missing keys)
@@ -170,8 +187,14 @@ def _simple(label_en: str, label_de: str, cap: str) -> str:
 REGEX_PATTERNS = {
     # BASIC INFO - mandatory
     "job_title": _simple("Job\\s*Title|Position|Stellenbezeichnung", "", "job_title"),
-    "employment_type": _simple("Employment\\s*Type", "Vertragsart", "employment_type"),
-    "contract_type": _simple("Contract\\s*Type", "Vertragstyp", "contract_type"),
+    "employment_type": _simple(
+        "Employment\\s*Type",
+        "Vertragsart|Beschäftigungsart|Arbeitszeit",
+        "employment_type",
+    ),
+    "contract_type": _simple(
+        "Contract\\s*Type", "Vertragstyp|Anstellungsart", "contract_type"
+    ),
     "seniority_level": _simple(
         "Seniority\\s*Level", "Karrierelevel", "seniority_level"
     ),
@@ -346,9 +369,9 @@ REGEX_PATTERNS = {
     ),
     # Compensation
     "salary_currency": _simple("Currency", "Währung", "salary_currency"),
-    "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|to|–)\s*\d{4,6})",
-    "salary_range_min": r"(?P<salary_range_min>\d{4,6})\s*(?:-|to|–)\s*\d{4,6}",
-    "salary_range_max": r"\d{4,6}\s*(?:-|to|–)\s*(?P<salary_range_max>\d{4,6})",
+    "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|bis|to|–)\s*\d{4,6})",
+    "salary_range_min": r"(?P<salary_range_min>\d{4,6})\s*(?:-|bis|to|–)\s*\d{4,6}",
+    "salary_range_max": r"\d{4,6}\s*(?:-|bis|to|–)\s*(?P<salary_range_max>\d{4,6})",
     "bonus_scheme": _simple(
         "Bonus\\s*Scheme|Bonus\\s*Model", "Bonusregelung", "bonus_scheme"
     ),
@@ -461,10 +484,11 @@ LLM_PROMPT = (
 
 # Additional lightweight patterns without explicit labels
 FALLBACK_PATTERNS: dict[str, str] = {
-    "employment_type": r"(?P<employment_type>Vollzeit|Teilzeit|Full[-\s]?time|Part[-\s]?time)",
-    "contract_type": r"(?P<contract_type>unbefristet|befristet|permanent|temporary|contract)",
+    "employment_type": r"(?P<employment_type>Vollzeit|Teilzeit|Werkstudent(?:[ei]n)?|Praktikum|Mini[-\s]?Job|Freelance|Internship|Full[-\s]?time|Part[-\s]?time)",
+    "contract_type": r"(?P<contract_type>unbefristet|befristet|festanstellung|permanent|temporary|fixed[-\s]?term|contract|freelancer|project|werkvertrag|zeitarbeit)",
     "seniority_level": r"(?P<seniority_level>Junior|Mid|Senior|Lead|Head|Manager|Einsteiger|Berufserfahren)",
     "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|bis|to|–)\s*\d{4,6})",
+    "work_location_city": r"\bin\s+(?P<work_location_city>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,}(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,})?)",
 }
 
 
@@ -485,6 +509,20 @@ def search_company_name(text: str) -> ExtractResult | None:
     m = re.search(pat_generic, text)
     if m:
         return ExtractResult(m.group("company_name"), 0.7)
+    return None
+
+
+def search_city(text: str) -> ExtractResult | None:
+    """Return a city found after the word 'in'."""
+
+    pat = (
+        r"\bin\s+"
+        r"(?P<work_location_city>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,}(?:\s+"
+        r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,})?)"
+    )
+    m = re.search(pat, text)
+    if m:
+        return ExtractResult(m.group("work_location_city"), 0.7)
     return None
 
 
@@ -739,6 +777,13 @@ async def extract(text: str) -> dict[str, ExtractResult]:
         guess = search_company_name(text)
         if guess:
             interim["company_name"] = guess
+
+    if "work_location_city" not in interim:
+        guess_city = search_city(text)
+        if guess_city:
+            interim["work_location_city"] = guess_city
+            if "city" not in interim:
+                interim["city"] = guess_city
 
     for k, pat in FALLBACK_PATTERNS.items():
         if k not in interim:
@@ -1370,19 +1415,21 @@ def main():
                 )
 
         ss["data"]["job_title"] = st.session_state.job_title
-        if st.session_state.job_title and not ss.get("extracted", {}).get("job_title"):
-            ss["extracted"]["job_title"] = ExtractResult(
-                st.session_state.job_title, 1.0
+        if st.session_state.job_title and not ss.get("extracted", {}).get(
+            "BASIC", {}
+        ).get("job_title"):
+            ss.setdefault("extracted", {}).setdefault("BASIC", {})["job_title"] = (
+                ExtractResult(st.session_state.job_title, 1.0)
             )
 
         if extract_btn and up:
             with st.spinner("Extracting…"):
                 file_bytes = up.read()
                 text = extract_text_from_file(file_bytes, up.type)
-                ss["extracted"] = asyncio.run(extract(text))
-                title_res = ss["extracted"].get("job_title")
+                flat = asyncio.run(extract(text))
+                ss["extracted"] = group_by_step(flat)
+                title_res = ss["extracted"].get("BASIC", {}).get("job_title")
                 if isinstance(title_res, ExtractResult) and title_res.value:
-                    ss["extracted"]["job_title"] = title_res
                     ss["data"]["job_title"] = title_res.value
                 st.rerun()
     # ----------- 1..n: Wizard -----------
@@ -1391,7 +1438,7 @@ def main():
         step_name = ORDER[step_idx]
         meta_fields = SCHEMA[step_name]  # <-- Zuerst setzen!
         fields = [item["key"] for item in meta_fields]
-        extr: dict[str, ExtractResult] = ss["extracted"]
+        extr: dict[str, ExtractResult] = ss.get("extracted", {}).get(step_name, {})
 
         # Headline & Subtitle
         st.markdown(
