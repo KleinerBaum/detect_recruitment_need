@@ -2180,33 +2180,151 @@ def main():
                 )
 
         else:
-            current_cols = 2
-            cols = st.columns(current_cols)
-            col_idx = 0
+            if step_name == "BENEFITS":
+                meta_map = {m["key"]: m for m in meta_fields}
 
-            for meta in meta_fields:
-                key = meta["key"]
-                result = extr.get(key) if key in extr else ExtractResult()
-                field_type = meta.get("field_type", meta.get("field", "text_input"))
+                comp = st.columns(2)
+                with comp[0]:
+                    show_input(
+                        "salary_range",
+                        extr.get("salary_range", ExtractResult()),
+                        meta_map["salary_range"],
+                        widget_prefix=step_name,
+                    )
+                with comp[1]:
+                    show_input(
+                        "salary_currency",
+                        extr.get("salary_currency", ExtractResult()),
+                        meta_map["salary_currency"],
+                        widget_prefix=step_name,
+                    )
 
-                if field_type == "text_area":
-                    cols = st.columns(1)
-                    with cols[0]:
+                comp = st.columns(2)
+                with comp[0]:
+                    show_input(
+                        "salary_range_min",
+                        extr.get("salary_range_min", ExtractResult()),
+                        meta_map["salary_range_min"],
+                        widget_prefix=step_name,
+                    )
+                with comp[1]:
+                    show_input(
+                        "salary_range_max",
+                        extr.get("salary_range_max", ExtractResult()),
+                        meta_map["salary_range_max"],
+                        widget_prefix=step_name,
+                    )
+
+                show_input(
+                    "pay_frequency",
+                    extr.get("pay_frequency", ExtractResult()),
+                    meta_map["pay_frequency"],
+                    widget_prefix=step_name,
+                )
+
+                show_input(
+                    "bonus_scheme",
+                    extr.get("bonus_scheme", ExtractResult()),
+                    meta_map["bonus_scheme"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "commission_structure",
+                    extr.get("commission_structure", ExtractResult()),
+                    meta_map["commission_structure"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "variable_comp",
+                    extr.get("variable_comp", ExtractResult()),
+                    meta_map["variable_comp"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "vacation_days",
+                    extr.get("vacation_days", ExtractResult()),
+                    meta_map["vacation_days"],
+                    widget_prefix=step_name,
+                )
+
+                cols = st.columns(2)
+                with cols[0]:
+                    show_input(
+                        "remote_policy",
+                        extr.get("remote_policy", ExtractResult()),
+                        meta_map["remote_policy"],
+                        widget_prefix=step_name,
+                    )
+                with cols[1]:
+                    show_input(
+                        "flexible_hours",
+                        extr.get("flexible_hours", ExtractResult()),
+                        meta_map["flexible_hours"],
+                        widget_prefix=step_name,
+                    )
+
+                st.markdown("### Standard Benefits")
+                perks = [
+                    "relocation_support",
+                    "childcare_support",
+                    "company_car",
+                    "sabbatical_option",
+                    "health_insurance",
+                    "pension_plan",
+                    "stock_options",
+                ]
+                perk_cols = st.columns(3)
+                for idx, field in enumerate(perks):
+                    if idx and idx % 3 == 0:
+                        perk_cols = st.columns(3)
+                    with perk_cols[idx % 3]:
+                        show_input(
+                            field,
+                            extr.get(field, ExtractResult()),
+                            meta_map[field],
+                            widget_prefix=step_name,
+                        )
+
+                show_input(
+                    "learning_budget",
+                    extr.get("learning_budget", ExtractResult()),
+                    meta_map["learning_budget"],
+                    widget_prefix=step_name,
+                )
+                show_input(
+                    "other_perks",
+                    extr.get("other_perks", ExtractResult()),
+                    meta_map["other_perks"],
+                    widget_prefix=step_name,
+                )
+            else:
+                current_cols = 2
+                cols = st.columns(current_cols)
+                col_idx = 0
+
+                for meta in meta_fields:
+                    key = meta["key"]
+                    result = extr.get(key) if key in extr else ExtractResult()
+                    field_type = meta.get("field_type", meta.get("field", "text_input"))
+
+                    if field_type == "text_area":
+                        cols = st.columns(1)
+                        with cols[0]:
+                            show_input(key, result, meta, widget_prefix=step_name)
+                        cols = st.columns(current_cols)
+                        col_idx = 0
+                        continue
+
+                    needed = 3 if field_type == "checkbox" else 2
+                    if needed != current_cols or col_idx >= needed:
+                        cols = st.columns(needed)
+                        current_cols = needed
+                        col_idx = 0
+
+                    with cols[col_idx]:
                         show_input(key, result, meta, widget_prefix=step_name)
-                    cols = st.columns(current_cols)
-                    col_idx = 0
-                    continue
 
-                needed = 3 if field_type == "checkbox" else 2
-                if needed != current_cols or col_idx >= needed:
-                    cols = st.columns(needed)
-                    current_cols = needed
-                    col_idx = 0
-
-                with cols[col_idx]:
-                    show_input(key, result, meta, widget_prefix=step_name)
-
-                col_idx += 1
+                    col_idx += 1
 
         if step_name == "SKILLS":
             if "hard_skill_suggestions" not in ss:
@@ -2275,81 +2393,42 @@ def main():
             st.subheader("AI Benefit Suggestions")
 
             title_header = ss["data"].get("job_title") or "this role"
-            col1, col2, col3 = st.columns(3)
 
-            with col1:
-                st.markdown(f"#### Benefits for {title_header}")
-                s1, b1 = st.columns([2, 1])
-                count_title = s1.selectbox(
-                    label="",
-                    options=[3, 5, 10],
-                    index=1,
-                    key="count_benefit_title",
-                )
-                if b1.button("Generate Title Benefits", key="gen_benefit_title"):
-                    with st.spinner("Generiere…"):
-                        try:
-                            ss["benefit_suggestions_title"] = asyncio.run(
-                                suggest_benefits_by_title(ss["data"], int(count_title))
-                            )
-                        except Exception as e:
-                            logging.error("benefit suggestion failed: %s", e)
-                            ss["benefit_suggestions_title"] = []
-                sel_title = selectable_buttons(
-                    ss.get("benefit_suggestions_title", []),
-                    "",
-                    "selected_benefits_title",
-                )
+            def benefit_block(title: str, key: str, func) -> list[str]:
+                st.markdown(f"#### {title}")
+                sel_cols = st.columns([2, 1])
+                with sel_cols[0]:
+                    count = st.selectbox(
+                        label="",
+                        options=[3, 5, 10],
+                        index=1,
+                        key=f"count_{key}",
+                    )
+                with sel_cols[1]:
+                    if st.button("Generate", key=f"gen_{key}"):
+                        with st.spinner("Generiere…"):
+                            try:
+                                ss[key] = asyncio.run(func(ss["data"], int(count)))
+                            except Exception as e:
+                                logging.error("benefit suggestion failed: %s", e)
+                                ss[key] = []
+                return selectable_buttons(ss.get(key, []), "", f"sel_{key}")
 
-            with col2:
-                st.markdown("#### Local Benefits")
-                s2, b2 = st.columns([2, 1])
-                count_loc = s2.selectbox(
-                    label="",
-                    options=[3, 5, 10],
-                    index=1,
-                    key="count_benefit_loc",
-                )
-                if b2.button("Generate Local Benefits", key="gen_benefit_loc"):
-                    with st.spinner("Generiere…"):
-                        try:
-                            ss["benefit_suggestions_location"] = asyncio.run(
-                                suggest_benefits_by_location(ss["data"], int(count_loc))
-                            )
-                        except Exception as e:
-                            logging.error("benefit suggestion failed: %s", e)
-                            ss["benefit_suggestions_location"] = []
-                sel_loc = selectable_buttons(
-                    ss.get("benefit_suggestions_location", []),
-                    "",
-                    "selected_benefits_location",
-                )
-
-            with col3:
-                st.markdown("#### Competitor Benefits")
-                s3, b3 = st.columns([2, 1])
-                count_comp = s3.selectbox(
-                    label="",
-                    options=[3, 5, 10],
-                    index=1,
-                    key="count_benefit_comp",
-                )
-                if b3.button("Generate Competitor Benefits", key="gen_benefit_comp"):
-                    with st.spinner("Generiere…"):
-                        try:
-                            ss["benefit_suggestions_competitors"] = asyncio.run(
-                                suggest_benefits_competitors(
-                                    ss["data"], int(count_comp)
-                                )
-                            )
-                        except Exception as e:
-                            logging.error("benefit suggestion failed: %s", e)
-                            ss["benefit_suggestions_competitors"] = []
-                sel_comp = selectable_buttons(
-                    ss.get("benefit_suggestions_competitors", []),
-                    "",
-                    "selected_benefits_competitors",
-                )
+            sel_title = benefit_block(
+                f"Benefits for {title_header}",
+                "benefit_title",
+                suggest_benefits_by_title,
+            )
+            sel_loc = benefit_block(
+                "Local Benefits",
+                "benefit_loc",
+                suggest_benefits_by_location,
+            )
+            sel_comp = benefit_block(
+                "Competitor Benefits",
+                "benefit_comp",
+                suggest_benefits_competitors,
+            )
 
             ss["benefit_list"] = list({*sel_title, *sel_loc, *sel_comp})
 
