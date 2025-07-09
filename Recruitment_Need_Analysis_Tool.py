@@ -1043,6 +1043,8 @@ def display_summary_overview() -> None:
         st.write(f"**Technical Tasks:** {val('technical_tasks')}")
         st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
         st.write(f"**Role Keywords:** {val('role_keywords')}")
+        st.write(f"**Ideal Candidate:** {val('ideal_candidate_profile')}")
+        st.write(f"**Target Industries:** {val('target_industries')}")
 
     with col3:
         st.markdown("### Skills")
