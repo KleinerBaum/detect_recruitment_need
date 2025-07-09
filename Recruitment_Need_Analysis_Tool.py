@@ -738,6 +738,62 @@ async def suggest_benefits_competitors(data: dict, count: int) -> list[str]:
     return await _suggest_benefits(data, "competitors", count)
 
 
+# New team context suggestion helpers
+async def _suggest_items(prompt: str, key: str) -> list[str]:
+    chat = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        max_tokens=300,
+        messages=[
+            {"role": "system", "content": "You are an expert HR assistant."},
+            {"role": "user", "content": prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+    raw = safe_json_load(chat.choices[0].message.content or "")
+    return [str(x).strip() for x in raw.get(key, []) if x]
+
+
+async def suggest_team_challenges(data: dict, count: int = 5) -> list[str]:
+    """Suggest common team challenges."""
+
+    prompt = (
+        f"List up to {count} challenges for a team in the {data.get('industry', '')} industry. "
+        'Return JSON object {"items": [..]} with one challenge per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
+async def suggest_client_difficulties(data: dict, count: int = 5) -> list[str]:
+    """Suggest frequent client difficulties."""
+
+    prompt = (
+        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry. "
+        'Return JSON object {"items": [..]} with one item per list entry.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
+async def suggest_recent_team_changes(data: dict, count: int = 5) -> list[str]:
+    """Suggest examples of recent team changes."""
+
+    prompt = (
+        f"Provide up to {count} examples of changes teams might have undergone recently. "
+        'Return JSON object {"items": [..]} with one change per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
+async def suggest_tech_stack(data: dict, count: int = 5) -> list[str]:
+    """Suggest technologies for the tech stack."""
+
+    prompt = (
+        f"List up to {count} technologies commonly used in {data.get('industry', '')}. "
+        'Return JSON object {"items": [..]} with one technology per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
 # ── GPT fill ------------------------------------------------------------------
 async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResult]:
     if not missing_keys:
@@ -1537,6 +1593,282 @@ def main():
                 meta_map["work_location_city"],
                 widget_prefix=step_name,
             )
+        elif step_name == "COMPANY":
+            meta_map = {m["key"]: m for m in meta_fields}
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "company_name",
+                    extr.get("company_name", ExtractResult()),
+                    meta_map["company_name"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "city",
+                    extr.get("city", ExtractResult()),
+                    meta_map["city"],
+                    widget_prefix=step_name,
+                )
+
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "industry",
+                    extr.get("industry", ExtractResult()),
+                    meta_map["industry"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "company_size",
+                    extr.get("company_size", ExtractResult()),
+                    meta_map["company_size"],
+                    widget_prefix=step_name,
+                )
+
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "headquarters_location",
+                    extr.get("headquarters_location", ExtractResult()),
+                    meta_map["headquarters_location"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "place_of_work",
+                    extr.get("place_of_work", ExtractResult()),
+                    meta_map["place_of_work"],
+                    widget_prefix=step_name,
+                )
+
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "department_name",
+                    extr.get("department_name", ExtractResult()),
+                    meta_map["department_name"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "team_size",
+                    extr.get("team_size", ExtractResult()),
+                    meta_map["team_size"],
+                    widget_prefix=step_name,
+                )
+
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "company_website",
+                    extr.get("company_website", ExtractResult()),
+                    meta_map["company_website"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "brand_name",
+                    extr.get("brand_name", ExtractResult()),
+                    meta_map["brand_name"],
+                    widget_prefix=step_name,
+                )
+
+            show_input(
+                "team_structure",
+                extr.get("team_structure", ExtractResult()),
+                meta_map["team_structure"],
+                widget_prefix=step_name,
+            )
+
+            show_input(
+                "reports_to",
+                extr.get("reports_to", ExtractResult()),
+                meta_map["reports_to"],
+                widget_prefix=step_name,
+            )
+
+            sup_col, direct_col = st.columns(2)
+            with sup_col:
+                show_input(
+                    "supervises",
+                    extr.get("supervises", ExtractResult()),
+                    meta_map["supervises"],
+                    widget_prefix=step_name,
+                )
+            with direct_col:
+                if ss.get("data", {}).get("supervises"):
+                    val = int(ss.get("data", {}).get("direct_reports_count", 0))
+                    val = st.number_input(
+                        meta_map["direct_reports_count"]["label"],
+                        value=val,
+                        step=1,
+                        format="%d",
+                        key=f"{step_name}_direct_reports_count",
+                        help=meta_map["direct_reports_count"].get("helptext", ""),
+                    )
+                    ss["data"]["direct_reports_count"] = int(val)
+                else:
+                    ss["data"]["direct_reports_count"] = 0
+
+            with st.expander("Team & Culture Context", expanded=False):
+                cols = st.columns([4, 1])
+                with cols[0]:
+                    show_input(
+                        "tech_stack",
+                        extr.get("tech_stack", ExtractResult()),
+                        meta_map["tech_stack"],
+                        widget_prefix=step_name,
+                    )
+                with cols[1]:
+                    if st.button("Generate Ideas", key="gen_tech_stack"):
+                        with st.spinner("Generiere…"):
+                            try:
+                                ss["tech_stack_suggestions"] = asyncio.run(
+                                    suggest_tech_stack(ss["data"])
+                                )
+                            except Exception as e:
+                                logging.error("tech stack suggestion failed: %s", e)
+                                ss["tech_stack_suggestions"] = []
+                sel_ts = selectable_buttons(
+                    ss.get("tech_stack_suggestions", []),
+                    "",
+                    "sel_tech_stack",
+                    cols=2,
+                )
+                current_ts = parse_skill_list(ss["data"].get("tech_stack"))
+                for s in sel_ts:
+                    if s not in current_ts:
+                        current_ts.append(s)
+                ss["data"]["tech_stack"] = ", ".join(current_ts)
+
+                show_input(
+                    "culture_notes",
+                    extr.get("culture_notes", ExtractResult()),
+                    meta_map["culture_notes"],
+                    widget_prefix=step_name,
+                )
+
+                cols = st.columns([4, 1])
+                with cols[0]:
+                    show_input(
+                        "team_challenges",
+                        extr.get("team_challenges", ExtractResult()),
+                        meta_map["team_challenges"],
+                        widget_prefix=step_name,
+                    )
+                with cols[1]:
+                    if st.button("Generate Ideas", key="gen_team_challenges"):
+                        with st.spinner("Generiere…"):
+                            try:
+                                ss["team_challenges_suggestions"] = asyncio.run(
+                                    suggest_team_challenges(ss["data"])
+                                )
+                            except Exception as e:
+                                logging.error("team challenge suggestion failed: %s", e)
+                                ss["team_challenges_suggestions"] = []
+                sel_tc = selectable_buttons(
+                    ss.get("team_challenges_suggestions", []),
+                    "",
+                    "sel_team_challenges",
+                    cols=2,
+                )
+                cur_tc = parse_skill_list(ss["data"].get("team_challenges"))
+                for s in sel_tc:
+                    if s not in cur_tc:
+                        cur_tc.append(s)
+                ss["data"]["team_challenges"] = ", ".join(cur_tc)
+
+                cols = st.columns([4, 1])
+                with cols[0]:
+                    show_input(
+                        "client_difficulties",
+                        extr.get("client_difficulties", ExtractResult()),
+                        meta_map["client_difficulties"],
+                        widget_prefix=step_name,
+                    )
+                with cols[1]:
+                    if st.button("Generate Ideas", key="gen_client_difficulties"):
+                        with st.spinner("Generiere…"):
+                            try:
+                                ss["client_difficulties_suggestions"] = asyncio.run(
+                                    suggest_client_difficulties(ss["data"])
+                                )
+                            except Exception as e:
+                                logging.error(
+                                    "client difficulty suggestion failed: %s", e
+                                )
+                                ss["client_difficulties_suggestions"] = []
+                sel_cd = selectable_buttons(
+                    ss.get("client_difficulties_suggestions", []),
+                    "",
+                    "sel_client_difficulties",
+                    cols=2,
+                )
+                cur_cd = parse_skill_list(ss["data"].get("client_difficulties"))
+                for s in sel_cd:
+                    if s not in cur_cd:
+                        cur_cd.append(s)
+                ss["data"]["client_difficulties"] = ", ".join(cur_cd)
+
+                show_input(
+                    "main_stakeholders",
+                    extr.get("main_stakeholders", ExtractResult()),
+                    meta_map["main_stakeholders"],
+                    widget_prefix=step_name,
+                )
+
+                show_input(
+                    "team_motivation",
+                    extr.get("team_motivation", ExtractResult()),
+                    meta_map["team_motivation"],
+                    widget_prefix=step_name,
+                )
+
+                cols = st.columns([4, 1])
+                with cols[0]:
+                    show_input(
+                        "recent_team_changes",
+                        extr.get("recent_team_changes", ExtractResult()),
+                        meta_map["recent_team_changes"],
+                        widget_prefix=step_name,
+                    )
+                with cols[1]:
+                    if st.button("Generate Ideas", key="gen_recent_team_changes"):
+                        with st.spinner("Generiere…"):
+                            try:
+                                ss["recent_team_changes_suggestions"] = asyncio.run(
+                                    suggest_recent_team_changes(ss["data"])
+                                )
+                            except Exception as e:
+                                logging.error("recent changes suggestion failed: %s", e)
+                                ss["recent_team_changes_suggestions"] = []
+                sel_rc = selectable_buttons(
+                    ss.get("recent_team_changes_suggestions", []),
+                    "",
+                    "sel_recent_team_changes",
+                    cols=2,
+                )
+                cur_rc = parse_skill_list(ss["data"].get("recent_team_changes"))
+                for s in sel_rc:
+                    if s not in cur_rc:
+                        cur_rc.append(s)
+                ss["data"]["recent_team_changes"] = ", ".join(cur_rc)
+
+            show_input(
+                "office_language",
+                extr.get("office_language", ExtractResult()),
+                meta_map["office_language"],
+                widget_prefix=step_name,
+            )
+            show_input(
+                "office_type",
+                extr.get("office_type", ExtractResult()),
+                meta_map["office_type"],
+                widget_prefix=step_name,
+            )
+
         else:
             current_cols = 2
             cols = st.columns(current_cols)

@@ -22,6 +22,11 @@ The **BENEFITS** step generates benefit suggestions based on the job title, the
 company location and typical competitor offerings. Each suggestion appears as a
 button that you can toggle to add it to your benefit list.
 
+The **COMPANY & DEPARTMENT** step now groups company information in a clearer
+layout and includes a *Team & Culture Context* expander. Optional fields such as
+Tech Stack and Team Challenges offer a **Generate Ideas** button that fetches AI
+suggestions you can insert directly.
+
 ## Wizard Steps
 
 The wizard collects data in the following order:
