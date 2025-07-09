@@ -465,19 +465,12 @@ REGEX_PATTERNS = {
         "Line\\s*Manager", "Fachvorgesetzte?r", "line_manager_name"
     ),
     "line_manager_email": r"(?P<line_manager_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "line_manager_recv_cv": _simple(
-        "Receives\\s*CV", "Erhält\\s*CV", "line_manager_recv_cv"
-    ),
     "hr_poc_name": _simple("HR\\s*POC", "Ansprechpartner\\s*HR", "hr_poc_name"),
     "hr_poc_email": r"(?P<hr_poc_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "hr_poc_recv_cv": _simple("Receives\\s*CV", "Erhält\\s*CV", "hr_poc_recv_cv"),
     "finance_poc_name": _simple(
         "Finance\\s*POC", "Ansprechpartner\\s*Finance", "finance_poc_name"
     ),
     "finance_poc_email": r"(?P<finance_poc_email>[\w\.-]+@[\w\.-]+\.\w+)",
-    "finance_poc_recv_offer": _simple(
-        "Receives\\s*Offer", "Erhält\\s*Angebot", "finance_poc_recv_offer"
-    ),
 }
 
 
@@ -1075,48 +1068,166 @@ def display_summary_overview() -> None:
             st.write(f"**Selected Benefits:** {', '.join(ss['benefit_list'])}")
 
 
-def display_interview_section() -> None:
-    """Show interview contacts and involvement."""
+def display_interview_section(
+    meta_fields: list[dict[str, str]], extr: dict[str, ExtractResult]
+) -> None:
+    """Show interview contacts and process information."""
 
     def val(field: str) -> str:
         return str(ss["data"].get(field, ""))
 
-    col1, col2, col3 = st.columns(3)
+    meta_map = {m["key"]: m for m in meta_fields}
 
     options = ["Receive CVs", "Receive IV-Invites", "Receive offer"]
 
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("### Need")
-        st.write(f"**Line Manager Name:** {val('line_manager_name')}")
-        st.write(f"**Line Manager Email:** {val('line_manager_email')}")
+        st.markdown("### Line Manager")
+        st.write(f"**Name:** {val('line_manager_name')}")
+        st.write(f"**Email:** {val('line_manager_email')}")
         st.multiselect(
             "Involvement",
             options,
             default=ss.get("line_manager_involve", []),
             key="line_manager_involve",
         )
-
     with col2:
-        st.markdown("### Authority")
-        st.write(f"**HR POC Name:** {val('hr_poc_name')}")
-        st.write(f"**HR POC Email:** {val('hr_poc_email')}")
+        st.markdown("### HR Contact")
+        st.write(f"**Name:** {val('hr_poc_name')}")
+        st.write(f"**Email:** {val('hr_poc_email')}")
         st.multiselect(
             "Involvement",
             options,
             default=ss.get("hr_poc_involve", []),
             key="hr_poc_involve",
         )
-
     with col3:
-        st.markdown("### Money")
-        st.write(f"**Finance POC Name:** {val('finance_poc_name')}")
-        st.write(f"**Finance POC Email:** {val('finance_poc_email')}")
+        st.markdown("### Finance Contact")
+        st.write(f"**Name:** {val('finance_poc_name')}")
+        st.write(f"**Email:** {val('finance_poc_email')}")
         st.multiselect(
             "Involvement",
             options,
             default=ss.get("finance_poc_involve", []),
             key="finance_poc_involve",
         )
+
+    st.subheader("Application Contact")
+    app_cols = st.columns(2)
+    with app_cols[0]:
+        show_input(
+            "recruitment_contact_email",
+            extr.get("recruitment_contact_email", ExtractResult()),
+            meta_map["recruitment_contact_email"],
+            widget_prefix="INTERVIEW",
+        )
+    with app_cols[1]:
+        show_input(
+            "recruitment_contact_phone",
+            extr.get("recruitment_contact_phone", ExtractResult()),
+            meta_map["recruitment_contact_phone"],
+            widget_prefix="INTERVIEW",
+        )
+
+    st.subheader("Interview Process")
+    proc_cols = st.columns(2)
+    with proc_cols[0]:
+        show_input(
+            "recruitment_steps",
+            extr.get("recruitment_steps", ExtractResult()),
+            meta_map["recruitment_steps"],
+            widget_prefix="INTERVIEW",
+        )
+    with proc_cols[1]:
+        show_input(
+            "recruitment_timeline",
+            extr.get("recruitment_timeline", ExtractResult()),
+            meta_map["recruitment_timeline"],
+            widget_prefix="INTERVIEW",
+        )
+
+    cols = st.columns(2)
+    with cols[0]:
+        show_input(
+            "number_of_interviews",
+            extr.get("number_of_interviews", ExtractResult()),
+            meta_map["number_of_interviews"],
+            widget_prefix="INTERVIEW",
+        )
+    with cols[1]:
+        show_input(
+            "interview_format",
+            extr.get("interview_format", ExtractResult()),
+            meta_map["interview_format"],
+            widget_prefix="INTERVIEW",
+        )
+
+    st.subheader("Onboarding & Probation")
+    onboard_cols = st.columns(3)
+    with onboard_cols[0]:
+        show_input(
+            "probation_period",
+            extr.get("probation_period", ExtractResult()),
+            meta_map["probation_period"],
+            widget_prefix="INTERVIEW",
+        )
+    with onboard_cols[1]:
+        show_input(
+            "mentorship_program",
+            extr.get("mentorship_program", ExtractResult()),
+            meta_map["mentorship_program"],
+            widget_prefix="INTERVIEW",
+        )
+    with onboard_cols[2]:
+        show_input(
+            "welcome_package",
+            extr.get("welcome_package", ExtractResult()),
+            meta_map["welcome_package"],
+            widget_prefix="INTERVIEW",
+        )
+
+    show_input(
+        "onboarding_process",
+        extr.get("onboarding_process", ExtractResult()),
+        meta_map["onboarding_process"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "onboarding_process_overview",
+        extr.get("onboarding_process_overview", ExtractResult()),
+        meta_map["onboarding_process_overview"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "interview_stage_count",
+        extr.get("interview_stage_count", ExtractResult()),
+        meta_map["interview_stage_count"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "interview_docs_required",
+        extr.get("interview_docs_required", ExtractResult()),
+        meta_map["interview_docs_required"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "assessment_tests",
+        extr.get("assessment_tests", ExtractResult()),
+        meta_map["assessment_tests"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "interview_notes",
+        extr.get("interview_notes", ExtractResult()),
+        meta_map["interview_notes"],
+        widget_prefix="INTERVIEW",
+    )
+    show_input(
+        "application_instructions",
+        extr.get("application_instructions", ExtractResult()),
+        meta_map["application_instructions"],
+        widget_prefix="INTERVIEW",
+    )
 
 
 img_path = Path("images/AdobeStock_506577005.jpeg")
@@ -1515,7 +1626,7 @@ def main():
             )
 
         if step_name == "INTERVIEW":
-            display_interview_section()
+            display_interview_section(meta_fields, extr)
 
         # Extrahierte Werte kompakt darstellen
         display_extracted_values_editable(extr, fields, step_name)
