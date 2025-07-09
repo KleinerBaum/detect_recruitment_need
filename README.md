@@ -27,8 +27,8 @@ button that you can toggle to add it to your benefit list.
 The wizard collects data in the following order:
 
 1. BASIC
-2. COMPANY – information about the company and the team
-3. ROLE – job responsibilities and priorities
+2. COMPANY & DEPARTMENT – company and team details
+3. ROLE & TASKS – responsibilities and key tasks
 4. SKILLS
 5. BENEFITS
 6. TARGET_GROUP
