@@ -27,15 +27,13 @@ button that you can toggle to add it to your benefit list.
 The wizard collects data in the following order:
 
 1. BASIC
-2. COMPANY
-3. DEPARTMENT
-4. ROLE
-5. TASKS
-6. SKILLS
-7. BENEFITS
-8. TARGET_GROUP
-9. INTERVIEW
-10. SUMMARY
+2. COMPANY – information about the company and the team
+3. ROLE – job responsibilities and priorities
+4. SKILLS
+5. BENEFITS
+6. TARGET_GROUP
+7. INTERVIEW
+8. SUMMARY
 
 In the final **SUMMARY** step you can generate a job advertisement, an interview
 guide, a Boolean search string and a draft contract. New buttons also let you

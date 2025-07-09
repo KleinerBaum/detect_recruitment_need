@@ -1,60 +1,60 @@
 step,key,field_type,is_must,label,options,helptext
 BASIC,job_title,text_input,1,Job Title,,Bitte den exakten Jobtitel angeben
-BASIC,employment_type,selectbox,1,Employment Type,"Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other",Beschäftigungsart auswählen
-BASIC,contract_type,selectbox,1,Contract Type,"Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit",Vertragsart auswählen
-BASIC,seniority_level,selectbox,1,Seniority Level,"Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern",Karrierestufe auswählen
+BASIC,employment_type,selectbox,1,Employment Type,Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other,Beschäftigungsart auswählen
+BASIC,contract_type,selectbox,1,Contract Type,Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit,Vertragsart auswählen
+BASIC,seniority_level,selectbox,1,Seniority Level,Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern,Karrierestufe auswählen
 BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
-BASIC,work_schedule,selectbox,0,Work Schedule,"Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid",Arbeitszeitmodell auswählen
+BASIC,work_schedule,selectbox,0,Work Schedule,Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid,Arbeitszeitmodell auswählen
 BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
 COMPANY,company_name,text_input,1,Company Name,,Firmenname
 COMPANY,city,text_input,1,Company City,,Stadt (Sitz der Firma)
-COMPANY,company_size,selectbox,0,Company Size,"1-10;11-50;51-200;201-500;501-1000;1001-5000;5001+",Unternehmensgröße auswählen
-COMPANY,industry,selectbox,0,Industry,"IT;Consulting;Finance;Healthcare;Manufacturing;Retail;Automotive;Construction;Media;Other",Branche auswählen
+COMPANY,company_size,selectbox,0,Company Size,1-10;11-50;51-200;201-500;501-1000;1001-5000;5001+,Unternehmensgröße auswählen
+COMPANY,industry,selectbox,0,Industry,IT;Consulting;Finance;Healthcare;Manufacturing;Retail;Automotive;Construction;Media;Other,Branche auswählen
 COMPANY,headquarters_location,text_input,0,Headquarters Location,,Hauptsitz
 COMPANY,place_of_work,text_input,0,Place of Work,,Genaue Arbeitsstätte
 COMPANY,company_website,text_input,0,Company Website,,Firmenwebsite (URL)
-DEPARTMENT,department_name,text_input,0,Department Name,,Abteilung
-DEPARTMENT,brand_name,text_input,0,Brand Name,,Marke
-DEPARTMENT,team_size,selectbox,0,Team Size,"1-2;3-5;6-10;11-20;21-50;50+",Teamgröße
-DEPARTMENT,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
-DEPARTMENT,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
-DEPARTMENT,reports_to,text_input,0,Reports To,,Vorgesetzter
-DEPARTMENT,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
-DEPARTMENT,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
-DEPARTMENT,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
-DEPARTMENT,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
-DEPARTMENT,client_difficulties,text_area,0,Client Difficulties,,Schwierigkeiten mit Kunden
-DEPARTMENT,main_stakeholders,text_area,0,Main Stakeholders,,Wichtigste Stakeholder
-DEPARTMENT,team_motivation,text_area,0,Team Motivation,,Was motiviert das Team?
-DEPARTMENT,recent_team_changes,text_area,0,Recent Team Changes,,Kürzliche Teamänderungen
-DEPARTMENT,office_language,selectbox,0,Office Language,"Deutsch;Englisch;Französisch;Italienisch;Spanisch;Other",Bürosprache
-DEPARTMENT,office_type,selectbox,0,Office Type,"Open Space;Einzelbüro;Remote;Hybrid;Home Office",Bürotyp
+COMPANY,department_name,text_input,0,Department Name,,Abteilung
+COMPANY,brand_name,text_input,0,Brand Name,,Marke
+COMPANY,team_size,selectbox,0,Team Size,1-2;3-5;6-10;11-20;21-50;50+,Teamgröße
+COMPANY,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
+COMPANY,reports_to,text_input,0,Reports To,,Vorgesetzter
+COMPANY,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
+COMPANY,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
+COMPANY,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
+COMPANY,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
+COMPANY,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
+COMPANY,client_difficulties,text_area,0,Client Difficulties,,Schwierigkeiten mit Kunden
+COMPANY,main_stakeholders,text_area,0,Main Stakeholders,,Wichtigste Stakeholder
+COMPANY,team_motivation,text_area,0,Team Motivation,,Was motiviert das Team?
+COMPANY,recent_team_changes,text_area,0,Recent Team Changes,,Kürzliche Teamänderungen
+COMPANY,office_language,selectbox,0,Office Language,Deutsch;Englisch;Französisch;Italienisch;Spanisch;Other,Bürosprache
+COMPANY,office_type,selectbox,0,Office Type,Open Space;Einzelbüro;Remote;Hybrid;Home Office,Bürotyp
 ROLE,role_description,text_area,1,Role Description,,Stellenbeschreibung / Aufgabenstellung
-ROLE,role_type,selectbox,0,Role Type,"Technical;Non-Technical;Leadership;Operational;Project-based;Consultant",Rollenart
+ROLE,role_type,selectbox,0,Role Type,Technical;Non-Technical;Leadership;Operational;Project-based;Consultant,Rollenart
 ROLE,role_keywords,text_area,0,Role Keywords,,Schlagworte zur Rolle
-ROLE,role_performance_metrics,text_area,0,Performance Metrics,,Leistungskennzahlen
-ROLE,role_priority_projects,text_area,0,Priority Projects,,Wichtige Projekte
 ROLE,primary_responsibilities,text_area,1,Primary Responsibilities,,Hauptaufgaben
-ROLE,key_deliverables,text_area,0,Key Deliverables,,Zentrale Ergebnisse
+ROLE,key_responsibilities,text_area,1,Key Responsibilities,,Hauptverantwortlichkeiten
+ROLE,role_priority_projects,text_area,0,Priority Projects,,Wichtige Projekte
+ROLE,role_performance_metrics,text_area,0,Performance Metrics,,Leistungskennzahlen
 ROLE,success_metrics,text_area,0,Success Metrics,,Erfolgskriterien
 ROLE,main_projects,text_area,0,Main Projects,,Wesentliche Projekte
-ROLE,travel_required,selectbox,0,Travel Required,"No;Rarely;Occasionally;Regularly;Frequently",Reiseanteil
-ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
-ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
+ROLE,key_deliverables,text_area,0,Key Deliverables,,Zentrale Ergebnisse
+ROLE,task_list,text_area,1,Task List,,Aufgabenliste
+ROLE,technical_tasks,text_area,0,Technical Tasks,,Technische Aufgaben
+ROLE,managerial_tasks,text_area,0,Managerial Tasks,,Führungsaufgaben
+ROLE,administrative_tasks,text_area,0,Administrative Tasks,,Verwaltungsaufgaben
+ROLE,customer_facing_tasks,text_area,0,Customer Facing Tasks,,Kundenkontaktaufgaben
+ROLE,internal_reporting_tasks,text_area,0,Internal Reporting Tasks,,Interne Berichte
+ROLE,performance_tasks,text_area,0,Performance Tasks,,Leistungsaufgaben
+ROLE,innovation_tasks,text_area,0,Innovation Tasks,,Innovationsaufgaben
+ROLE,task_prioritization,checkbox,0,Task Prioritization,,Aufgabenpriorisierung nötig?
 ROLE,decision_authority,checkbox,0,Decision Authority,,Entscheidungskompetenz
 ROLE,process_improvement,checkbox,0,Process Improvement,,Prozessoptimierung gefragt?
 ROLE,innovation_expected,checkbox,0,Innovation Expected,,Innovationsgrad gefordert?
+ROLE,travel_required,selectbox,0,Travel Required,No;Rarely;Occasionally;Regularly;Frequently,Reiseanteil
+ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
+ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
 ROLE,daily_tools,text_area,0,Daily Tools,,Tägliche Tools/Programme
-TASKS,task_list,text_area,1,Task List,,Aufgabenliste
-TASKS,key_responsibilities,text_area,1,Key Responsibilities,,Hauptverantwortlichkeiten
-TASKS,technical_tasks,text_area,0,Technical Tasks,,Technische Aufgaben
-TASKS,managerial_tasks,text_area,0,Managerial Tasks,,Führungsaufgaben
-TASKS,administrative_tasks,text_area,0,Administrative Tasks,,Verwaltungsaufgaben
-TASKS,customer_facing_tasks,text_area,0,Customer Facing Tasks,,Kundenkontaktaufgaben
-TASKS,internal_reporting_tasks,text_area,0,Internal Reporting Tasks,,Interne Berichte
-TASKS,performance_tasks,text_area,0,Performance Tasks,,Leistungsaufgaben
-TASKS,innovation_tasks,text_area,0,Innovation Tasks,,Innovationsaufgaben
-TASKS,task_prioritization,checkbox,0,Task Prioritization,,Aufgabenpriorisierung nötig?
 SKILLS,must_have_skills,text_area,1,Must Have Skills,,Erforderliche Kompetenzen/Skills
 SKILLS,nice_to_have_skills,text_area,0,Nice to Have Skills,,Wünschenswerte Skills
 SKILLS,hard_skills,text_area,0,Hard Skills,,Fachliche Kompetenzen
@@ -73,19 +73,19 @@ SKILLS,industry_experience,checkbox,0,Industry Experience,,Branchenerfahrung
 SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere Anforderungen
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
-SKILLS,visa_sponsorship,selectbox,0,Visa Sponsorship,"No;Yes;Optional",Visa möglich?
-BENEFITS,salary_currency,selectbox,1,Salary Currency,"EUR;USD;GBP;CHF;PLN;Other",Währung
-BENEFITS,salary_range,text_input,1,Salary Range (EUR),,"Bsp.: 50000–65000"
+SKILLS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
+BENEFITS,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
+BENEFITS,salary_range,text_input,1,Salary Range (EUR),,Bsp.: 50000–65000
 BENEFITS,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt
 BENEFITS,salary_range_max,number_input,0,Salary Range Max (EUR),,Maximalgehalt
 BENEFITS,bonus_scheme,text_area,0,Bonus Scheme,,Bonusregelung
 BENEFITS,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
 BENEFITS,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
 BENEFITS,vacation_days,number_input,0,Vacation Days,,Urlaubstage
-BENEFITS,remote_policy,selectbox,0,Remote Policy,"Onsite;Remote;Hybrid;Flexible;Home Office;After Probation",Homeoffice-Regelung
-BENEFITS,flexible_hours,selectbox,0,Flexible Hours,"No;Yes;After Probation;By Arrangement",Flexible Arbeitszeiten
-BENEFITS,relocation_support,selectbox,0,Relocation Support,"No;Yes;Optional",Umzugshilfe
-BENEFITS,childcare_support,selectbox,0,Childcare Support,"No;Yes;Optional",Kinderbetreuung
+BENEFITS,remote_policy,selectbox,0,Remote Policy,Onsite;Remote;Hybrid;Flexible;Home Office;After Probation,Homeoffice-Regelung
+BENEFITS,flexible_hours,selectbox,0,Flexible Hours,No;Yes;After Probation;By Arrangement,Flexible Arbeitszeiten
+BENEFITS,relocation_support,selectbox,0,Relocation Support,No;Yes;Optional,Umzugshilfe
+BENEFITS,childcare_support,selectbox,0,Childcare Support,No;Yes;Optional,Kinderbetreuung
 BENEFITS,learning_budget,number_input,0,Learning Budget (EUR),,Weiterbildungsbudget
 BENEFITS,company_car,checkbox,0,Company Car,,Firmenwagen
 BENEFITS,sabbatical_option,checkbox,0,Sabbatical Option,,Sabbatical möglich?
@@ -93,7 +93,7 @@ BENEFITS,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
 BENEFITS,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
 BENEFITS,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
 BENEFITS,other_perks,text_area,0,Other Perks,,Weitere Benefits
-BENEFITS,pay_frequency,selectbox,1,Pay Frequency,"Monthly;Yearly;Weekly;Bi-Weekly;Quarterly",Zahlungsintervall
+BENEFITS,pay_frequency,selectbox,1,Pay Frequency,Monthly;Yearly;Weekly;Bi-Weekly;Quarterly,Zahlungsintervall
 TARGET_GROUP,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
 TARGET_GROUP,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
 INTERVIEW,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
@@ -101,7 +101,7 @@ INTERVIEW,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Tele
 INTERVIEW,recruitment_steps,text_area,0,Recruitment Steps,,Bewerbungsprozess
 INTERVIEW,recruitment_timeline,text_area,0,Recruitment Timeline,,Ablauf/Zeitrahmen
 INTERVIEW,number_of_interviews,number_input,0,Number of Interviews,,Anzahl Interviews
-INTERVIEW,interview_format,selectbox,0,Interview Format,"Onsite;Remote;Hybrid;Phone",Interview-Format
+INTERVIEW,interview_format,selectbox,0,Interview Format,Onsite;Remote;Hybrid;Phone,Interview-Format
 INTERVIEW,interview_stage_count,number_input,0,Interview Stages,,Stufen im Auswahlprozess
 INTERVIEW,interview_docs_required,text_area,0,Interview Docs Required,,Erforderliche Unterlagen
 INTERVIEW,assessment_tests,checkbox,0,Assessment Tests,,Einstellungstests?

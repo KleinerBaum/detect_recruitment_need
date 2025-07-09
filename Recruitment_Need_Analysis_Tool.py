@@ -143,9 +143,7 @@ MUST_HAVE_KEYS = {
 ORDER = [
     "BASIC",
     "COMPANY",
-    "DEPARTMENT",
     "ROLE",
-    "TASKS",
     "SKILLS",
     "BENEFITS",
     "TARGET_GROUP",
@@ -153,8 +151,16 @@ ORDER = [
     "SUMMARY",
 ]
 
+STEP_TITLES = {
+    "COMPANY": "Company & Team",
+    "ROLE": "Job Responsibilities and Priorities",
+}
+
 STEPS: list[tuple[str, list[str]]] = [
-    (name.title().replace("_", " "), [item["key"] for item in SCHEMA[name]])
+    (
+        STEP_TITLES.get(name, name.title().replace("_", " ")),
+        [item["key"] for item in SCHEMA[name]],
+    )
     for name in ORDER
     if name in SCHEMA
 ]
@@ -947,7 +953,7 @@ def display_summary() -> None:
     for step_name in ORDER:
         if step_name not in SCHEMA:
             continue
-        with st.expander(step_name.title(), expanded=False):
+        with st.expander(STEP_TITLES.get(step_name, step_name.title()), expanded=False):
             for meta in SCHEMA[step_name]:
                 key = meta["key"]
                 result = ExtractResult(ss["data"].get(key), 1.0)
@@ -1087,20 +1093,14 @@ STEP_SUBTITLES = {
         "Je vollständiger diese Angaben sind, desto gezielter kann die Stelle gefunden und analysiert werden."
     ),
     "COMPANY": (
-        "Informationen zum Unternehmen helfen, die Vakanz besser zu verorten und passgenaues Employer Branding zu ermöglichen. "
-        "Firmenbezogene Angaben erhöhen die Glaubwürdigkeit und Transparenz gegenüber Kandidat:innen."
-    ),
-    "DEPARTMENT": (
-        "Team- und Abteilungsinfos sind entscheidend, um das Umfeld und die Anforderungen präzise zu erfassen. "
-        "So wird klar, wie die Position im Team eingebettet ist und welche Schnittstellen relevant sind."
+        "Informationen zum Unternehmen und zum Team helfen, die Vakanz besser zu verorten "
+        "und passgenaues Employer Branding zu ermöglichen. Firmen- und Teamangaben erhöhen "
+        "die Glaubwürdigkeit und Transparenz gegenüber Kandidat:innen."
     ),
     "ROLE": (
-        "Die Aufgaben und die Rolle sind das Herzstück der Ausschreibung – hier bitte besonders genau sein. "
-        "Je klarer die Rolle beschrieben ist, desto besser passen die späteren Kandidat:innen."
-    ),
-    "TASKS": (
-        "Hier werden alle wesentlichen Aufgaben und Verantwortlichkeiten der Position gesammelt. "
-        "Eine transparente Aufgabenbeschreibung hilft Missverständnisse zu vermeiden und Erwartungen zu steuern."
+        "Die Rolle bündelt Beschreibung und Aufgaben – hier bitte besonders genau sein. "
+        "Je klarer Verantwortlichkeiten und Prioritäten definiert sind, desto besser passen "
+        "die späteren Kandidat:innen."
     ),
     "SKILLS": (
         "An dieser Stelle werden die fachlichen und persönlichen Kompetenzen festgehalten, die für die Vakanz wichtig sind. "
@@ -1442,7 +1442,7 @@ def main():
 
         # Headline & Subtitle
         st.markdown(
-            f"<h2 style='text-align:center'>{step_name.title()}</h2>",
+            f"<h2 style='text-align:center'>{STEP_TITLES.get(step_name, step_name.title())}</h2>",
             unsafe_allow_html=True,
         )
         subtitle = STEP_SUBTITLES.get(step_name, "")
@@ -1700,7 +1700,7 @@ def main():
                         ss[f"out_{key}"] = change
                     st.session_state[f"txt_{key}"] = ss[f"out_{key}"]
 
-        step_labels = [name.title().replace("_", " ") for name, _ in STEPS]
+        step_labels = [title for title, _ in STEPS]
         target = st.selectbox("Zu Schritt springen:", step_labels)
         if st.button("Wechseln"):
             goto(step_labels.index(target) + 1)
