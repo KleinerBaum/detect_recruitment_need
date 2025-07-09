@@ -146,7 +146,6 @@ ORDER = [
     "ROLE",
     "SKILLS",
     "BENEFITS",
-    "TARGET_GROUP",
     "INTERVIEW",
     "SUMMARY",
 ]
@@ -1176,10 +1175,6 @@ STEP_SUBTITLES = {
     "BENEFITS": (
         "In diesem Abschnitt werden die Vorteile und Benefits präsentiert, die das Unternehmen bietet. "
         "Attraktive Zusatzleistungen steigern die Arbeitgeberattraktivität und fördern Bewerbungen."
-    ),
-    "TARGET_GROUP": (
-        "Hier analysierst du die Zielgruppe, für die die Position besonders attraktiv ist. "
-        "Durch das Verständnis der Zielgruppe kann die Ansprache und das Sourcing gezielter erfolgen."
     ),
     "INTERVIEW": (
         "Der Interviewprozess und die beteiligten Personen werden in diesem Abschnitt dokumentiert. "
@@ -2450,6 +2445,15 @@ def main():
         display_summary_overview()
         with st.expander("Alle Daten", expanded=False):
             display_summary()
+
+        ss["data"]["ideal_candidate_profile"] = st.text_area(
+            "Ideal Candidate Profile",
+            value=ss["data"].get("ideal_candidate_profile", ""),
+        )
+        ss["data"]["target_industries"] = st.text_area(
+            "Target Industries",
+            value=ss["data"].get("target_industries", ""),
+        )
 
         st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
 
