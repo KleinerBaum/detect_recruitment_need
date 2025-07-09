@@ -152,8 +152,8 @@ ORDER = [
 ]
 
 STEP_TITLES = {
-    "COMPANY": "Company & Team",
-    "ROLE": "Job Responsibilities and Priorities",
+    "COMPANY": "Company & Department",
+    "ROLE": "Role & Tasks",
 }
 
 STEPS: list[tuple[str, list[str]]] = [
@@ -1099,13 +1099,13 @@ STEP_SUBTITLES = {
         "Je vollständiger diese Angaben sind, desto gezielter kann die Stelle gefunden und analysiert werden."
     ),
     "COMPANY": (
-        "Informationen zum Unternehmen und zum Team helfen, die Vakanz besser zu verorten "
-        "und passgenaues Employer Branding zu ermöglichen. Firmen- und Teamangaben erhöhen "
+        "Informationen zu Unternehmen, Team und Abteilung helfen, die Vakanz besser zu verorten "
+        "und passgenaues Employer Branding zu ermöglichen. Solche Angaben erhöhen "
         "die Glaubwürdigkeit und Transparenz gegenüber Kandidat:innen."
     ),
     "ROLE": (
         "Die Rolle bündelt Beschreibung und Aufgaben – hier bitte besonders genau sein. "
-        "Je klarer Verantwortlichkeiten und Prioritäten definiert sind, desto besser passen "
+        "Je klarer Verantwortlichkeiten, Prioritäten und Aufgaben definiert sind, desto besser passen "
         "die späteren Kandidat:innen."
     ),
     "SKILLS": (
