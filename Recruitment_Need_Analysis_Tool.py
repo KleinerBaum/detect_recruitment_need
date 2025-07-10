@@ -26,6 +26,7 @@ from dateutil import parser as dateparser
 import datetime as dt
 import csv
 import base64
+import hashlib
 
 _spec = importlib.util.spec_from_file_location(
     "file_tools", Path(__file__).with_name("file_tools.py")
@@ -1724,7 +1725,6 @@ def main():
             st.session_state.job_title = job_title_default
 
         up = None
-        extract_btn = False
         left_pad, center_col, right_pad = st.columns([15, 70, 15])
 
         with center_col:
@@ -1745,19 +1745,11 @@ def main():
                 unsafe_allow_html=True,
             )
 
-            btn_left, btn_right = st.columns(2)
-            with btn_left:
-                extract_btn = st.button(
-                    "Extract Vacancy Data",
-                    disabled=not up,
-                    use_container_width=True,
-                )
-            with btn_right:
-                st.button(
-                    "Next →",
-                    on_click=lambda: goto(1),
-                    use_container_width=True,
-                )
+            st.button(
+                "Next →",
+                on_click=lambda: goto(1),
+                use_container_width=True,
+            )
 
         ss["data"]["job_title"] = st.session_state.job_title
         if st.session_state.job_title and not ss.get("extracted", {}).get(
@@ -1767,16 +1759,19 @@ def main():
                 ExtractResult(st.session_state.job_title, 1.0)
             )
 
-        if extract_btn and up:
-            with st.spinner("Extracting…"):
-                file_bytes = up.read()
-                text = extract_text_from_file(file_bytes, up.type)
-                flat = asyncio.run(extract(text))
-                ss["extracted"] = group_by_step(flat)
-                title_res = ss["extracted"].get("BASIC", {}).get("job_title")
-                if isinstance(title_res, ExtractResult) and title_res.value:
-                    ss["data"]["job_title"] = title_res.value
-                st.rerun()
+        if up:
+            file_bytes = up.getvalue()
+            file_hash = hashlib.md5(file_bytes).hexdigest()
+            if ss.get("uploaded_file_hash") != file_hash:
+                with st.spinner("Extracting…"):
+                    text = extract_text_from_file(file_bytes, up.type)
+                    flat = asyncio.run(extract(text))
+                    ss["extracted"] = group_by_step(flat)
+                    title_res = ss["extracted"].get("BASIC", {}).get("job_title")
+                    if isinstance(title_res, ExtractResult) and title_res.value:
+                        ss["data"]["job_title"] = title_res.value
+                    ss["uploaded_file_hash"] = file_hash
+                    st.rerun()
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
