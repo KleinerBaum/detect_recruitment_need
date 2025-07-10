@@ -38,6 +38,13 @@ assert _esco_spec.loader is not None
 _esco_spec.loader.exec_module(_esco_api)
 search_occupations = _esco_api.search_occupations
 get_skills_for_occupation = _esco_api.get_skills_for_occupation
+fetch_occupation_details = _esco_api.fetch_occupation_details
+bulk_search_occupations = _esco_api.bulk_search_occupations
+get_related_occupations = _esco_api.get_related_occupations
+get_skills_for_skill = _esco_api.get_skills_for_skill
+get_skill_categories = _esco_api.get_skill_categories
+get_occupation_statistics = _esco_api.get_occupation_statistics
+suggest = _esco_api.suggest
 
 _spec = importlib.util.spec_from_file_location(
     "file_tools", Path(__file__).with_name("file_tools.py")
@@ -689,6 +696,18 @@ def selectable_buttons(
     return selected
 
 
+def streamlined_skill_buttons(skills: list[str], label: str, key: str) -> list[str]:
+    """Show skill suggestions as styled buttons."""
+
+    return selectable_buttons(skills, label, key, cols=4)
+
+
+def update_benefit_preferences(city: str) -> None:
+    """Update session benefit suggestions based on location."""
+
+    ss["local_benefits"] = LOCAL_BENEFITS.get(city.lower(), [])
+
+
 async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
     existing: list[str] = []
     for key in [
@@ -763,8 +782,10 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
     location = data.get("city") or data.get("work_location_city", "")
 
     loc_key = location.lower()
-    if mode == "location" and loc_key in LOCAL_BENEFITS:
-        return LOCAL_BENEFITS[loc_key][:count]
+    if mode == "location":
+        local = ss.get("local_benefits") or LOCAL_BENEFITS.get(loc_key)
+        if local:
+            return cast(list[str], local)[:count]
 
     if mode == "title":
         prefix = f"for the job title '{job_title}'"
@@ -1100,6 +1121,8 @@ def show_input(
 
     # Save to session state
     st.session_state["data"][key] = val
+    if key in {"city", "work_location_city"}:
+        update_benefit_preferences(str(val))
 
 
 def value_missing(key: str) -> bool:
@@ -2467,7 +2490,7 @@ def main():
                 soft_label = f"AI-Suggested Soft Skills for your {job_title} Vacancy"
             else:
                 soft_label = "AI-Suggested Soft Skills"
-            soft_sel = selectable_buttons(
+            soft_sel = streamlined_skill_buttons(
                 ss.get("soft_skill_suggestions", []),
                 soft_label,
                 "selected_soft_skills",
@@ -2484,6 +2507,16 @@ def main():
                 ss["esco_results"] = search_occupations(query)
                 ss.pop("esco_skill_suggestions", None)
 
+            bulk = st.text_area("Bulk Titles", key="esco_bulk")
+            if st.button("Bulk Search", key="esco_bulk_btn") and bulk.strip():
+                titles = [t.strip() for t in bulk.splitlines() if t.strip()]
+                ss["bulk_esco"] = bulk_search_occupations(titles)
+
+            if "bulk_esco" in ss:
+                for t, res in cast(dict[str, list[dict]], ss["bulk_esco"]).items():
+                    title = res[0].get("title") if res else "-"
+                    st.caption(f"{t} → {title}")
+
             occs = cast(list[dict[str, Any]], ss.get("esco_results", []))
             if occs:
                 labels = [o.get("label") or o.get("title", "") for o in occs]
@@ -2494,13 +2527,32 @@ def main():
                     key="esco_select",
                 )
                 occ_uri = occs[idx].get("uri", "")
-                if st.button("Fetch Skills", key="esco_fetch_skills") and occ_uri:
-                    ss["esco_skill_suggestions"] = get_esco_skills(
-                        occupation_uri=occ_uri
+                if occ_uri:
+                    details = fetch_occupation_details(occ_uri)
+                    if desc := details.get("description"):
+                        st.info(desc)
+                    alt = details.get("altLabels") or []
+                    if alt:
+                        st.caption("Also known as: " + ", ".join(cast(list[str], alt)))
+                    stats = get_occupation_statistics(occ_uri)
+                    st.caption(
+                        f"Languages: {stats.get('languages', 0)} – Related skills: {stats.get('skills', 0)}"
                     )
+                    if st.button("Related Occupations", key="esco_related"):
+                        ss["related_occs"] = get_related_occupations(occ_uri)
+                    if st.button("Fetch Skills", key="esco_fetch_skills"):
+                        ss["esco_skill_suggestions"] = get_esco_skills(
+                            occupation_uri=occ_uri
+                        )
+
+            if ss.get("related_occs"):
+                rel_labels = [
+                    o.get("title", "") for o in cast(list[dict], ss["related_occs"])
+                ]
+                st.write("Related:", ", ".join(rel_labels))
 
             if ss.get("esco_skill_suggestions"):
-                esco_sel = selectable_buttons(
+                esco_sel = streamlined_skill_buttons(
                     cast(list[str], ss["esco_skill_suggestions"]),
                     "ESCO Skills",
                     "selected_esco_skills",
@@ -2509,6 +2561,19 @@ def main():
                     if sk not in current_hard:
                         current_hard.append(sk)
                 ss["data"]["hard_skills"] = ", ".join(current_hard)
+
+                if esco_sel:
+                    chosen = esco_sel[-1]
+                    sugg = suggest(chosen, type_="skill", limit=1)
+                    if sugg:
+                        s_uri = sugg[0].get("uri", "")
+                        cats = get_skill_categories(s_uri)
+                        subs = get_skills_for_skill(s_uri)
+                        if cats:
+                            st.caption("Categories: " + ", ".join(cats))
+                        sub_names = [s.get("title", "") for s in subs][:5]
+                        if sub_names:
+                            st.caption("Related Skills: " + ", ".join(sub_names))
 
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")

@@ -78,3 +78,99 @@ def suggest(
     except httpx.HTTPError as exc:  # pragma: no cover - log only
         logging.error("ESCO suggest failed: %s", exc)
         return []
+
+
+def fetch_occupation_details(uri: str, language: str = "en") -> dict[str, Any]:
+    """Retrieve full occupation metadata from ESCO.
+
+    Args:
+        uri: Occupation URI.
+        language: Preferred language for labels.
+
+    Returns:
+        Metadata dictionary including description and hierarchy.
+    """
+    params = {"uri": uri, "language": language, "full": "true"}
+    try:
+        resp = httpx.get(f"{BASE_URL}/resource/occupation", params=params, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPError as exc:  # pragma: no cover - log only
+        logging.error("ESCO occupation details failed: %s", exc)
+        return {}
+
+
+def bulk_search_occupations(query: list[str]) -> dict[str, list[dict[str, Any]]]:
+    """Search several job titles and return best matches."""
+    results: dict[str, list[dict[str, Any]]] = {}
+    for q in query:
+        results[q] = search_occupations(q, limit=1)
+    return results
+
+
+def get_related_occupations(
+    occupation_uri: str, language: str = "en", limit: int = 10
+) -> list[dict[str, Any]]:
+    """Suggest similar occupations using ESCO relations."""
+    params = {
+        "uri": occupation_uri,
+        "relation": "isRelatedToOccupation",
+        "language": language,
+        "limit": str(limit),
+    }
+    try:
+        resp = httpx.get(f"{BASE_URL}/resource/related", params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("_embedded", {}).get("isRelatedToOccupation", [])
+    except httpx.HTTPError as exc:  # pragma: no cover - log only
+        logging.error("ESCO related occupations failed: %s", exc)
+        return []
+
+
+def get_skills_for_skill(
+    skill_uri: str,
+    *,
+    relation: str = "isEssentialForSkill",
+    language: str = "en",
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Fetch skills linked to a specific skill."""
+    params = {
+        "uri": skill_uri,
+        "relation": relation,
+        "language": language,
+        "limit": str(limit),
+    }
+    try:
+        resp = httpx.get(f"{BASE_URL}/resource/related", params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("_embedded", {}).get(relation, [])
+    except httpx.HTTPError as exc:  # pragma: no cover - log only
+        logging.error("ESCO skill relation failed: %s", exc)
+        return []
+
+
+def get_skill_categories(skill_uri: str, language: str = "en") -> list[str]:
+    """Retrieve broader categories for a skill."""
+    params = {"uri": skill_uri, "language": language}
+    try:
+        resp = httpx.get(f"{BASE_URL}/resource/skill", params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        groups = data.get("_embedded", {}).get("isGroupedBy", [])
+        return [g.get("title") for g in groups if g.get("title")]
+    except httpx.HTTPError as exc:  # pragma: no cover - log only
+        logging.error("ESCO skill categories failed: %s", exc)
+        return []
+
+
+def get_occupation_statistics(occupation_uri: str) -> dict[str, Any]:
+    """Aggregate statistics for an occupation."""
+    details = fetch_occupation_details(occupation_uri)
+    skills = get_skills_for_occupation(occupation_uri)
+    return {
+        "skills": len(skills),
+        "languages": len(details.get("preferredLabel", {})),
+    }
