@@ -73,7 +73,7 @@ SKILLS,industry_experience,checkbox,0,Industry Experience,,Branchenerfahrung
 SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere Anforderungen
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
-SKILLS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
+BENEFITS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
 BENEFITS,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
 BENEFITS,salary_range,text_input,1,Salary Range (EUR),,Bsp.: 50000–65000
 BENEFITS,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt

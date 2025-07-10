@@ -16,9 +16,10 @@ streamlit run "Recruitment_Need_Analysis_Tool.py"
 
 The **SKILLS** step suggests additional hard and soft skills via OpenAI and
 presents them as selectable buttons. Chosen suggestions are stored in your
-profile. A dynamic salary chart visualises the impact of your selected skills.
-Skills are grouped into language skills, key competencies and other
-requirements for a cleaner layout.
+profile. Skills are grouped into language skills, key competencies and other
+requirements for a cleaner layout. The interactive salary chart now lives in the
+final **SUMMARY** step and shows how different factors influence the expected
+annual salary.
 
 The **BENEFITS** step generates benefit suggestions based on the job title, the
 company location and typical competitor offerings. Each suggestion appears as a
