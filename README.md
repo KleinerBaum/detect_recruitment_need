@@ -28,7 +28,8 @@ button that you can toggle to add it to your benefit list.
 The **COMPANY & DEPARTMENT** step now groups company information in a clearer
 layout and includes a *Team & Culture Context* expander. Optional fields such as
 Tech Stack and Team Challenges offer a **Generate Ideas** button that fetches AI
-suggestions you can insert directly.
+suggestions you can insert directly. Missing data for the company and the
+department is highlighted in two columns below the extracted values.
 
 ## Wizard Steps
 

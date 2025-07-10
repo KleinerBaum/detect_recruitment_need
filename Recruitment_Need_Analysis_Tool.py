@@ -1021,6 +1021,63 @@ def display_missing_inputs(
         show_input(k, result, meta, widget_prefix=f"missing_{step_name}")
 
 
+def display_missing_company_inputs(
+    meta_fields: list[dict[str, str]], extracted: dict
+) -> None:
+    """Special layout for missing company and team data."""
+
+    missing = {
+        m["key"]: m
+        for m in meta_fields
+        if not (
+            m["key"] in extracted and getattr(extracted.get(m["key"]), "value", None)
+        )
+    }
+
+    if not missing:
+        return
+
+    company = ss.get("data", {}).get("company_name", "the company")
+    col_a, col_b = st.columns(2)
+
+    col_a_keys = [
+        "company_size",
+        "headquarters_location",
+        "industry",
+        "brand_name",
+        "culture_notes",
+        "office_type",
+        "office_language",
+    ]
+    col_b_keys = [
+        "department_name",
+        "team_size",
+        "team_structure",
+        "tech_stack",
+        "team_challenges",
+        "client_difficulties",
+        "main_stakeholders",
+        "team_motivation",
+        "recent_team_changes",
+    ]
+
+    with col_a:
+        st.markdown(f"### Missing Data on {company}")
+        for key in col_a_keys:
+            if key in missing:
+                meta = missing[key]
+                result = ExtractResult(ss["data"].get(key), 1.0)
+                show_input(key, result, meta, widget_prefix="missing_COMPANY")
+
+    with col_b:
+        st.markdown("### Missing Data on the Department and Team")
+        for key in col_b_keys:
+            if key in missing:
+                meta = missing[key]
+                result = ExtractResult(ss["data"].get(key), 1.0)
+                show_input(key, result, meta, widget_prefix="missing_COMPANY")
+
+
 def display_missing_basic_inputs(
     meta_fields: list[dict[str, str]], extracted: dict
 ) -> None:
@@ -1742,6 +1799,8 @@ def main():
         # Prominent fehlende Felder abfragen
         if step_name == "BASIC":
             display_missing_basic_inputs(meta_fields, extr)
+        elif step_name == "COMPANY":
+            display_missing_company_inputs(meta_fields, extr)
         else:
             display_missing_inputs(step_name, meta_fields, extr)
 
@@ -1875,29 +1934,6 @@ def main():
                 meta_map["reports_to"],
                 widget_prefix=step_name,
             )
-
-            sup_col, direct_col = st.columns(2)
-            with sup_col:
-                show_input(
-                    "supervises",
-                    extr.get("supervises", ExtractResult()),
-                    meta_map["supervises"],
-                    widget_prefix=step_name,
-                )
-            with direct_col:
-                if ss.get("data", {}).get("supervises"):
-                    val = int(ss.get("data", {}).get("direct_reports_count", 0))
-                    val = st.number_input(
-                        meta_map["direct_reports_count"]["label"],
-                        value=val,
-                        step=1,
-                        format="%d",
-                        key=f"{step_name}_direct_reports_count",
-                        help=meta_map["direct_reports_count"].get("helptext", ""),
-                    )
-                    ss["data"]["direct_reports_count"] = int(val)
-                else:
-                    ss["data"]["direct_reports_count"] = 0
 
             with st.expander("Team & Culture Context", expanded=False):
                 cols = st.columns([4, 1])
@@ -2095,6 +2131,29 @@ def main():
                 meta_map["key_responsibilities"],
                 widget_prefix=step_name,
             )
+
+            sup_col, direct_col = st.columns(2)
+            with sup_col:
+                show_input(
+                    "supervises",
+                    extr.get("supervises", ExtractResult()),
+                    meta_map["supervises"],
+                    widget_prefix=step_name,
+                )
+            with direct_col:
+                if ss.get("data", {}).get("supervises"):
+                    val = int(ss.get("data", {}).get("direct_reports_count", 0))
+                    val = st.number_input(
+                        meta_map["direct_reports_count"]["label"],
+                        value=val,
+                        step=1,
+                        format="%d",
+                        key=f"{step_name}_direct_reports_count",
+                        help=meta_map["direct_reports_count"].get("helptext", ""),
+                    )
+                    ss["data"]["direct_reports_count"] = int(val)
+                else:
+                    ss["data"]["direct_reports_count"] = 0
 
             with st.expander("Projects & Metrics", expanded=False):
                 show_input(
