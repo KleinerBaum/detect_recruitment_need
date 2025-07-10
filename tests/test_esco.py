@@ -58,3 +58,40 @@ def test_suggest(monkeypatch):
     monkeypatch.setattr(mod.httpx, "get", DummyClient(data).get)
     res = mod.suggest("a", type_="skill")
     assert res == data["_embedded"]["results"]
+
+
+def test_fetch_occupation_details(monkeypatch):
+    mod = load_module()
+    data = {"description": "desc"}
+    monkeypatch.setattr(mod.httpx, "get", DummyClient(data).get)
+    res = mod.fetch_occupation_details("uri")
+    assert res == data
+
+
+def test_bulk_search_occupations(monkeypatch):
+    mod = load_module()
+    data = {"_embedded": {"results": [{"label": "N"}]}}
+    monkeypatch.setattr(
+        mod, "search_occupations", lambda q, limit=1: data["_embedded"]["results"]
+    )
+    res = mod.bulk_search_occupations(["n"])
+    assert res == {"n": data["_embedded"]["results"]}
+
+
+def test_related_and_categories(monkeypatch):
+    mod = load_module()
+    rel_data = {"_embedded": {"isRelatedToOccupation": [{"title": "r"}]}}
+    skill_rel = {"_embedded": {"isEssentialForSkill": [{"title": "s"}]}}
+    cat_data = {"_embedded": {"isGroupedBy": [{"title": "c"}]}}
+
+    monkeypatch.setattr(mod.httpx, "get", DummyClient(rel_data).get)
+    rel = mod.get_related_occupations("uri")
+    assert rel == rel_data["_embedded"]["isRelatedToOccupation"]
+
+    monkeypatch.setattr(mod.httpx, "get", DummyClient(skill_rel).get)
+    skills = mod.get_skills_for_skill("suri")
+    assert skills == skill_rel["_embedded"]["isEssentialForSkill"]
+
+    monkeypatch.setattr(mod.httpx, "get", DummyClient(cat_data).get)
+    cats = mod.get_skill_categories("suri")
+    assert cats == ["c"]
