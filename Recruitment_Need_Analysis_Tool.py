@@ -240,14 +240,23 @@ def _simple(label_en: str, label_de: str, cap: str) -> str:
 
 REGEX_PATTERNS = {
     # BASIC INFO - mandatory
-    "job_title": _simple("Job\\s*Title|Position|Stellenbezeichnung", "", "job_title"),
+    "job_title": _simple(
+        "Job\\s*Title|Position|Jobtitel|Stellentitel|Berufsbezeichnung",
+        "",
+        "job_title",
+    ),
     "employment_type": _simple(
-        "Employment\\s*Type",
-        "Vertragsart|Beschäftigungsart|Arbeitszeit",
+        "Employment\\s*Type|Work\\s*Type",
+        (
+            "Vertragsart|Beschäftigungsart|Arbeitszeit|Anstellungsart|"
+            "Beschäftigungsverhältnis|Art\\s*der\\s*Beschäftigung|Arbeitszeitmodell"
+        ),
         "employment_type",
     ),
     "contract_type": _simple(
-        "Contract\\s*Type", "Vertragstyp|Anstellungsart", "contract_type"
+        "Contract\\s*Type|Type\\s*of\\s*Contract",
+        "Vertragstyp|Anstellungsart|Art\\s*des\\s*Vertrags",
+        "contract_type",
     ),
     "seniority_level": _simple(
         "Seniority\\s*Level", "Karrierelevel", "seniority_level"
@@ -538,8 +547,16 @@ LLM_PROMPT = (
 
 # Additional lightweight patterns without explicit labels
 FALLBACK_PATTERNS: dict[str, str] = {
-    "employment_type": r"(?P<employment_type>Vollzeit|Teilzeit|Werkstudent(?:[ei]n)?|Praktikum|Mini[-\s]?Job|Freelance|Internship|Full[-\s]?time|Part[-\s]?time)",
-    "contract_type": r"(?P<contract_type>unbefristet|befristet|festanstellung|permanent|temporary|fixed[-\s]?term|contract|freelancer|project|werkvertrag|zeitarbeit)",
+    "employment_type": (
+        r"(?P<employment_type>Vollzeit|Teilzeit|Teilzeitkraft|Werkstudent(?:[ei]n)?|"
+        r"Praktikum|Mini[-\s]?Job|Freelance|Freelancer|Freiberuflich|"
+        r"Internship|Full[-\s]?time|Part[-\s]?time)"
+    ),
+    "contract_type": (
+        r"(?P<contract_type>unbefristet|befristet|befristeter\s*Vertrag|"
+        r"festanstellung|permanent|temporary|fixed[-\s]?term|contract|"
+        r"freelancer|project|werkvertrag|zeitarbeit|project[-\s]?based)"
+    ),
     "seniority_level": r"(?P<seniority_level>Junior|Mid|Senior|Lead|Head|Manager|Einsteiger|Berufserfahren)",
     "salary_range": r"(?P<salary_range>\d{4,6}\s*(?:-|bis|to|–)\s*\d{4,6})",
     "work_location_city": r"\bin\s+(?P<work_location_city>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,}(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß.-]{2,})?)",
