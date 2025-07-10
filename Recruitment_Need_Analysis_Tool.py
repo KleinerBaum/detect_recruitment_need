@@ -19,6 +19,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import httpx
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
 import importlib.util
 from dotenv import load_dotenv
@@ -1751,8 +1752,21 @@ def main():
 
     step = ss["step"]
 
+    def render_page_links() -> None:
+        """Display navigation links to the info pages."""
+
+        link_cols = st.columns([1, 1, 1])
+        with link_cols[1]:
+            st.page_link("pages/🏠_Advantages.py", label="Advantages", icon="🏠")
+            st.page_link(
+                "pages/💡_Tech_Overview.py",
+                label="The Technology behind",
+                icon="💡",
+            )
+
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
+        render_page_links()
         # Neat welcome design
         with open("images/color1_logo_transparent_background.png", "rb") as img_file:
             logo_b64 = base64.b64encode(img_file.read()).decode()
@@ -1786,6 +1800,7 @@ def main():
         left_pad, center_col, right_pad = st.columns([15, 70, 15])
 
         with center_col:
+            status_box = st.empty()
             st.text_input(
                 "Job Title",
                 value=job_title_default or "",
@@ -1797,6 +1812,9 @@ def main():
                 "Upload Job Description (PDF or DOCX)",
                 type=["pdf", "docx"],
             )
+
+            if ss.pop("extraction_success", False):
+                status_box.success("Extraction complete!", icon="🔥")
 
             st.markdown(
                 "<p style='text-align:center; font-size:calc(1rem + 2pt);'>Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success</p>",
@@ -1821,18 +1839,21 @@ def main():
             file_bytes = up.getvalue()
             file_hash = hashlib.md5(file_bytes).hexdigest()
             if ss.get("uploaded_file_hash") != file_hash:
-                with st.spinner("Extracting…"):
-                    text = extract_text_from_file(file_bytes, up.type)
-                    flat = asyncio.run(extract(text))
-                    ss["extracted"] = group_by_step(flat)
-                    title_res = ss["extracted"].get("BASIC", {}).get("job_title")
-                    if isinstance(title_res, ExtractResult) and title_res.value:
-                        ss["data"]["job_title"] = title_res.value
-                    ss["uploaded_file_hash"] = file_hash
-                    st.rerun()
+                with status_box.container():
+                    with st.spinner("Extracting…"):
+                        text = extract_text_from_file(file_bytes, up.type)
+                        flat = asyncio.run(extract(text))
+                        ss["extracted"] = group_by_step(flat)
+                        title_res = ss["extracted"].get("BASIC", {}).get("job_title")
+                        if isinstance(title_res, ExtractResult) and title_res.value:
+                            ss["data"]["job_title"] = title_res.value
+                        ss["uploaded_file_hash"] = file_hash
+                ss["extraction_success"] = True
+                st.rerun()
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
+        render_page_links()
         step_name = ORDER[step_idx]
         meta_fields = SCHEMA[step_name]  # <-- Zuerst setzen!
         fields = [item["key"] for item in meta_fields]
@@ -2025,10 +2046,16 @@ def main():
                 )
 
             with st.expander("Team & Culture Context", expanded=False):
-                cols = st.columns([4, 1])
-                with cols[0]:
-                    show_missing("tech_stack", extr, meta_map, step_name)
-                with cols[1]:
+                box_a, box_b, box_c = st.empty(), st.empty(), st.empty()
+
+                def _wrap(container: DeltaGenerator) -> DeltaGenerator:
+                    return container.container()
+
+                with _wrap(box_a):
+                    st.markdown(
+                        "<div style='border:1px solid #ccc;padding:10px'>",
+                        unsafe_allow_html=True,
+                    )
                     if st.button("Generate Ideas", key="gen_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
@@ -2038,36 +2065,25 @@ def main():
                             except Exception as e:
                                 logging.error("tech stack suggestion failed: %s", e)
                                 ss["tech_stack_suggestions"] = []
-                sel_ts = selectable_buttons(
-                    ss.get("tech_stack_suggestions", []),
-                    "",
-                    "sel_tech_stack",
-                    cols=2,
-                )
-                current_ts = parse_skill_list(ss["data"].get("tech_stack"))
-                for s in sel_ts:
-                    if s not in current_ts:
-                        current_ts.append(s)
-                ss["data"]["tech_stack"] = ", ".join(current_ts)
-
-                if value_missing("culture_notes"):
-                    show_input(
-                        "culture_notes",
-                        extr.get("culture_notes", ExtractResult()),
-                        meta_map["culture_notes"],
-                        widget_prefix=step_name,
+                    show_missing("tech_stack", extr, meta_map, step_name)
+                    sel_ts = st.pills(
+                        "",
+                        ss.get("tech_stack_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_tech_stack",
                     )
+                    current_ts = parse_skill_list(ss["data"].get("tech_stack"))
+                    for s in sel_ts or []:
+                        if s not in current_ts:
+                            current_ts.append(s)
+                    ss["data"]["tech_stack"] = ", ".join(current_ts)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                cols = st.columns([4, 1])
-                with cols[0]:
-                    if value_missing("team_challenges"):
-                        show_input(
-                            "team_challenges",
-                            extr.get("team_challenges", ExtractResult()),
-                            meta_map["team_challenges"],
-                            widget_prefix=step_name,
-                        )
-                with cols[1]:
+                with _wrap(box_b):
+                    st.markdown(
+                        "<div style='border:1px solid #ccc;padding:10px'>",
+                        unsafe_allow_html=True,
+                    )
                     if st.button("Generate Ideas", key="gen_team_challenges"):
                         with st.spinner("Generating…"):
                             try:
@@ -2077,28 +2093,18 @@ def main():
                             except Exception as e:
                                 logging.error("team challenge suggestion failed: %s", e)
                                 ss["team_challenges_suggestions"] = []
-                sel_tc = selectable_buttons(
-                    ss.get("team_challenges_suggestions", []),
-                    "",
-                    "sel_team_challenges",
-                    cols=2,
-                )
-                cur_tc = parse_skill_list(ss["data"].get("team_challenges"))
-                for s in sel_tc:
-                    if s not in cur_tc:
-                        cur_tc.append(s)
-                ss["data"]["team_challenges"] = ", ".join(cur_tc)
-
-                cols = st.columns([4, 1])
-                with cols[0]:
-                    if value_missing("client_difficulties"):
-                        show_input(
-                            "client_difficulties",
-                            extr.get("client_difficulties", ExtractResult()),
-                            meta_map["client_difficulties"],
-                            widget_prefix=step_name,
-                        )
-                with cols[1]:
+                    show_missing("team_challenges", extr, meta_map, step_name)
+                    sel_tc = st.pills(
+                        "",
+                        ss.get("team_challenges_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_team_challenges",
+                    )
+                    cur_tc = parse_skill_list(ss["data"].get("team_challenges"))
+                    for s in sel_tc or []:
+                        if s not in cur_tc:
+                            cur_tc.append(s)
+                    ss["data"]["team_challenges"] = ", ".join(cur_tc)
                     if st.button("Generate Ideas", key="gen_client_difficulties"):
                         with st.spinner("Generating…"):
                             try:
@@ -2110,44 +2116,25 @@ def main():
                                     "client difficulty suggestion failed: %s", e
                                 )
                                 ss["client_difficulties_suggestions"] = []
-                sel_cd = selectable_buttons(
-                    ss.get("client_difficulties_suggestions", []),
-                    "",
-                    "sel_client_difficulties",
-                    cols=2,
-                )
-                cur_cd = parse_skill_list(ss["data"].get("client_difficulties"))
-                for s in sel_cd:
-                    if s not in cur_cd:
-                        cur_cd.append(s)
-                ss["data"]["client_difficulties"] = ", ".join(cur_cd)
-
-                if value_missing("main_stakeholders"):
-                    show_input(
-                        "main_stakeholders",
-                        extr.get("main_stakeholders", ExtractResult()),
-                        meta_map["main_stakeholders"],
-                        widget_prefix=step_name,
+                    show_missing("client_difficulties", extr, meta_map, step_name)
+                    sel_cd = st.pills(
+                        "",
+                        ss.get("client_difficulties_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_client_difficulties",
                     )
+                    cur_cd = parse_skill_list(ss["data"].get("client_difficulties"))
+                    for s in sel_cd or []:
+                        if s not in cur_cd:
+                            cur_cd.append(s)
+                    ss["data"]["client_difficulties"] = ", ".join(cur_cd)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                if value_missing("team_motivation"):
-                    show_input(
-                        "team_motivation",
-                        extr.get("team_motivation", ExtractResult()),
-                        meta_map["team_motivation"],
-                        widget_prefix=step_name,
+                with _wrap(box_c):
+                    st.markdown(
+                        "<div style='border:1px solid #ccc;padding:10px'>",
+                        unsafe_allow_html=True,
                     )
-
-                cols = st.columns([4, 1])
-                with cols[0]:
-                    if value_missing("recent_team_changes"):
-                        show_input(
-                            "recent_team_changes",
-                            extr.get("recent_team_changes", ExtractResult()),
-                            meta_map["recent_team_changes"],
-                            widget_prefix=step_name,
-                        )
-                with cols[1]:
                     if st.button("Generate Ideas", key="gen_recent_team_changes"):
                         with st.spinner("Generating…"):
                             try:
@@ -2157,17 +2144,40 @@ def main():
                             except Exception as e:
                                 logging.error("recent changes suggestion failed: %s", e)
                                 ss["recent_team_changes_suggestions"] = []
-                sel_rc = selectable_buttons(
-                    ss.get("recent_team_changes_suggestions", []),
-                    "",
-                    "sel_recent_team_changes",
-                    cols=2,
-                )
-                cur_rc = parse_skill_list(ss["data"].get("recent_team_changes"))
-                for s in sel_rc:
-                    if s not in cur_rc:
-                        cur_rc.append(s)
-                ss["data"]["recent_team_changes"] = ", ".join(cur_rc)
+                    show_missing("recent_team_changes", extr, meta_map, step_name)
+                    sel_rc = st.pills(
+                        "",
+                        ss.get("recent_team_changes_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_recent_team_changes",
+                    )
+                    cur_rc = parse_skill_list(ss["data"].get("recent_team_changes"))
+                    for s in sel_rc or []:
+                        if s not in cur_rc:
+                            cur_rc.append(s)
+                    ss["data"]["recent_team_changes"] = ", ".join(cur_rc)
+                    if value_missing("culture_notes"):
+                        show_input(
+                            "culture_notes",
+                            extr.get("culture_notes", ExtractResult()),
+                            meta_map["culture_notes"],
+                            widget_prefix=step_name,
+                        )
+                    if value_missing("main_stakeholders"):
+                        show_input(
+                            "main_stakeholders",
+                            extr.get("main_stakeholders", ExtractResult()),
+                            meta_map["main_stakeholders"],
+                            widget_prefix=step_name,
+                        )
+                    if value_missing("team_motivation"):
+                        show_input(
+                            "team_motivation",
+                            extr.get("team_motivation", ExtractResult()),
+                            meta_map["team_motivation"],
+                            widget_prefix=step_name,
+                        )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
         elif step_name == "ROLE":
             meta_map = {m["key"]: m for m in meta_fields}
