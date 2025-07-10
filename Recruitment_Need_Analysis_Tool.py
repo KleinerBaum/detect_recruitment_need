@@ -87,6 +87,13 @@ if not api_key:
 
 client = AsyncOpenAI(api_key=api_key)
 
+LOCAL_BENEFITS: dict[str, list[str]] = {
+    "düsseldorf": [
+        "Fortuna Düsseldorf Vereinsmitgliedschaft",
+        "Zugang zur Driving Range auf https://www.golf-duesseldorf.de/driving-range/",
+    ]
+}
+
 
 async def generate_text(
     prompt: str,
@@ -718,6 +725,10 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
 
     job_title = data.get("job_title", "")
     location = data.get("city") or data.get("work_location_city", "")
+
+    loc_key = location.lower()
+    if mode == "location" and loc_key in LOCAL_BENEFITS:
+        return LOCAL_BENEFITS[loc_key][:count]
 
     if mode == "title":
         prefix = f"for the job title '{job_title}'"

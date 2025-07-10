@@ -23,7 +23,9 @@ annual salary.
 
 The **BENEFITS** step generates benefit suggestions based on the job title, the
 company location and typical competitor offerings. Each suggestion appears as a
-button that you can toggle to add it to your benefit list.
+button that you can toggle to add it to your benefit list. For some cities the
+app proposes local perks such as club memberships or discounted facilities (for
+example a "Fortuna Düsseldorf" membership when the location is Düsseldorf).
 
 The **COMPANY & DEPARTMENT** step now groups company information in a clearer
 layout and includes a *Team & Culture Context* expander. Optional fields such as
