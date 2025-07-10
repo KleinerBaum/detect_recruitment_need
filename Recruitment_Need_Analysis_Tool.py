@@ -69,9 +69,9 @@ DOMAIN_OPTIONS = [
 st.markdown(
     """
     <style>
-    /* rotes Stern-Prefix erzeugt roten Rahmen, wenn das Feld leer ist */
+    /* red star prefix triggers a red border when the field is empty */
     input.must_req:placeholder-shown {
-        border: 1px solid #e74c3c !important;   /* Streamlit default überschreiben */
+        border: 1px solid #e74c3c !important;   /* override Streamlit default */
     }
     </style>
     """,
@@ -82,7 +82,7 @@ st.markdown(
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
 if not api_key:
-    st.error("❌ OPENAI_API_KEY fehlt! Bitte in .env oder secrets.toml eintragen.")
+    st.error("❌ OPENAI_API_KEY missing! Please add it to .env or secrets.toml.")
     st.stop()
 
 client = AsyncOpenAI(api_key=api_key)
@@ -1087,7 +1087,7 @@ def display_extracted_values_editable(
             )
 
     if not rows:
-        st.info("Keine Werte extrahiert.")
+        st.info("No values extracted.")
         return
 
     df = pd.DataFrame(rows).drop(columns="_key")
@@ -1122,7 +1122,7 @@ def display_missing_inputs(
     if not missing:
         return
 
-    st.subheader("Fehlende Angaben")
+    st.subheader("Missing Data")
     for meta in missing:
         k = meta["key"]
         result = ExtractResult(ss["data"].get(k), 1.0)
@@ -1410,7 +1410,7 @@ def display_interview_section(
 img_path = Path("images/AdobeStock_506577005.jpeg")
 
 
-# Bild als Base64 laden (damit es im CSS eingebettet werden kann)
+# Load image as Base64 so it can be embedded via CSS
 def get_base64_image(img_path: Path) -> str:
     """Return the image as a base64 data URL."""
 
@@ -1419,7 +1419,7 @@ def get_base64_image(img_path: Path) -> str:
     return f"data:image/jpeg;base64,{encoded}"
 
 
-# CSS-Block für halbtransparentes Hintergrundbild
+# CSS block for a semi-transparent background image
 def set_background(image_path: Path, opacity: float = 0.5) -> None:
     """Set a semi-transparent background image via inline CSS."""
 
@@ -1443,41 +1443,36 @@ def set_background(image_path: Path, opacity: float = 0.5) -> None:
     )
 
 
-# Hintergrund aktivieren
+# Enable background image
 set_background(img_path, opacity=0.5)
 
 
-# Mapping für Subtitles pro Step
+# Mapping for subtitles per wizard step
 STEP_SUBTITLES = {
     "BASIC": (
-        "Hier werden die Basisdaten zur Vakanz gesammelt – sie sind wichtig für die spätere Zuordnung, Suche und Vergleichbarkeit. "
-        "Je vollständiger diese Angaben sind, desto gezielter kann die Stelle gefunden und analysiert werden."
+        "This step collects the core vacancy data required for later classification, search and comparison. "
+        "The more complete these details are, the easier the role can be found and analysed."
     ),
     "COMPANY": (
-        "Informationen zu Unternehmen, Team und Abteilung helfen, die Vakanz besser zu verorten "
-        "und passgenaues Employer Branding zu ermöglichen. Solche Angaben erhöhen "
-        "die Glaubwürdigkeit und Transparenz gegenüber Kandidat:innen."
+        "Information about the company, team and department helps position the vacancy and enables targeted employer branding. "
+        "Such details increase credibility and transparency towards candidates."
     ),
     "ROLE": (
-        "Die Rolle bündelt Beschreibung und Aufgaben – hier bitte besonders genau sein. "
-        "Je klarer Verantwortlichkeiten, Prioritäten und Aufgaben definiert sind, desto besser passen "
-        "die späteren Kandidat:innen."
+        "Here we summarise the role description and tasks. The clearer responsibilities, priorities and tasks are defined, "
+        "the better future candidates will fit."
     ),
     "SKILLS": (
-        "An dieser Stelle werden die fachlichen und persönlichen Kompetenzen festgehalten, die für die Vakanz wichtig sind. "
-        "Eine genaue Definition der Anforderungen erleichtert das Matching im späteren Prozess."
+        "This section records the technical and personal skills required for the vacancy. "
+        "A precise definition of requirements makes matching easier later in the process."
     ),
     "BENEFITS": (
-        "In diesem Abschnitt werden die Vorteile und Benefits präsentiert, die das Unternehmen bietet. "
-        "Attraktive Zusatzleistungen steigern die Arbeitgeberattraktivität und fördern Bewerbungen."
+        "This part presents the benefits offered by the company. Attractive perks boost employer appeal and encourage applications."
     ),
     "INTERVIEW": (
-        "Der Interviewprozess und die beteiligten Personen werden in diesem Abschnitt dokumentiert. "
-        "Eine klare Struktur des Prozesses sorgt für ein professionelles Kandidaten-Erlebnis."
+        "The interview process and the people involved are documented here. A clear structure ensures a professional candidate experience."
     ),
     "SUMMARY": (
-        "Im letzten Schritt werden alle Informationen noch einmal übersichtlich zusammengefasst. "
-        "Überprüfe die Angaben und exportiere das vollständige Anforderungsprofil."
+        "In the final step all information is summarised once more. Review the details and export the complete profile."
     ),
 }
 
@@ -1485,11 +1480,10 @@ STEP_SUBTITLES = {
 # AI-Functions
 
 
-# --- a) Jobad-Generator mit DSGVO, SEO, Edit, PDF ---
 async def generate_jobad(data: dict) -> str:
-    """
-    Generiert eine professionelle, DSGVO-konforme und SEO-optimierte Stellenanzeige auf Basis der gesammelten Daten.
-    Rückgabe: Jobad als Markdown/Text.
+    """Generate a GDPR-compliant, SEO-optimised job ad from the collected data.
+
+    Returns the job advertisement as Markdown/text.
     """
     prompt = (
         "Erstelle eine vollständige, DSGVO-konforme und suchmaschinenoptimierte Stellenanzeige "
@@ -1528,9 +1522,9 @@ def download_as_pdf(text: str, filename: str = "jobad.pdf"):
 
 # --- b) Interview-Vorbereitungs-Sheet ---
 async def generate_interview_sheet(data: dict) -> str:
-    """
-    Erstellt ein kompaktes, tabellarisches Vorbereitungsblatt für Line und HR auf Basis der wichtigsten Anforderungen, Aufgaben und Wunschkriterien.
-    Rückgabe: Markdown- oder HTML-Tabelle.
+    """Create a compact preparation sheet for line managers and HR.
+
+    Returns a Markdown or HTML table based on key requirements, tasks and desired criteria.
     """
     prompt = (
         "Prepare an interview briefing for the hiring team. "
@@ -1549,9 +1543,7 @@ async def generate_interview_sheet(data: dict) -> str:
 
 # --- c) Boolean Searchstring ---
 async def generate_boolean_search(data: dict) -> str:
-    """
-    Erstellt einen professionellen, auf die Vakanz optimierten Boolean Searchstring für Jobbörsen, LinkedIn, XING etc.
-    """
+    """Create a professional Boolean search string optimised for the vacancy."""
     prompt = (
         "Create a concise, optimized Boolean search string for this vacancy, "
         "using key responsibilities, requirements, and skills as the basis.\n"
@@ -1569,9 +1561,9 @@ async def generate_boolean_search(data: dict) -> str:
 
 # --- d) Arbeitsvertrag-Generator ---
 async def generate_contract(data: dict) -> str:
-    """
-    Erstellt einen einfachen Entwurf für einen Arbeitsvertrag auf Basis der extrahierten Stammdaten.
-    (Beachte: Dies ist keine Rechtsberatung und ersetzt keinen Juristen!)
+    """Create a basic employment contract draft from the extracted core data.
+
+    Note: This is not legal advice and does not replace a lawyer.
     """
     prompt = (
         "Erstelle einen Muster-Arbeitsvertrag (nur als Vorlage, keine Rechtsberatung!) auf Basis dieser strukturierten Daten. "
@@ -1706,7 +1698,7 @@ def main():
 
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
-        # Schönes Welcome-Design!
+        # Neat welcome design
         with open("images/color1_logo_transparent_background.png", "rb") as img_file:
             logo_b64 = base64.b64encode(img_file.read()).decode()
 
@@ -1820,7 +1812,7 @@ def main():
         # Extrahierte Werte kompakt darstellen
         display_extracted_values_editable(extr, fields, step_name)
 
-        # Prominent fehlende Felder abfragen
+        # Prominently request missing fields
         if step_name == "BASIC":
             display_missing_basic_inputs(meta_fields, extr)
         elif step_name == "COMPANY":
@@ -1983,7 +1975,7 @@ def main():
                     show_missing("tech_stack", extr, meta_map, step_name)
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_tech_stack"):
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = asyncio.run(
                                     suggest_tech_stack(ss["data"])
@@ -2022,7 +2014,7 @@ def main():
                         )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_team_challenges"):
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             try:
                                 ss["team_challenges_suggestions"] = asyncio.run(
                                     suggest_team_challenges(ss["data"])
@@ -2053,7 +2045,7 @@ def main():
                         )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_client_difficulties"):
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             try:
                                 ss["client_difficulties_suggestions"] = asyncio.run(
                                     suggest_client_difficulties(ss["data"])
@@ -2102,7 +2094,7 @@ def main():
                         )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_recent_team_changes"):
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             try:
                                 ss["recent_team_changes_suggestions"] = asyncio.run(
                                     suggest_recent_team_changes(ss["data"])
@@ -2426,7 +2418,7 @@ def main():
                     st.markdown(text)
                 with row[3]:
                     if st.button("Generate", key=f"gen_{key}"):
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             try:
                                 ss[key] = asyncio.run(func(ss["data"], int(count)))
                             except Exception as e:
@@ -2462,7 +2454,7 @@ def main():
         ]
         ok = all(ss["data"].get(k) for k in required_keys)
         if not ok:
-            st.warning("Einige Pflichtfelder sind noch leer.")
+            st.warning("Some required fields are still empty.")
         nxt.button("Next →", on_click=lambda: goto(step + 1))
 
     # ----------- Summary / Abschluss ----------
@@ -2471,7 +2463,7 @@ def main():
             "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
         display_summary_overview()
-        with st.expander("Alle Daten", expanded=False):
+        with st.expander("All Data", expanded=False):
             display_summary()
 
         ss["data"]["ideal_candidate_profile"] = st.text_area(
@@ -2483,30 +2475,30 @@ def main():
             value=ss["data"].get("target_industries", ""),
         )
 
-        st.subheader("Erwartetes Jahresgehalt")
+        st.subheader("Expected Annual Salary")
         display_salary_plot()
 
-        st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
+        st.header("Next Step – Use the collected data!")
 
         btn_cols = st.columns(6)
         actions = [
-            ("Stellenanzeige erstellen", "jobad", generate_jobad),
-            ("Guide Vorstellungsgespräch", "interview", generate_interview_sheet),
+            ("Create Job Ad", "jobad", generate_jobad),
+            ("Interview Guide", "interview", generate_interview_sheet),
             (
-                "Boolean Search für bessere Search-Engine Findings",
+                "Boolean Search for better search engine findings",
                 "boolean",
                 generate_boolean_search,
             ),
-            ("Arbeitsvertrag erstellen", "contract", generate_contract),
-            ("Gehaltsband schätzen", "salary", None),
-            ("Gesamtkosten berechnen", "total", None),
+            ("Create Contract", "contract", generate_contract),
+            ("Estimate Salary Range", "salary", None),
+            ("Calculate Total Cost", "total", None),
         ]
 
         for col, (label, key, func) in zip(btn_cols, actions):
             with col:
                 if st.button(label, key=f"btn_{key}"):
                     if func:
-                        with st.spinner("Generiere…"):
+                        with st.spinner("Generating…"):
                             ss[f"out_{key}"] = asyncio.run(func(ss["data"]))
                     else:
                         if key == "salary":
@@ -2560,8 +2552,8 @@ def main():
                 )
 
         step_labels = [title for title, _ in STEPS]
-        target = st.selectbox("Zu Schritt springen:", step_labels)
-        if st.button("Wechseln"):
+        target = st.selectbox("Jump to step:", step_labels)
+        if st.button("Switch"):
             goto(step_labels.index(target) + 1)
 
 
