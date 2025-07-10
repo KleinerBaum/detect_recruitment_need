@@ -13,6 +13,7 @@ python-dotenv
 python-dateutil==2.9.0.post0
 types-python-dateutil
 types-fpdf2
+plotly
 
 # --- development / CI ---
 pre-commit==4.2.0          # hook runner :contentReference[oaicite:5]{index=5}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from streamlit import session_state as ss
 import pandas as pd  # type: ignore
+import plotly.express as px  # type: ignore
 
 import asyncio
 import json
@@ -49,6 +50,20 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         KEY_TO_STEP[row["key"]] = step
 
 DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
+INDUSTRY_OPTIONS = [
+    "IT",
+    "Finance",
+    "Healthcare",
+    "Manufacturing",
+    "Retail",
+]
+DOMAIN_OPTIONS = [
+    "AI",
+    "Cloud",
+    "Cybersecurity",
+    "Data Engineering",
+    "Analytics",
+]
 
 st.markdown(
     """
@@ -1055,6 +1070,8 @@ def display_summary_overview() -> None:
         st.write(f"**Certifications Required:** {val('certifications_required')}")
         st.write(f"**Domain Expertise:** {val('domain_expertise')}")
         st.write(f"**Language Requirements:** {val('language_requirements')}")
+        st.write(f"**Languages Optional:** {val('languages_optional')}")
+        st.write(f"**Industry Experience:** {val('industry_experience')}")
 
     with col4:
         st.markdown("### Benefits")
@@ -1068,6 +1085,45 @@ def display_summary_overview() -> None:
         st.write(f"**Other Perks:** {val('other_perks')}")
         if ss.get("benefit_list"):
             st.write(f"**Selected Benefits:** {', '.join(ss['benefit_list'])}")
+
+
+def display_salary_plot() -> None:
+    """Show an interactive salary contribution chart."""
+
+    factors = ["job_title", "role_description", "task_list", "location", "skills"]
+    selected = st.multiselect("Factors", factors, default=factors)
+    job_title_val = ss["data"].get("job_title") if "job_title" in selected else None
+    role_desc_val = (
+        ss["data"].get("role_description") if "role_description" in selected else None
+    )
+    task_list_val = ss["data"].get("task_list") if "task_list" in selected else None
+    location_val = ss["data"].get("city") if "location" in selected else None
+    skills_val = (
+        parse_skill_list(ss["data"].get("must_have_skills"))
+        if "skills" in selected
+        else None
+    )
+    total, parts = predict_annual_salary(
+        cast(str | None, job_title_val),
+        cast(str | None, role_desc_val),
+        cast(str | None, task_list_val),
+        cast(str | None, location_val),
+        cast(list[str] | None, skills_val),
+    )
+    fig = px.bar(
+        x=list(parts.keys()),
+        y=list(parts.values()),
+        labels={"x": "Component", "y": "Contribution"},
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.write(f"**Expected Annual Salary:** {total} €")
+    st.write(
+        "This estimate derives from typical market rates, the complexity of the role, location factors, the number of tasks and the required skills. "
+        "Each component contributes additively to the final figure. "
+        "Data scientist roles or similar often command premiums reflected in the job_title factor. "
+        "Longer task lists and detailed role descriptions increase expectations as they imply broader responsibilities. "
+        "Locations with high living costs push salaries upwards, while more skills signify higher expertise and thus higher pay."
+    )
 
 
 def display_interview_section(
@@ -2198,6 +2254,36 @@ def main():
                 widget_prefix=step_name,
             )
 
+            ind_required = st.checkbox(
+                "Industry experience",
+                value=bool(ss.get("data", {}).get("industry_experience_required")),
+                key=f"{step_name}_industry_exp_req",
+            )
+            ss["data"]["industry_experience_required"] = ind_required
+            if ind_required:
+                inds = st.multiselect(
+                    "Select industries",
+                    INDUSTRY_OPTIONS,
+                    default=ss.get("data", {}).get("industry_experience", []),
+                    key=f"{step_name}_industry_list",
+                )
+                ss["data"]["industry_experience"] = inds
+
+            dom_required = st.checkbox(
+                "Domain expertise",
+                value=bool(ss.get("data", {}).get("domain_expertise_required")),
+                key=f"{step_name}_domain_exp_req",
+            )
+            ss["data"]["domain_expertise_required"] = dom_required
+            if dom_required:
+                doms = st.multiselect(
+                    "Select domains",
+                    DOMAIN_OPTIONS,
+                    default=ss.get("data", {}).get("domain_expertise", []),
+                    key=f"{step_name}_domain_list",
+                )
+                ss["data"]["domain_expertise"] = doms
+
             st.subheader("Key Competencies")
             comp_cols = st.columns(2)
             with comp_cols[0]:
@@ -2211,12 +2297,6 @@ def main():
                     "project_management_skills",
                     extr.get("project_management_skills", ExtractResult()),
                     meta_map["project_management_skills"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "industry_experience",
-                    extr.get("industry_experience", ExtractResult()),
-                    meta_map["industry_experience"],
                     widget_prefix=step_name,
                 )
             with comp_cols[1]:
@@ -2253,13 +2333,6 @@ def main():
                 widget_prefix=step_name,
             )
             show_input(
-                "domain_expertise",
-                extr.get("domain_expertise", ExtractResult()),
-                meta_map["domain_expertise"],
-                widget_prefix=step_name,
-            )
-
-            show_input(
                 "soft_requirement_details",
                 extr.get("soft_requirement_details", ExtractResult()),
                 meta_map["soft_requirement_details"],
@@ -2279,13 +2352,6 @@ def main():
                     help=meta_map["years_experience_min"].get("helptext", ""),
                 )
                 ss["data"]["years_experience_min"] = int(years_val)
-            with other_cols[1]:
-                show_input(
-                    "visa_sponsorship",
-                    extr.get("visa_sponsorship", ExtractResult()),
-                    meta_map["visa_sponsorship"],
-                    widget_prefix=step_name,
-                )
 
         else:
             if step_name == "BENEFITS":
@@ -2405,6 +2471,12 @@ def main():
                     meta_map["other_perks"],
                     widget_prefix=step_name,
                 )
+                show_input(
+                    "visa_sponsorship",
+                    extr.get("visa_sponsorship", ExtractResult()),
+                    meta_map["visa_sponsorship"],
+                    widget_prefix=step_name,
+                )
             else:
                 current_cols = 2
                 cols = st.columns(current_cols)
@@ -2480,23 +2552,6 @@ def main():
                     current_soft.append(sk)
             ss["data"]["soft_skills"] = ", ".join(current_soft)
 
-            # Salary prediction chart
-            total, parts = predict_annual_salary(
-                ss["data"].get("job_title"),
-                ss["data"].get("role_description"),
-                ss["data"].get("task_list"),
-                ss["data"].get("city"),
-                hard_sel + soft_sel,
-            )
-            st.subheader(f"Erwartetes Jahresgehalt: {total} €")
-            chart_df = pd.DataFrame(
-                {
-                    "Component": list(parts.keys()),
-                    "Contribution": list(parts.values()),
-                }
-            ).set_index("Component")
-            st.bar_chart(chart_df)
-
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
 
@@ -2567,6 +2622,9 @@ def main():
             "Target Industries",
             value=ss["data"].get("target_industries", ""),
         )
+
+        st.subheader("Erwartetes Jahresgehalt")
+        display_salary_plot()
 
         st.header("Nächster Schritt – Nutzen Sie die gesammelten Daten!")
 
