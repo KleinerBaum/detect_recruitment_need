@@ -529,8 +529,11 @@ REGEX_PATTERNS = {
 
 LLM_PROMPT = (
     "You parse German or English job ads. "
-    "Return ONLY valid JSON where every key maps to an object "
-    'with fields "value" (string|null) and "confidence" (0-1).'
+    "You will receive the complete text after HTML parsing. "
+    "Return STRICT JSON using the provided keys only. "
+    "Every key maps to an object with fields 'value' (string or null) "
+    "and 'confidence' (0-1). Missing information must be expressed "
+    "as null in the value field."
 )
 
 # Additional lightweight patterns without explicit labels
