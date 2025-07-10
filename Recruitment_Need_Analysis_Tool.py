@@ -1089,12 +1089,7 @@ def display_missing_company_inputs(
         "department_name",
         "team_size",
         "team_structure",
-        "tech_stack",
-        "team_challenges",
-        "client_difficulties",
         "main_stakeholders",
-        "team_motivation",
-        "recent_team_changes",
     ]
 
     with col_a:
@@ -2053,21 +2048,6 @@ def main():
                     if s not in cur_rc:
                         cur_rc.append(s)
                 ss["data"]["recent_team_changes"] = ", ".join(cur_rc)
-
-            if value_missing("office_language"):
-                show_input(
-                    "office_language",
-                    extr.get("office_language", ExtractResult()),
-                    meta_map["office_language"],
-                    widget_prefix=step_name,
-                )
-            if value_missing("office_type"):
-                show_input(
-                    "office_type",
-                    extr.get("office_type", ExtractResult()),
-                    meta_map["office_type"],
-                    widget_prefix=step_name,
-                )
 
         elif step_name == "ROLE":
             meta_map = {m["key"]: m for m in meta_fields}
