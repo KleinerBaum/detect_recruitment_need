@@ -12,7 +12,7 @@ import ast
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Any, Sequence, cast
 
 from io import BytesIO
 from pathlib import Path
@@ -653,37 +653,30 @@ def parse_skill_list(raw: str | list[str] | None) -> list[str]:
 def selectable_buttons(
     options: list[str], label: str, session_key: str, cols: int = 3
 ) -> list[str]:
-    """Render options as toggleable buttons and store selections.
+    """Render options as multi-select pills and store selections.
 
     Args:
         options: Suggestions to present.
-        label: Section label shown above the buttons.
+        label: Section label shown above the pills.
         session_key: Key used in :mod:`streamlit.session_state`.
-        cols: Number of columns used for layout.
+        cols: Ignored; kept for backward compatibility.
 
     Returns:
         The updated list of selected options.
     """
 
-    st.write(label)
-    selected = cast(list[str], ss.setdefault(session_key, []))
-    columns = st.columns(cols)
-    for idx, opt in enumerate(options):
-        col = columns[idx % cols]
-        is_selected = opt in selected
-        btn_type = "primary" if is_selected else "secondary"
-        btn_label = f"✓ {opt}" if is_selected else opt
-        if col.button(
-            btn_label,
-            key=f"{session_key}_{idx}",
-            type=cast(Literal["primary", "secondary", "tertiary"], btn_type),
-            use_container_width=True,
-        ):
-            if is_selected:
-                selected.remove(opt)
-            else:
-                selected.append(opt)
-
+    default = cast(list[str], ss.get(session_key, []))
+    selected = cast(
+        list[str],
+        st.pills(
+            label,
+            options,
+            selection_mode="multi",
+            default=default,
+            key=session_key,
+        )
+        or [],
+    )
     ss[session_key] = selected
     return selected
 
@@ -862,6 +855,16 @@ async def suggest_tech_stack(data: dict, count: int = 5) -> list[str]:
     prompt = (
         f"List up to {count} technologies commonly used in {data.get('industry', '')}. "
         'Return JSON object {"items": [..]} with one technology per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
+async def suggest_tasks(data: dict, count: int = 5) -> list[str]:
+    """Suggest typical tasks for the given job."""
+
+    prompt = (
+        f"List up to {count} common tasks for the role '{data.get('job_title', '')}'. "
+        'Return JSON object {"items": [..]} with one task per list item.'
     )
     return await _suggest_items(prompt, "items")
 
@@ -1288,57 +1291,62 @@ def display_summary() -> None:
                 show_input(key, result, meta, widget_prefix=f"summary_{step_name}")
 
 
-def display_summary_overview() -> None:
-    """Render the most important fields in four columns."""
+def display_summary_overview(selected: Sequence[str]) -> None:
+    """Render the most important fields based on *selected* segments."""
 
     def val(field: str) -> str:
         return str(ss["data"].get(field, ""))
 
-    col1, col2, col3, col4 = st.columns(4)
+    cols = st.columns(len(selected)) if selected else []
+    mapping = {seg: cols[i] for i, seg in enumerate(selected)}
 
-    with col1:
-        st.markdown("### Vacancy Details")
-        st.write(f"**Job Title:** {val('job_title')}")
-        st.write(f"**Company Name:** {val('company_name')}")
-        st.write(f"**Start Date Target:** {val('date_of_employment_start')}")
-        st.write(f"**Place of Work:** {val('place_of_work')}")
-        st.write(f"**Contract Type:** {val('contract_type')}")
-        st.write(f"**Work Schedule:** {val('work_schedule')}")
+    if "Vacancy Details" in selected:
+        with mapping["Vacancy Details"]:
+            st.markdown("### Vacancy Details")
+            st.write(f"**Job Title:** {val('job_title')}")
+            st.write(f"**Company Name:** {val('company_name')}")
+            st.write(f"**Start Date Target:** {val('date_of_employment_start')}")
+            st.write(f"**Place of Work:** {val('place_of_work')}")
+            st.write(f"**Contract Type:** {val('contract_type')}")
+            st.write(f"**Work Schedule:** {val('work_schedule')}")
 
-    with col2:
-        st.markdown("### About the Role")
-        st.write(f"**Role Description:** {val('role_description')}")
-        st.write(f"**Task List:** {val('task_list')}")
-        st.write(f"**Technical Tasks:** {val('technical_tasks')}")
-        st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
-        st.write(f"**Role Keywords:** {val('role_keywords')}")
-        st.write(f"**Ideal Candidate:** {val('ideal_candidate_profile')}")
-        st.write(f"**Target Industries:** {val('target_industries')}")
+    if "About the Role" in selected:
+        with mapping["About the Role"]:
+            st.markdown("### About the Role")
+            st.write(f"**Role Description:** {val('role_description')}")
+            st.write(f"**Task List:** {val('task_list')}")
+            st.write(f"**Technical Tasks:** {val('technical_tasks')}")
+            st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
+            st.write(f"**Role Keywords:** {val('role_keywords')}")
+            st.write(f"**Ideal Candidate:** {val('ideal_candidate_profile')}")
+            st.write(f"**Target Industries:** {val('target_industries')}")
 
-    with col3:
-        st.markdown("### Skills")
-        st.write(f"**Hard Skills:** {val('hard_skills')}")
-        st.write(f"**Must Have Skills:** {val('must_have_skills')}")
-        st.write(f"**Nice to Have Skills:** {val('nice_to_have_skills')}")
-        st.write(f"**Soft Skills:** {val('soft_skills')}")
-        st.write(f"**Certifications Required:** {val('certifications_required')}")
-        st.write(f"**Domain Expertise:** {val('domain_expertise')}")
-        st.write(f"**Language Requirements:** {val('language_requirements')}")
-        st.write(f"**Languages Optional:** {val('languages_optional')}")
-        st.write(f"**Industry Experience:** {val('industry_experience')}")
+    if "Skills" in selected:
+        with mapping["Skills"]:
+            st.markdown("### Skills")
+            st.write(f"**Hard Skills:** {val('hard_skills')}")
+            st.write(f"**Must Have Skills:** {val('must_have_skills')}")
+            st.write(f"**Nice to Have Skills:** {val('nice_to_have_skills')}")
+            st.write(f"**Soft Skills:** {val('soft_skills')}")
+            st.write(f"**Certifications Required:** {val('certifications_required')}")
+            st.write(f"**Domain Expertise:** {val('domain_expertise')}")
+            st.write(f"**Language Requirements:** {val('language_requirements')}")
+            st.write(f"**Languages Optional:** {val('languages_optional')}")
+            st.write(f"**Industry Experience:** {val('industry_experience')}")
 
-    with col4:
-        st.markdown("### Benefits")
-        st.write(f"**Salary Range (EUR):** {val('salary_range')}")
-        st.write(f"**Variable Comp:** {val('variable_comp')}")
-        st.write(f"**Vacation Days:** {val('vacation_days')}")
-        st.write(f"**Remote Policy:** {val('remote_policy')}")
-        st.write(f"**Flexible Hours:** {val('flexible_hours')}")
-        st.write(f"**Childcare Support:** {val('childcare_support')}")
-        st.write(f"**Learning Budget (EUR):** {val('learning_budget')}")
-        st.write(f"**Other Perks:** {val('other_perks')}")
-        if ss.get("benefit_list"):
-            st.write(f"**Selected Benefits:** {', '.join(ss['benefit_list'])}")
+    if "Benefits" in selected:
+        with mapping["Benefits"]:
+            st.markdown("### Benefits")
+            st.write(f"**Salary Range (EUR):** {val('salary_range')}")
+            st.write(f"**Variable Comp:** {val('variable_comp')}")
+            st.write(f"**Vacation Days:** {val('vacation_days')}")
+            st.write(f"**Remote Policy:** {val('remote_policy')}")
+            st.write(f"**Flexible Hours:** {val('flexible_hours')}")
+            st.write(f"**Childcare Support:** {val('childcare_support')}")
+            st.write(f"**Learning Budget (EUR):** {val('learning_budget')}")
+            st.write(f"**Other Perks:** {val('other_perks')}")
+            if ss.get("benefit_list"):
+                st.write(f"**Selected Benefits:** {', '.join(ss['benefit_list'])}")
 
 
 def display_salary_plot() -> None:
@@ -1573,6 +1581,12 @@ def download_as_pdf(text: str, filename: str = "jobad.pdf"):
         st.download_button(
             "Download PDF", f, file_name=filename, mime="application/pdf"
         )
+
+
+def download_text(text: str, filename: str) -> None:
+    """Offer *text* as a download."""
+
+    st.download_button("Download", text, file_name=filename, mime="text/plain")
 
 
 # --- b) Interview-Vorbereitungs-Sheet ---
@@ -2218,6 +2232,28 @@ def main():
 
             st.subheader("Tasks")
             show_missing("task_list", extr, meta_map, step_name)
+            if "task_suggestions" not in ss:
+                with st.spinner("AI suggests tasks…"):
+                    try:
+                        ss["task_suggestions"] = asyncio.run(suggest_tasks(ss["data"]))
+                    except Exception as e:
+                        logging.error("task suggestion failed: %s", e)
+                        ss["task_suggestions"] = []
+
+            if ss.get("task_suggestions"):
+                sel_tasks = st.pills(
+                    "Suggested Tasks",
+                    cast(list[str], ss["task_suggestions"]),
+                    selection_mode="multi",
+                    default=cast(list[str], ss.get("sel_tasks", [])),
+                    key="sel_tasks",
+                )
+                ss["sel_tasks"] = sel_tasks
+                current_tasks = parse_skill_list(ss["data"].get("task_list"))
+                for tsk in sel_tasks:
+                    if tsk not in current_tasks:
+                        current_tasks.append(tsk)
+                ss["data"]["task_list"] = ", ".join(current_tasks)
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)
@@ -2512,7 +2548,15 @@ def main():
                             except Exception as e:
                                 logging.error("benefit suggestion failed: %s", e)
                                 ss[key] = []
-                return selectable_buttons(ss.get(key, []), "", f"sel_{key}")
+                sel = st.pills(
+                    "",
+                    cast(list[str], ss.get(key, [])),
+                    selection_mode="multi",
+                    default=cast(list[str], ss.get(f"sel_{key}", [])),
+                    key=f"sel_{key}",
+                )
+                ss[f"sel_{key}"] = cast(list[str], sel or [])
+                return cast(list[str], sel or [])
 
             title = ss["data"].get("job_title", "this role")
             company = ss["data"].get("company_name", "your company")
@@ -2550,7 +2594,18 @@ def main():
         st.markdown(
             "<h2 style='text-align:center'>Summary</h2>", unsafe_allow_html=True
         )
-        display_summary_overview()
+        segs = st.segmented_control(
+            "Segments",
+            ["Vacancy Details", "About the Role", "Skills", "Benefits"],
+            selection_mode="multi",
+            default=ss.get(
+                "summary_segments",
+                ["Vacancy Details", "About the Role", "Skills", "Benefits"],
+            ),
+            key="summary_segments",
+        )
+        ss["summary_segments"] = segs
+        display_summary_overview(segs)
         with st.expander("All Data", expanded=False):
             display_summary()
 
@@ -2619,13 +2674,6 @@ def main():
                                 calculate_total_compensation(rng, benefits)
                             )
 
-        def apply_change(k: str) -> None:
-            """Update generated text with optional user changes."""
-            change_val = st.session_state.get(f"chg_{k}", "")
-            if change_val:
-                ss[f"out_{k}"] = change_val
-            st.session_state[f"txt_{k}"] = ss[f"out_{k}"]
-
         for label, key, _ in actions:
             if f"out_{key}" in ss:
                 ss[f"out_{key}"] = st.text_area(
@@ -2634,10 +2682,19 @@ def main():
                     key=f"txt_{key}",
                     height=200,
                 )
-                st.text_area("Change Request", key=f"chg_{key}", value="")
-                st.button(
-                    "Apply", key=f"apply_{key}", on_click=apply_change, args=(key,)
-                )
+                req = st.chat_input(f"Change request for {label}", key=f"chat_{key}")
+                if req:
+                    with st.spinner("Updating…"):
+                        try:
+                            ss[f"out_{key}"] = asyncio.run(
+                                generate_text(
+                                    f"Update the following text according to this request: {req}\n\nTEXT:\n{ss[f'out_{key}']}"
+                                )
+                            )
+                        except Exception as e:
+                            logging.error("change request failed: %s", e)
+                    st.session_state[f"txt_{key}"] = ss[f"out_{key}"]
+                download_text(ss[f"out_{key}"], f"{key}.txt")
 
         step_labels = [title for title, _ in STEPS]
         target = st.selectbox("Jump to step:", step_labels)
