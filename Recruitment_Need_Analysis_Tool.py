@@ -901,6 +901,15 @@ def show_input(
 
     # Field logic
     widget_key = f"{widget_prefix}_{key}" if widget_prefix else key
+    used = st.session_state.setdefault("_used_widget_keys", set())
+    if widget_key in used:
+        suffix = 1
+        candidate = f"{widget_key}_{suffix}"
+        while candidate in used:
+            suffix += 1
+            candidate = f"{widget_key}_{suffix}"
+        widget_key = candidate
+    used.add(widget_key)
     if field_type == "text_area":
         val = st.text_area(
             label,
