@@ -206,8 +206,10 @@ def _simple(label_en: str, label_de: str, cap: str) -> str:
     label. It is more restrictive than before to avoid grabbing unrelated text.
     """
 
-    label = rf"(?:{label_en}|{label_de})"
-    return rf"{label}\s*[:\-]?\s*(?P<{cap}>[^\n\r]+)"
+    labels = "|".join(part for part in (label_en, label_de) if part)
+    label = rf"(?:{labels})"
+    bullet = r"^\s*(?:[-*•>]\s*)?"
+    return rf"{bullet}{label}\s*[:\-]?\s*(?P<{cap}>[^\n\r]+)"
 
 
 REGEX_PATTERNS = {

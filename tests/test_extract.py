@@ -55,6 +55,25 @@ def test_extract_label_company(monkeypatch):
     assert result["company_name"].value == "Example GmbH"
 
 
+def test_extract_bullet_prefix(monkeypatch):
+    tool = load_tool_module()
+
+    async def dummy_fill(missing, text):
+        return {}
+
+    async def dummy_validate(data):
+        return {}
+
+    monkeypatch.setattr(tool, "llm_fill", dummy_fill)
+    monkeypatch.setattr(tool, "llm_validate", dummy_validate)
+
+    text = "- Company Name: Example GmbH\n- City: Hamburg\n* Job Title: Engineer"
+    result = asyncio.run(tool.extract(text))
+    assert result["company_name"].value == "Example GmbH"
+    assert result["city"].value == "Hamburg"
+    assert result["job_title"].value == "Engineer"
+
+
 def test_llm_validate(monkeypatch):
     tool = load_tool_module()
 
