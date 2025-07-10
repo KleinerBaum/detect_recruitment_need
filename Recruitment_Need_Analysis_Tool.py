@@ -1775,24 +1775,64 @@ def main():
 
     step = ss["step"]
 
-    def render_page_links() -> None:
-        """Display navigation links to the info pages."""
+    def render_page_links() -> str:
+        """Display navigation links and language toggle.
 
-        link_cols = st.columns([1, 1, 1])
+        Returns
+        -------
+        str
+            Selected language label ("Deutsch" or "English").
+        """
+
+        labels = {
+            "Deutsch": {
+                "adv": "Vorteile",
+                "tech": "Die Technologie dahinter",
+            },
+            "English": {"adv": "Advantages", "tech": "The Technology behind"},
+        }
+
+        link_cols = st.columns([8, 2, 2, 3])
         with link_cols[1]:
-            st.page_link("pages/🏠_Advantages.py", label="Advantages", icon="🏠")
+            st.page_link(
+                "pages/🏠_Advantages.py",
+                label=labels[st.session_state.get("nav_lang", "English")]["adv"],
+                icon="🏠",
+            )
+        with link_cols[2]:
             st.page_link(
                 "pages/💡_Tech_Overview.py",
-                label="The Technology behind",
+                label=labels[st.session_state.get("nav_lang", "English")]["tech"],
                 icon="💡",
             )
+        with link_cols[3]:
+            lang_label = st.radio(
+                "German-English",
+                ("Deutsch", "English"),
+                horizontal=True,
+                key="nav_lang",
+            )
+        return lang_label
 
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
-        render_page_links()
+        lang_label = render_page_links()
         # Neat welcome design
         with open("images/color1_logo_transparent_background.png", "rb") as img_file:
             logo_b64 = base64.b64encode(img_file.read()).decode()
+
+        intro = {
+            "Deutsch": [
+                "Willkommen! Dieses Tool hilft dir, schnell ein vollst\u00e4ndiges Anforderungsprofil zu erstellen.",
+                "Lade eine Stellenanzeige hoch. Alle relevanten Informationen werden automatisch extrahiert und vorverarbeitet.",
+                "Anschlie\u00dfend deckst du fehlende Daten in deiner Spezifikation auf, um Kosten zu minimieren und maximalen Recruiting-Erfolg zu sichern.",
+            ],
+            "English": [
+                "Welcome! This Tool helps you quickly create a complete vacancy profile.",
+                "Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.",
+                "Afterwards, start discovering missing data in your Specification in order to minimise Costs and to ensure Maximum Recruitment Success.",
+            ],
+        }
 
         st.markdown(
             f"""
@@ -1801,9 +1841,9 @@ def main():
             <img src="data:image/png;base64,{logo_b64}" style="width:200px;" />
         </div>
         <div class="black-text" style="text-align:center;">
-            <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
-            <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
-            <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
+            <p>{intro[lang_label][0]}</p>
+            <p>{intro[lang_label][1]}</p>
+            <p>{intro[lang_label][2]}</p>
         </div>
         """,
             unsafe_allow_html=True,
@@ -1825,27 +1865,35 @@ def main():
         with center_col:
             status_box = st.empty()
             st.text_input(
-                "Job Title",
+                "Stellentitel" if lang_label == "Deutsch" else "Job Title",
                 value=job_title_default or "",
                 key="job_title",
                 label_visibility="visible",
             )
 
             up = st.file_uploader(
-                "Upload Job Description (PDF or DOCX)",
+                (
+                    "Stellenbeschreibung hochladen (PDF oder DOCX)"
+                    if lang_label == "Deutsch"
+                    else "Upload Job Description (PDF or DOCX)"
+                ),
                 type=["pdf", "docx"],
             )
 
             if ss.pop("extraction_success", False):
                 status_box.success("Extraction complete!", icon="🔥")
 
+            missing_msg = {
+                "Deutsch": "Starte danach, fehlende Daten in deiner Spezifikation aufzudecken, um Kosten zu minimieren und maximalen Recruiting-Erfolg zu sichern.",
+                "English": "Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success",
+            }
             st.markdown(
-                "<p style='text-align:center; font-size:calc(1rem + 2pt);'>Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success</p>",
+                f"<p style='text-align:center; font-size:calc(1rem + 2pt);'>{missing_msg[lang_label]}</p>",
                 unsafe_allow_html=True,
             )
 
             st.button(
-                "Next →",
+                "Weiter →" if lang_label == "Deutsch" else "Next →",
                 on_click=lambda: goto(1),
                 use_container_width=True,
             )
@@ -1876,7 +1924,7 @@ def main():
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
-        render_page_links()
+        _ = render_page_links()
         step_name = ORDER[step_idx]
         meta_fields = SCHEMA[step_name]  # <-- Zuerst setzen!
         fields = [item["key"] for item in meta_fields]
