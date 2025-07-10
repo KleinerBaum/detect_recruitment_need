@@ -35,11 +35,15 @@ def search_occupations(
 def get_skills_for_occupation(
     occupation_uri: str,
     *,
-    relation: str = "isEssentialForSkill",
+    relation: str = "hasEssentialSkill",
     language: str = "en",
     limit: int = 20,
 ) -> list[dict[str, Any]]:
-    """Return skills related to an occupation URI."""
+    """Return skills related to an occupation URI.
+
+    By default uses the ``hasEssentialSkill`` relation which matches the
+    ESCO API and retrieves skills essential for the given occupation.
+    """
     params = {
         "uri": occupation_uri,
         "relation": relation,

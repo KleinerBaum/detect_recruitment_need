@@ -59,3 +59,6 @@ selected benefits.
 The tool includes helpers to query the [ESCO REST API](https://ec.europa.eu/esco/api) for
 standardised occupations and skills. Environment variable `ESCO_API_BASE_URL` controls the
 target endpoint. Occupation lookup and ESCO skill suggestions are available directly in the **SKILLS** step.
+
+The helper uses the ``hasEssentialSkill`` relation to fetch essential skills for
+an occupation from the ESCO API.
