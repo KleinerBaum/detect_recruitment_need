@@ -1739,14 +1739,14 @@ def main():
 
         st.markdown(
             f"""
-        <div style="position:relative;">
-            <img src="data:image/png;base64,{logo_b64}" style="position:absolute; top:0; right:0; width:200px;" />
-            <div class="black-text" style="text-align:center;">
-                <h2 style="font-size:26pt;">Recruitment Need Analysis 🧭</h2>
-                <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
-                <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
-                <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
-            </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 class="black-text" style="font-size:26pt;margin-bottom:0;">Recruitment Need Analysis 🧭</h2>
+            <img src="data:image/png;base64,{logo_b64}" style="width:200px;" />
+        </div>
+        <div class="black-text" style="text-align:center;">
+            <p>Welcome! This Tool helps you quickly create a complete vacancy profile.</p>
+            <p>Upload a Job Advert. All relevant information will be extracted and preprocessed automatically.</p>
+            <p>Afterwards, start discovering missing data in your Specification in order to Minimise Costs and to ensure Maximum Recruitment Success .</p>
         </div>
         """,
             unsafe_allow_html=True,
