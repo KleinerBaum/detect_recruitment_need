@@ -20,8 +20,8 @@ COMPANY,brand_name,text_input,0,Brand Name,,Marke
 COMPANY,team_size,selectbox,0,Team Size,1-2;3-5;6-10;11-20;21-50;50+,Teamgröße
 COMPANY,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
 COMPANY,reports_to,text_input,0,Reports To,,Vorgesetzter
-COMPANY,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
-COMPANY,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
+ROLE,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
+ROLE,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
 COMPANY,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
 COMPANY,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
 COMPANY,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
