@@ -28,6 +28,16 @@ import csv
 import base64
 import hashlib
 
+_esco_spec = importlib.util.spec_from_file_location(
+    "esco_api", Path(__file__).with_name("esco_api.py")
+)
+assert _esco_spec is not None
+_esco_api = importlib.util.module_from_spec(_esco_spec)
+assert _esco_spec.loader is not None
+_esco_spec.loader.exec_module(_esco_api)
+search_occupations = _esco_api.search_occupations
+get_skills_for_occupation = _esco_api.get_skills_for_occupation
+
 _spec = importlib.util.spec_from_file_location(
     "file_tools", Path(__file__).with_name("file_tools.py")
 )
@@ -718,6 +728,31 @@ async def suggest_hard_skills(data: dict) -> list[str]:
 async def suggest_soft_skills(data: dict) -> list[str]:
     """Suggest up to 5 relevant soft skills."""
     return await _suggest_skills(data, "soft", 5)
+
+
+def get_esco_skills(
+    query: str | None = None, *, occupation_uri: str | None = None, limit: int = 20
+) -> list[str]:
+    """Return ESCO skill titles for a given occupation or search query."""
+
+    if not occupation_uri:
+        if not query:
+            return []
+        occupations = search_occupations(query, limit=1)
+        if not occupations:
+            return []
+        occupation_uri = occupations[0].get("uri", "")
+
+    if not occupation_uri:
+        return []
+
+    skills = get_skills_for_occupation(occupation_uri, limit=limit)
+    out: list[str] = []
+    for item in skills:
+        label = item.get("label") or item.get("title")
+        if label:
+            out.append(str(label))
+    return out
 
 
 async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
@@ -2397,6 +2432,38 @@ def main():
                 if sk not in current_soft:
                     current_soft.append(sk)
             ss["data"]["soft_skills"] = ", ".join(current_soft)
+
+            st.subheader("ESCO Occupation Lookup")
+            query = st.text_input("Search Occupation", key="esco_query")
+            if st.button("Search", key="esco_search") and query:
+                ss["esco_results"] = search_occupations(query)
+                ss.pop("esco_skill_suggestions", None)
+
+            occs = cast(list[dict[str, Any]], ss.get("esco_results", []))
+            if occs:
+                labels = [o.get("label") or o.get("title", "") for o in occs]
+                idx = st.selectbox(
+                    "Select Occupation",
+                    range(len(labels)),
+                    format_func=lambda i: labels[i],
+                    key="esco_select",
+                )
+                occ_uri = occs[idx].get("uri", "")
+                if st.button("Fetch Skills", key="esco_fetch_skills") and occ_uri:
+                    ss["esco_skill_suggestions"] = get_esco_skills(
+                        occupation_uri=occ_uri
+                    )
+
+            if ss.get("esco_skill_suggestions"):
+                esco_sel = selectable_buttons(
+                    cast(list[str], ss["esco_skill_suggestions"]),
+                    "ESCO Skills",
+                    "selected_esco_skills",
+                )
+                for sk in esco_sel:
+                    if sk not in current_hard:
+                        current_hard.append(sk)
+                ss["data"]["hard_skills"] = ", ".join(current_hard)
 
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
