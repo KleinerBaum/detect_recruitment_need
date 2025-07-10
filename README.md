@@ -33,7 +33,7 @@ department is highlighted in two columns below the extracted values.
 
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase
-accuracy.
+accuracy. Labels may now be prefixed with dashes or bullet characters.
 
 ## Wizard Steps
 
