@@ -2539,6 +2539,13 @@ def main():
                                 calculate_total_compensation(rng, benefits)
                             )
 
+        def apply_change(k: str) -> None:
+            """Update generated text with optional user changes."""
+            change_val = st.session_state.get(f"chg_{k}", "")
+            if change_val:
+                ss[f"out_{k}"] = change_val
+            st.session_state[f"txt_{k}"] = ss[f"out_{k}"]
+
         for label, key, _ in actions:
             if f"out_{key}" in ss:
                 ss[f"out_{key}"] = st.text_area(
@@ -2547,11 +2554,10 @@ def main():
                     key=f"txt_{key}",
                     height=200,
                 )
-                change = st.text_area("Change Request", key=f"chg_{key}", value="")
-                if st.button("Apply", key=f"apply_{key}"):
-                    if change:
-                        ss[f"out_{key}"] = change
-                    st.session_state[f"txt_{key}"] = ss[f"out_{key}"]
+                st.text_area("Change Request", key=f"chg_{key}", value="")
+                st.button(
+                    "Apply", key=f"apply_{key}", on_click=apply_change, args=(key,)
+                )
 
         step_labels = [title for title, _ in STEPS]
         target = st.selectbox("Zu Schritt springen:", step_labels)
