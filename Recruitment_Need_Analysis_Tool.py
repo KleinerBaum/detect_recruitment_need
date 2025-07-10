@@ -1672,8 +1672,13 @@ def main():
         extr: dict[str, ExtractResult] = ss.get("extracted", {}).get(step_name, {})
 
         # Headline & Subtitle
+        title = STEP_TITLES.get(step_name, step_name.title())
+        if step_name == "BENEFITS":
+            job_title_val = ss.get("data", {}).get("job_title", "")
+            if job_title_val:
+                title = f"{title} – {job_title_val}"
         st.markdown(
-            f"<h2 style='text-align:center'>{STEP_TITLES.get(step_name, step_name.title())}</h2>",
+            f"<h2 style='text-align:center'>{title}</h2>",
             unsafe_allow_html=True,
         )
         subtitle = STEP_SUBTITLES.get(step_name, "")
@@ -1757,6 +1762,34 @@ def main():
                 meta_map["work_location_city"],
                 widget_prefix=step_name,
             )
+
+            cols = st.columns(2)
+            with cols[0]:
+                show_input(
+                    "salary_currency",
+                    extr.get("salary_currency", ExtractResult()),
+                    meta_map["salary_currency"],
+                    widget_prefix=step_name,
+                )
+            with cols[1]:
+                show_input(
+                    "pay_frequency",
+                    extr.get("pay_frequency", ExtractResult()),
+                    meta_map["pay_frequency"],
+                    widget_prefix=step_name,
+                )
+
+            default_min = int(ss.get("data", {}).get("salary_range_min", 50000))
+            default_max = int(ss.get("data", {}).get("salary_range_max", 80000))
+            rng = st.slider(
+                "Salary Range (EUR)",
+                min_value=30000,
+                max_value=200000,
+                value=(default_min, default_max),
+                step=1000,
+            )
+            ss["data"]["salary_range_min"], ss["data"]["salary_range_max"] = rng
+            ss["data"]["salary_range"] = f"{rng[0]}–{rng[1]}"
         elif step_name == "COMPANY":
             meta_map = {m["key"]: m for m in meta_fields}
             cols = st.columns(2)
@@ -2357,126 +2390,129 @@ def main():
             if step_name == "BENEFITS":
                 meta_map = {m["key"]: m for m in meta_fields}
 
-                comp = st.columns(2)
-                with comp[0]:
+                cols_a, cols_b = st.columns(2)
+                with cols_a:
                     show_input(
-                        "salary_range",
-                        extr.get("salary_range", ExtractResult()),
-                        meta_map["salary_range"],
+                        "vacation_days",
+                        extr.get("vacation_days", ExtractResult()),
+                        meta_map["vacation_days"],
                         widget_prefix=step_name,
                     )
-                with comp[1]:
-                    show_input(
-                        "salary_currency",
-                        extr.get("salary_currency", ExtractResult()),
-                        meta_map["salary_currency"],
-                        widget_prefix=step_name,
-                    )
-
-                comp = st.columns(2)
-                with comp[0]:
-                    show_input(
-                        "salary_range_min",
-                        extr.get("salary_range_min", ExtractResult()),
-                        meta_map["salary_range_min"],
-                        widget_prefix=step_name,
-                    )
-                with comp[1]:
-                    show_input(
-                        "salary_range_max",
-                        extr.get("salary_range_max", ExtractResult()),
-                        meta_map["salary_range_max"],
-                        widget_prefix=step_name,
-                    )
-
-                show_input(
-                    "pay_frequency",
-                    extr.get("pay_frequency", ExtractResult()),
-                    meta_map["pay_frequency"],
-                    widget_prefix=step_name,
-                )
-
-                show_input(
-                    "bonus_scheme",
-                    extr.get("bonus_scheme", ExtractResult()),
-                    meta_map["bonus_scheme"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "commission_structure",
-                    extr.get("commission_structure", ExtractResult()),
-                    meta_map["commission_structure"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "variable_comp",
-                    extr.get("variable_comp", ExtractResult()),
-                    meta_map["variable_comp"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "vacation_days",
-                    extr.get("vacation_days", ExtractResult()),
-                    meta_map["vacation_days"],
-                    widget_prefix=step_name,
-                )
-
-                cols = st.columns(2)
-                with cols[0]:
                     show_input(
                         "remote_policy",
                         extr.get("remote_policy", ExtractResult()),
                         meta_map["remote_policy"],
                         widget_prefix=step_name,
                     )
-                with cols[1]:
+                    if ss.get("data", {}).get("remote_policy") not in {"", "Onsite"}:
+                        pct = int(ss.get("data", {}).get("remote_percentage", 50))
+                        pct = st.slider(
+                            "% Remote", 0, 100, pct, 5, key="remote_percentage"
+                        )
+                        ss["data"]["remote_percentage"] = pct
+
                     show_input(
                         "flexible_hours",
                         extr.get("flexible_hours", ExtractResult()),
                         meta_map["flexible_hours"],
                         widget_prefix=step_name,
                     )
-
-                st.markdown("### Standard Benefits")
-                perks = [
-                    "relocation_support",
-                    "childcare_support",
-                    "company_car",
-                    "sabbatical_option",
-                    "health_insurance",
-                    "pension_plan",
-                    "stock_options",
-                ]
-                perk_cols = st.columns(3)
-                for idx, field in enumerate(perks):
-                    if idx and idx % 3 == 0:
-                        perk_cols = st.columns(3)
-                    with perk_cols[idx % 3]:
-                        show_input(
-                            field,
-                            extr.get(field, ExtractResult()),
-                            meta_map[field],
-                            widget_prefix=step_name,
+                    if ss.get("data", {}).get("flexible_hours") not in {"", "No"}:
+                        txt = st.text_input(
+                            "Flexibility Details", key="flexible_hours_details"
                         )
+                        ss["data"]["flexible_hours_details"] = txt
 
-                show_input(
-                    "learning_budget",
-                    extr.get("learning_budget", ExtractResult()),
-                    meta_map["learning_budget"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "other_perks",
-                    extr.get("other_perks", ExtractResult()),
-                    meta_map["other_perks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "visa_sponsorship",
-                    extr.get("visa_sponsorship", ExtractResult()),
-                    meta_map["visa_sponsorship"],
-                    widget_prefix=step_name,
-                )
+                    show_input(
+                        "company_car",
+                        extr.get("company_car", ExtractResult()),
+                        meta_map["company_car"],
+                        widget_prefix=step_name,
+                    )
+                    if ss.get("data", {}).get("company_car"):
+                        car = st.text_input("Car Class", key="car_class")
+                        ss["data"]["car_class"] = car
+
+                    show_input(
+                        "stock_options",
+                        extr.get("stock_options", ExtractResult()),
+                        meta_map["stock_options"],
+                        widget_prefix=step_name,
+                    )
+                    if ss.get("data", {}).get("stock_options"):
+                        opt = st.text_input(
+                            "Stock Option Details", key="stock_options_details"
+                        )
+                        ss["data"]["stock_options_details"] = opt
+
+                    show_input(
+                        "bonus_scheme",
+                        extr.get("bonus_scheme", ExtractResult()),
+                        meta_map["bonus_scheme"],
+                        widget_prefix=step_name,
+                    )
+                    if ss.get("data", {}).get("bonus_scheme"):
+                        txt = st.text_area(
+                            meta_map["commission_structure"]["label"],
+                            key="commission_structure",
+                        )
+                        ss["data"]["commission_structure"] = txt
+
+                with cols_b:
+                    show_input(
+                        "relocation_support",
+                        extr.get("relocation_support", ExtractResult()),
+                        meta_map["relocation_support"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "childcare_support",
+                        extr.get("childcare_support", ExtractResult()),
+                        meta_map["childcare_support"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "learning_budget",
+                        extr.get("learning_budget", ExtractResult(value=10000)),
+                        meta_map["learning_budget"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "sabbatical_option",
+                        extr.get("sabbatical_option", ExtractResult()),
+                        meta_map["sabbatical_option"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "health_insurance",
+                        extr.get("health_insurance", ExtractResult()),
+                        meta_map["health_insurance"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "pension_plan",
+                        extr.get("pension_plan", ExtractResult()),
+                        meta_map["pension_plan"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "other_perks",
+                        extr.get("other_perks", ExtractResult()),
+                        meta_map["other_perks"],
+                        widget_prefix=step_name,
+                    )
+                    if ss.get("data", {}).get("other_perks"):
+                        txt = st.text_area(
+                            "Other Perks Details", key="other_perks_details"
+                        )
+                        ss["data"]["other_perks_details"] = txt
+
+                    show_input(
+                        "visa_sponsorship",
+                        extr.get("visa_sponsorship", ExtractResult()),
+                        meta_map["visa_sponsorship"],
+                        widget_prefix=step_name,
+                    )
             else:
                 current_cols = 2
                 cols = st.columns(current_cols)
@@ -2555,19 +2591,22 @@ def main():
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
 
-            title_header = ss["data"].get("job_title") or "this role"
-
-            def benefit_block(title: str, key: str, func) -> list[str]:
-                st.markdown(f"#### {title}")
-                sel_cols = st.columns([2, 1])
-                with sel_cols[0]:
-                    count = st.selectbox(
+            def benefit_row(text: str, key: str, func) -> list[str]:
+                row = st.columns([1, 1, 6, 1])
+                with row[0]:
+                    st.markdown("Generate")
+                with row[1]:
+                    count = st.number_input(
                         label="",
-                        options=[3, 5, 10],
-                        index=1,
+                        min_value=1,
+                        max_value=10,
+                        value=5,
+                        step=1,
                         key=f"count_{key}",
                     )
-                with sel_cols[1]:
+                with row[2]:
+                    st.markdown(text)
+                with row[3]:
                     if st.button("Generate", key=f"gen_{key}"):
                         with st.spinner("Generiere…"):
                             try:
@@ -2577,18 +2616,21 @@ def main():
                                 ss[key] = []
                 return selectable_buttons(ss.get(key, []), "", f"sel_{key}")
 
-            sel_title = benefit_block(
-                f"Benefits for {title_header}",
+            title = ss["data"].get("job_title", "this role")
+            company = ss["data"].get("company_name", "your company")
+
+            sel_title = benefit_row(
+                f"Benefits for {title}",
                 "benefit_title",
                 suggest_benefits_by_title,
             )
-            sel_loc = benefit_block(
-                "Local Benefits",
+            sel_loc = benefit_row(
+                "local Benefits",
                 "benefit_loc",
                 suggest_benefits_by_location,
             )
-            sel_comp = benefit_block(
-                "Competitor Benefits",
+            sel_comp = benefit_row(
+                f"Benefits offered by the competitors of {company}",
                 "benefit_comp",
                 suggest_benefits_competitors,
             )
