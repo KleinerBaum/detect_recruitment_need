@@ -1074,6 +1074,26 @@ def show_input(
             label, value=str(val).lower() == "true", key=widget_key, help=helptext
         )
 
+    elif field_type == "slider":
+        digits = [int(x) for x in re.findall(r"\d+", str(val))]
+        if len(digits) >= 2:
+            default_range = (digits[0], digits[1])
+        elif len(digits) == 1:
+            default_range = (digits[0], digits[0])
+        else:
+            default_range = (50000, 60000)
+
+        selected = st.slider(
+            label,
+            min_value=0,
+            max_value=200000,
+            value=default_range,
+            step=1000,
+            key=widget_key,
+            help=helptext,
+        )
+        val = f"{selected[0]}–{selected[1]}"
+
     else:
         val = st.text_input(label, value=val or "", key=widget_key, help=helptext)
 

@@ -6,7 +6,7 @@ BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startda
 BASIC,work_schedule,selectbox,0,Work Schedule,Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid,Arbeitszeitmodell auswählen
 BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
 BASIC,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
-BASIC,salary_range,text_input,1,Salary Range (EUR),,Bsp.: 50000–65000
+BASIC,salary_range,slider,1,Salary Range (EUR),,Bsp.: 50000–60000
 BASIC,pay_frequency,selectbox,1,Pay Frequency,Monthly;Yearly;Weekly;Bi-Weekly;Quarterly,Zahlungsintervall
 COMPANY,company_name,text_input,1,Company Name,,Firmenname
 COMPANY,city,text_input,1,Company City,,Stadt (Sitz der Firma)
