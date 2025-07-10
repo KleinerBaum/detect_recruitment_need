@@ -1,5 +1,4 @@
 step,key,field_type,is_must,label,options,helptext
-BASIC,job_title,text_input,1,Job Title,,Bitte den exakten Jobtitel angeben
 BASIC,employment_type,selectbox,1,Employment Type,Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other,Beschäftigungsart auswählen
 BASIC,contract_type,selectbox,1,Contract Type,Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit,Vertragsart auswählen
 BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
