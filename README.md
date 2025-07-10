@@ -27,11 +27,12 @@ button that you can toggle to add it to your benefit list. For some cities the
 app proposes local perks such as club memberships or discounted facilities (for
 example a "Fortuna Düsseldorf" membership when the location is Düsseldorf).
 
-The **COMPANY & DEPARTMENT** step now groups company information in a clearer
-layout and includes a *Team & Culture Context* expander. Optional fields such as
-Tech Stack and Team Challenges offer a **Generate Ideas** button that fetches AI
-suggestions you can insert directly. Missing data for the company and the
-department is highlighted in two columns below the extracted values.
+The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
+*Team & Culture Context* now shows three bordered boxes. Each field provides a
+**Generate Ideas** button above the input and AI suggestions appear as pill
+buttons. Missing data remains highlighted in two columns below the extracted
+values. After uploading a file a small success message with a 🔥 icon confirms
+that the extraction finished.
 
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase
