@@ -1305,119 +1305,39 @@ def display_interview_section(
     st.subheader("Application Contact")
     app_cols = st.columns(2)
     with app_cols[0]:
-        show_input(
-            "recruitment_contact_email",
-            extr.get("recruitment_contact_email", ExtractResult()),
-            meta_map["recruitment_contact_email"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("recruitment_contact_email", extr, meta_map, "INTERVIEW")
     with app_cols[1]:
-        show_input(
-            "recruitment_contact_phone",
-            extr.get("recruitment_contact_phone", ExtractResult()),
-            meta_map["recruitment_contact_phone"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("recruitment_contact_phone", extr, meta_map, "INTERVIEW")
 
     st.subheader("Interview Process")
     proc_cols = st.columns(2)
     with proc_cols[0]:
-        show_input(
-            "recruitment_steps",
-            extr.get("recruitment_steps", ExtractResult()),
-            meta_map["recruitment_steps"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("recruitment_steps", extr, meta_map, "INTERVIEW")
     with proc_cols[1]:
-        show_input(
-            "recruitment_timeline",
-            extr.get("recruitment_timeline", ExtractResult()),
-            meta_map["recruitment_timeline"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("recruitment_timeline", extr, meta_map, "INTERVIEW")
 
     cols = st.columns(2)
     with cols[0]:
-        show_input(
-            "number_of_interviews",
-            extr.get("number_of_interviews", ExtractResult()),
-            meta_map["number_of_interviews"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("number_of_interviews", extr, meta_map, "INTERVIEW")
     with cols[1]:
-        show_input(
-            "interview_format",
-            extr.get("interview_format", ExtractResult()),
-            meta_map["interview_format"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("interview_format", extr, meta_map, "INTERVIEW")
 
     st.subheader("Onboarding & Probation")
     onboard_cols = st.columns(3)
     with onboard_cols[0]:
-        show_input(
-            "probation_period",
-            extr.get("probation_period", ExtractResult()),
-            meta_map["probation_period"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("probation_period", extr, meta_map, "INTERVIEW")
     with onboard_cols[1]:
-        show_input(
-            "mentorship_program",
-            extr.get("mentorship_program", ExtractResult()),
-            meta_map["mentorship_program"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("mentorship_program", extr, meta_map, "INTERVIEW")
     with onboard_cols[2]:
-        show_input(
-            "welcome_package",
-            extr.get("welcome_package", ExtractResult()),
-            meta_map["welcome_package"],
-            widget_prefix="INTERVIEW",
-        )
+        show_missing("welcome_package", extr, meta_map, "INTERVIEW")
 
-    show_input(
-        "onboarding_process",
-        extr.get("onboarding_process", ExtractResult()),
-        meta_map["onboarding_process"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "onboarding_process_overview",
-        extr.get("onboarding_process_overview", ExtractResult()),
-        meta_map["onboarding_process_overview"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "interview_stage_count",
-        extr.get("interview_stage_count", ExtractResult()),
-        meta_map["interview_stage_count"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "interview_docs_required",
-        extr.get("interview_docs_required", ExtractResult()),
-        meta_map["interview_docs_required"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "assessment_tests",
-        extr.get("assessment_tests", ExtractResult()),
-        meta_map["assessment_tests"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "interview_notes",
-        extr.get("interview_notes", ExtractResult()),
-        meta_map["interview_notes"],
-        widget_prefix="INTERVIEW",
-    )
-    show_input(
-        "application_instructions",
-        extr.get("application_instructions", ExtractResult()),
-        meta_map["application_instructions"],
-        widget_prefix="INTERVIEW",
-    )
+    show_missing("onboarding_process", extr, meta_map, "INTERVIEW")
+    show_missing("onboarding_process_overview", extr, meta_map, "INTERVIEW")
+    show_missing("interview_stage_count", extr, meta_map, "INTERVIEW")
+    show_missing("interview_docs_required", extr, meta_map, "INTERVIEW")
+    show_missing("assessment_tests", extr, meta_map, "INTERVIEW")
+    show_missing("interview_notes", extr, meta_map, "INTERVIEW")
+    show_missing("application_instructions", extr, meta_map, "INTERVIEW")
 
 
 img_path = Path("images/AdobeStock_506577005.jpeg")
@@ -1992,12 +1912,7 @@ def main():
             with st.expander("Team & Culture Context", expanded=False):
                 cols = st.columns([4, 1])
                 with cols[0]:
-                    show_input(
-                        "tech_stack",
-                        extr.get("tech_stack", ExtractResult()),
-                        meta_map["tech_stack"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("tech_stack", extr, meta_map, step_name)
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_tech_stack"):
                         with st.spinner("Generiere…"):
@@ -2173,7 +2088,9 @@ def main():
             with sup_col:
                 show_missing("supervises", extr, meta_map, step_name)
             with direct_col:
-                if ss.get("data", {}).get("supervises"):
+                if ss.get("data", {}).get("supervises") and value_missing(
+                    "direct_reports_count"
+                ):
                     val = int(ss.get("data", {}).get("direct_reports_count", 0))
                     val = st.number_input(
                         meta_map["direct_reports_count"]["label"],
@@ -2184,7 +2101,7 @@ def main():
                         help=meta_map["direct_reports_count"].get("helptext", ""),
                     )
                     ss["data"]["direct_reports_count"] = int(val)
-                else:
+                elif not ss.get("data", {}).get("supervises"):
                     ss["data"]["direct_reports_count"] = 0
 
             with st.expander("Projects & Metrics", expanded=False):
@@ -2293,16 +2210,17 @@ def main():
             st.subheader("Other Requirements")
             other_cols = st.columns(2)
             with other_cols[0]:
-                years_val = int(ss.get("data", {}).get("years_experience_min", 0))
-                years_val = st.number_input(
-                    meta_map["years_experience_min"]["label"],
-                    value=years_val,
-                    step=1,
-                    format="%d",
-                    key=f"{step_name}_years_experience_min",
-                    help=meta_map["years_experience_min"].get("helptext", ""),
-                )
-                ss["data"]["years_experience_min"] = int(years_val)
+                if value_missing("years_experience_min"):
+                    years_val = int(ss.get("data", {}).get("years_experience_min", 0))
+                    years_val = st.number_input(
+                        meta_map["years_experience_min"]["label"],
+                        value=years_val,
+                        step=1,
+                        format="%d",
+                        key=f"{step_name}_years_experience_min",
+                        help=meta_map["years_experience_min"].get("helptext", ""),
+                    )
+                    ss["data"]["years_experience_min"] = int(years_val)
 
         else:
             if step_name == "BENEFITS":
@@ -2361,19 +2279,19 @@ def main():
                         ss["data"]["other_perks_details"] = txt
                     show_missing("visa_sponsorship", extr, meta_map, step_name)
             else:
+                meta_map = {m["key"]: m for m in meta_fields}
                 current_cols = 2
                 cols = st.columns(current_cols)
                 col_idx = 0
 
                 for meta in meta_fields:
                     key = meta["key"]
-                    result = extr.get(key) if key in extr else ExtractResult()
                     field_type = meta.get("field_type", meta.get("field", "text_input"))
 
                     if field_type == "text_area":
                         cols = st.columns(1)
                         with cols[0]:
-                            show_input(key, result, meta, widget_prefix=step_name)
+                            show_missing(key, extr, meta_map, step_name)
                         cols = st.columns(current_cols)
                         col_idx = 0
                         continue
@@ -2385,7 +2303,7 @@ def main():
                         col_idx = 0
 
                     with cols[col_idx]:
-                        show_input(key, result, meta, widget_prefix=step_name)
+                        show_missing(key, extr, meta_map, step_name)
 
                     col_idx += 1
 
