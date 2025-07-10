@@ -1878,13 +1878,6 @@ def main():
 
         if step_name == "BASIC":
             meta_map = {m["key"]: m for m in meta_fields}
-            if value_missing("job_title"):
-                show_input(
-                    "job_title",
-                    extr.get("job_title", ExtractResult()),
-                    meta_map["job_title"],
-                    widget_prefix=step_name,
-                )
 
             cols = st.columns(2)
             with cols[0]:
