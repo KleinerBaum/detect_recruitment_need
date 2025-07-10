@@ -1313,7 +1313,6 @@ def display_summary_overview() -> None:
         st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
         st.write(f"**Role Keywords:** {val('role_keywords')}")
         st.write(f"**Ideal Candidate:** {val('ideal_candidate_profile')}")
-        st.write(f"**Target Industries:** {val('target_industries')}")
 
     with col3:
         st.markdown("### Skills")
@@ -2270,13 +2269,22 @@ def main():
             )
             ss["data"]["industry_experience_required"] = ind_required
             if ind_required:
-                inds = st.multiselect(
-                    "Select industries",
-                    INDUSTRY_OPTIONS,
-                    default=ss.get("data", {}).get("industry_experience", []),
-                    key=f"{step_name}_industry_list",
-                )
-                ss["data"]["industry_experience"] = inds
+                with st.popover("Select industry"):
+                    ind_val = st.radio(
+                        "Industry",
+                        INDUSTRY_OPTIONS,
+                        index=(
+                            INDUSTRY_OPTIONS.index(
+                                ss.get("data", {}).get("industry_experience", [""])[0]
+                            )
+                            if ss.get("data", {}).get("industry_experience")
+                            else 0
+                        ),
+                        key=f"{step_name}_industry_list",
+                    )
+                ss["data"]["industry_experience"] = [ind_val]
+            else:
+                ss["data"]["industry_experience"] = []
 
             dom_required = st.checkbox(
                 "Domain expertise",
@@ -2285,13 +2293,19 @@ def main():
             )
             ss["data"]["domain_expertise_required"] = dom_required
             if dom_required:
-                doms = st.multiselect(
-                    "Select domains",
-                    DOMAIN_OPTIONS,
-                    default=ss.get("data", {}).get("domain_expertise", []),
-                    key=f"{step_name}_domain_list",
+                default_domains = cast(
+                    list[str], ss.get("data", {}).get("domain_expertise", [])
                 )
+                with st.popover("Select domains"):
+                    doms = st.multiselect(
+                        "Domains",
+                        DOMAIN_OPTIONS,
+                        default=default_domains,
+                        key=f"{step_name}_domain_list",
+                    )
                 ss["data"]["domain_expertise"] = doms
+            else:
+                ss["data"]["domain_expertise"] = []
 
             st.subheader("Key Competencies")
             comp_cols = st.columns(2)
@@ -2554,14 +2568,7 @@ def main():
         with st.expander("All Data", expanded=False):
             display_summary()
 
-        ss["data"]["ideal_candidate_profile"] = st.text_area(
-            "Ideal Candidate Profile",
-            value=ss["data"].get("ideal_candidate_profile", ""),
-        )
-        ss["data"]["target_industries"] = st.text_area(
-            "Target Industries",
-            value=ss["data"].get("target_industries", ""),
-        )
+        # Ideal Candidate Profile is now collected in the BASIC step
 
         st.subheader("Expected Annual Salary")
         display_salary_plot()

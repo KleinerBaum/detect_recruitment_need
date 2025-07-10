@@ -92,7 +92,7 @@ BENEFITS,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
 BENEFITS,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
 BENEFITS,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
 BENEFITS,other_perks,checkbox,0,Other Perks,,Weitere Benefits
-TARGET_GROUP,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
+BASIC,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
 TARGET_GROUP,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
 INTERVIEW,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
 INTERVIEW,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Telefonnummer für Bewerbungen
