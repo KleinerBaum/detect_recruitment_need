@@ -1399,27 +1399,34 @@ img_path = Path("images/AdobeStock_506577005.jpeg")
 
 
 # Bild als Base64 laden (damit es im CSS eingebettet werden kann)
-def get_base64_image(img_path):
+def get_base64_image(img_path: Path) -> str:
+    """Return the image as a base64 data URL."""
+
     with open(img_path, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
     return f"data:image/jpeg;base64,{encoded}"
 
 
 # CSS-Block für halbtransparentes Hintergrundbild
-def set_background(image_path: Path, opacity=0.5):
+def set_background(image_path: Path, opacity: float = 0.5) -> None:
+    """Set a semi-transparent background image via inline CSS."""
+
     img_url = get_base64_image(image_path)
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background: linear-gradient(rgba(255, 255, 255, {1-opacity}), rgba(255, 255, 255, {0-opacity})), 
-                        url("{img_url}");
+            background: linear-gradient(
+                rgba(255, 255, 255, {1 - opacity}),
+                rgba(255, 255, 255, {1 - opacity})
+            ),
+            url("{img_url}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }}
         </style>
-    """,
+        """,
         unsafe_allow_html=True,
     )
 
