@@ -53,3 +53,9 @@ In the final **SUMMARY** step you can generate a job advertisement, an interview
 guide, a Boolean search string and a draft contract. New buttons also let you
 estimate the salary range and calculate the total annual compensation based on
 selected benefits.
+
+## ESCO Integration
+
+The tool includes helpers to query the [ESCO REST API](https://ec.europa.eu/esco/api) for
+standardised occupations and skills. Environment variable `ESCO_API_BASE_URL` controls the
+target endpoint.
