@@ -2,7 +2,6 @@ step,key,field_type,is_must,label,options,helptext
 BASIC,job_title,text_input,1,Job Title,,Bitte den exakten Jobtitel angeben
 BASIC,employment_type,selectbox,1,Employment Type,Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other,Beschäftigungsart auswählen
 BASIC,contract_type,selectbox,1,Contract Type,Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit,Vertragsart auswählen
-BASIC,seniority_level,selectbox,1,Seniority Level,Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern,Karrierestufe auswählen
 BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
 BASIC,work_schedule,selectbox,0,Work Schedule,Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid,Arbeitszeitmodell auswählen
 BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
@@ -58,6 +57,7 @@ ROLE,travel_required,selectbox,0,Travel Required,No;Rarely;Occasionally;Regularl
 ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
 ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
 ROLE,daily_tools,text_area,0,Daily Tools,,Tägliche Tools/Programme
+SKILLS,seniority_level,selectbox,1,Seniority Level,Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern,Karrierestufe auswählen
 SKILLS,must_have_skills,text_area,1,Must Have Skills,,Erforderliche Kompetenzen/Skills
 SKILLS,nice_to_have_skills,text_area,0,Nice to Have Skills,,Wünschenswerte Skills
 SKILLS,hard_skills,text_area,0,Hard Skills,,Fachliche Kompetenzen

@@ -142,7 +142,6 @@ MUST_HAVE_KEYS = {
     "job_title",
     "company_name",
     "city",
-    "employment_type",
     "contract_type",
     "seniority_level",
     "role_description",
@@ -1022,6 +1021,46 @@ def display_missing_inputs(
         show_input(k, result, meta, widget_prefix=f"missing_{step_name}")
 
 
+def display_missing_basic_inputs(
+    meta_fields: list[dict[str, str]], extracted: dict
+) -> None:
+    """Special layout for missing inputs in the BASIC step."""
+
+    missing = {
+        m["key"]
+        for m in meta_fields
+        if not (
+            m["key"] in extracted and getattr(extracted.get(m["key"]), "value", None)
+        )
+    }
+
+    if not missing:
+        return
+
+    st.subheader("Provide Information on missing basic data")
+    meta_map = {m["key"]: m for m in meta_fields}
+    col_a_keys = [
+        "date_of_employment_start",
+        "employment_type",
+        "work_location_city",
+        "pay_frequency",
+        "salary_currency",
+        "salary_range",
+    ]
+    col_b_keys = ["company_name", "department_name", "company_website"]
+    col_a, col_b = st.columns(2)
+    for key in col_a_keys:
+        if key in missing and key in meta_map:
+            with col_a:
+                result = ExtractResult(ss["data"].get(key), 1.0)
+                show_input(key, result, meta_map[key], widget_prefix="missing_BASIC")
+    for key in col_b_keys:
+        if key in missing and key in meta_map:
+            with col_b:
+                result = ExtractResult(ss["data"].get(key), 1.0)
+                show_input(key, result, meta_map[key], widget_prefix="missing_BASIC")
+
+
 def display_summary() -> None:
     """Show all collected data grouped by step with inline editing."""
     for step_name in ORDER:
@@ -1677,6 +1716,12 @@ def main():
             job_title_val = ss.get("data", {}).get("job_title", "")
             if job_title_val:
                 title = f"{title} – {job_title_val}"
+        elif step_name == "BASIC":
+            job_title_val = ss.get("data", {}).get("job_title", "")
+            if job_title_val:
+                title = f"Basic Data on your {job_title_val}-Vacancy"
+            else:
+                title = "Basic Data on your Vacancy"
         st.markdown(
             f"<h2 style='text-align:center'>{title}</h2>",
             unsafe_allow_html=True,
@@ -1695,7 +1740,10 @@ def main():
         display_extracted_values_editable(extr, fields, step_name)
 
         # Prominent fehlende Felder abfragen
-        display_missing_inputs(step_name, meta_fields, extr)
+        if step_name == "BASIC":
+            display_missing_basic_inputs(meta_fields, extr)
+        else:
+            display_missing_inputs(step_name, meta_fields, extr)
 
         if step_name == "BASIC":
             meta_map = {m["key"]: m for m in meta_fields}
@@ -1706,35 +1754,12 @@ def main():
                 widget_prefix=step_name,
             )
 
-            cols = st.columns(3)
+            cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "employment_type",
-                    extr.get("employment_type", ExtractResult()),
-                    meta_map["employment_type"],
-                    widget_prefix=step_name,
-                )
-            with cols[1]:
                 show_input(
                     "contract_type",
                     extr.get("contract_type", ExtractResult()),
                     meta_map["contract_type"],
-                    widget_prefix=step_name,
-                )
-            with cols[2]:
-                show_input(
-                    "seniority_level",
-                    extr.get("seniority_level", ExtractResult()),
-                    meta_map["seniority_level"],
-                    widget_prefix=step_name,
-                )
-
-            cols = st.columns(2)
-            with cols[0]:
-                show_input(
-                    "date_of_employment_start",
-                    extr.get("date_of_employment_start", ExtractResult()),
-                    meta_map["date_of_employment_start"],
                     widget_prefix=step_name,
                 )
             with cols[1]:
@@ -1755,41 +1780,6 @@ def main():
                         key="onsite_percentage",
                     )
                     ss["data"]["onsite_percentage"] = pct
-
-            show_input(
-                "work_location_city",
-                extr.get("work_location_city", ExtractResult()),
-                meta_map["work_location_city"],
-                widget_prefix=step_name,
-            )
-
-            cols = st.columns(2)
-            with cols[0]:
-                show_input(
-                    "salary_currency",
-                    extr.get("salary_currency", ExtractResult()),
-                    meta_map["salary_currency"],
-                    widget_prefix=step_name,
-                )
-            with cols[1]:
-                show_input(
-                    "pay_frequency",
-                    extr.get("pay_frequency", ExtractResult()),
-                    meta_map["pay_frequency"],
-                    widget_prefix=step_name,
-                )
-
-            default_min = int(ss.get("data", {}).get("salary_range_min", 50000))
-            default_max = int(ss.get("data", {}).get("salary_range_max", 80000))
-            rng = st.slider(
-                "Salary Range (EUR)",
-                min_value=30000,
-                max_value=200000,
-                value=(default_min, default_max),
-                step=1000,
-            )
-            ss["data"]["salary_range_min"], ss["data"]["salary_range_max"] = rng
-            ss["data"]["salary_range"] = f"{rng[0]}–{rng[1]}"
         elif step_name == "COMPANY":
             meta_map = {m["key"]: m for m in meta_fields}
             cols = st.columns(2)
@@ -2240,6 +2230,13 @@ def main():
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}
+
+            show_input(
+                "seniority_level",
+                extr.get("seniority_level", ExtractResult()),
+                meta_map["seniority_level"],
+                widget_prefix=step_name,
+            )
 
             # Core skills
             show_input(
