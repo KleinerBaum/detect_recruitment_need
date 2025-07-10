@@ -34,3 +34,17 @@ def test_suggest_hard_skills(monkeypatch):
     data = {"job_title": "Engineer"}
     out = asyncio.run(tool.suggest_hard_skills(data))
     assert out == ["SkillA", "SkillB"]
+
+
+def test_get_esco_skills(monkeypatch):
+    tool = load_tool_module()
+
+    monkeypatch.setattr(tool, "search_occupations", lambda q, limit=1: [{"uri": "u"}])
+    monkeypatch.setattr(
+        tool,
+        "get_skills_for_occupation",
+        lambda uri, limit=20: [{"title": "Skill1"}, {"label": "Skill2"}],
+    )
+
+    res = tool.get_esco_skills("nurse")
+    assert res == ["Skill1", "Skill2"]
