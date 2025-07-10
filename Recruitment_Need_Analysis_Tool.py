@@ -1745,6 +1745,7 @@ def main():
     ss.setdefault("data", {})
     ss.setdefault("extracted", {})
     ss.setdefault("benefit_list", [])
+    ss["_used_widget_keys"] = set()
 
     def goto(i: int):
         ss["step"] = i
