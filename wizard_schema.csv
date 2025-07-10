@@ -6,6 +6,9 @@ BASIC,seniority_level,selectbox,1,Seniority Level,Junior;Professional;Senior;Lea
 BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
 BASIC,work_schedule,selectbox,0,Work Schedule,Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid,Arbeitszeitmodell auswählen
 BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
+BASIC,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
+BASIC,salary_range,text_input,1,Salary Range (EUR),,Bsp.: 50000–65000
+BASIC,pay_frequency,selectbox,1,Pay Frequency,Monthly;Yearly;Weekly;Bi-Weekly;Quarterly,Zahlungsintervall
 COMPANY,company_name,text_input,1,Company Name,,Firmenname
 COMPANY,city,text_input,1,Company City,,Stadt (Sitz der Firma)
 COMPANY,company_size,selectbox,0,Company Size,1-10;11-50;51-200;201-500;501-1000;1001-5000;5001+,Unternehmensgröße auswählen
@@ -74,11 +77,7 @@ SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere An
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
 BENEFITS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
-BENEFITS,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
-BENEFITS,salary_range,text_input,1,Salary Range (EUR),,Bsp.: 50000–65000
-BENEFITS,salary_range_min,number_input,0,Salary Range Min (EUR),,Mindestgehalt
-BENEFITS,salary_range_max,number_input,0,Salary Range Max (EUR),,Maximalgehalt
-BENEFITS,bonus_scheme,text_area,0,Bonus Scheme,,Bonusregelung
+BENEFITS,bonus_scheme,checkbox,0,Bonus Scheme,,Bonusregelung
 BENEFITS,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
 BENEFITS,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
 BENEFITS,vacation_days,number_input,0,Vacation Days,,Urlaubstage
@@ -92,8 +91,7 @@ BENEFITS,sabbatical_option,checkbox,0,Sabbatical Option,,Sabbatical möglich?
 BENEFITS,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
 BENEFITS,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
 BENEFITS,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
-BENEFITS,other_perks,text_area,0,Other Perks,,Weitere Benefits
-BENEFITS,pay_frequency,selectbox,1,Pay Frequency,Monthly;Yearly;Weekly;Bi-Weekly;Quarterly,Zahlungsintervall
+BENEFITS,other_perks,checkbox,0,Other Perks,,Weitere Benefits
 TARGET_GROUP,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
 TARGET_GROUP,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
 INTERVIEW,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
