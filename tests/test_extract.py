@@ -74,6 +74,24 @@ def test_extract_bullet_prefix(monkeypatch):
     assert result["job_title"].value == "Engineer"
 
 
+def test_extract_synonym_labels(monkeypatch):
+    tool = load_tool_module()
+
+    async def dummy_fill(missing, text):
+        return {}
+
+    async def dummy_validate(data):
+        return {}
+
+    monkeypatch.setattr(tool, "llm_fill", dummy_fill)
+    monkeypatch.setattr(tool, "llm_validate", dummy_validate)
+
+    text = "Jobtitel: Data Engineer\n" "Beschäftigungsverhältnis: Teilzeit"
+    result = asyncio.run(tool.extract(text))
+    assert result["job_title"].value == "Data Engineer"
+    assert result["employment_type"].value.lower() == "teilzeit"
+
+
 def test_llm_validate(monkeypatch):
     tool = load_tool_module()
 
