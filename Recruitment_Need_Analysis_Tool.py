@@ -974,6 +974,33 @@ def show_input(
     st.session_state["data"][key] = val
 
 
+def value_missing(key: str) -> bool:
+    """Return ``True`` if no meaningful value is stored for ``key``."""
+
+    val = st.session_state.get("data", {}).get(key)
+    if val is None:
+        return True
+    if isinstance(val, str):
+        return not val.strip()
+    if isinstance(val, list):
+        return len(val) == 0
+    return False
+
+
+def show_missing(
+    key: str,
+    extr: dict[str, ExtractResult],
+    meta_map: dict[str, Any],
+    step_name: str,
+) -> None:
+    """Display the input only when no value exists."""
+
+    if value_missing(key):
+        show_input(
+            key, extr.get(key, ExtractResult()), meta_map[key], widget_prefix=step_name
+        )
+
+
 def display_extracted_values_editable(
     extracted: dict[str, ExtractResult], keys: list[str], step_name: str
 ) -> None:
@@ -1815,29 +1842,35 @@ def main():
 
         if step_name == "BASIC":
             meta_map = {m["key"]: m for m in meta_fields}
-            show_input(
-                "job_title",
-                extr.get("job_title", ExtractResult()),
-                meta_map["job_title"],
-                widget_prefix=step_name,
-            )
+            if value_missing("job_title"):
+                show_input(
+                    "job_title",
+                    extr.get("job_title", ExtractResult()),
+                    meta_map["job_title"],
+                    widget_prefix=step_name,
+                )
 
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "contract_type",
-                    extr.get("contract_type", ExtractResult()),
-                    meta_map["contract_type"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("contract_type"):
+                    show_input(
+                        "contract_type",
+                        extr.get("contract_type", ExtractResult()),
+                        meta_map["contract_type"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
-                show_input(
-                    "work_schedule",
-                    extr.get("work_schedule", ExtractResult()),
-                    meta_map["work_schedule"],
-                    widget_prefix=step_name,
-                )
-                if ss.get("data", {}).get("work_schedule") == "Hybrid":
+                if value_missing("work_schedule"):
+                    show_input(
+                        "work_schedule",
+                        extr.get("work_schedule", ExtractResult()),
+                        meta_map["work_schedule"],
+                        widget_prefix=step_name,
+                    )
+                if (
+                    not value_missing("work_schedule")
+                    and ss.get("data", {}).get("work_schedule") == "Hybrid"
+                ):
                     default_pct = int(ss.get("data", {}).get("onsite_percentage", 50))
                     pct = st.slider(
                         "% Onsite vs Remote",
@@ -1852,97 +1885,109 @@ def main():
             meta_map = {m["key"]: m for m in meta_fields}
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "company_name",
-                    extr.get("company_name", ExtractResult()),
-                    meta_map["company_name"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("company_name"):
+                    show_input(
+                        "company_name",
+                        extr.get("company_name", ExtractResult()),
+                        meta_map["company_name"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
-                show_input(
-                    "city",
-                    extr.get("city", ExtractResult()),
-                    meta_map["city"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("city"):
+                    show_input(
+                        "city",
+                        extr.get("city", ExtractResult()),
+                        meta_map["city"],
+                        widget_prefix=step_name,
+                    )
 
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "industry",
-                    extr.get("industry", ExtractResult()),
-                    meta_map["industry"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("industry"):
+                    show_input(
+                        "industry",
+                        extr.get("industry", ExtractResult()),
+                        meta_map["industry"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
-                show_input(
-                    "company_size",
-                    extr.get("company_size", ExtractResult()),
-                    meta_map["company_size"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("company_size"):
+                    show_input(
+                        "company_size",
+                        extr.get("company_size", ExtractResult()),
+                        meta_map["company_size"],
+                        widget_prefix=step_name,
+                    )
 
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "headquarters_location",
-                    extr.get("headquarters_location", ExtractResult()),
-                    meta_map["headquarters_location"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("headquarters_location"):
+                    show_input(
+                        "headquarters_location",
+                        extr.get("headquarters_location", ExtractResult()),
+                        meta_map["headquarters_location"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
-                show_input(
-                    "place_of_work",
-                    extr.get("place_of_work", ExtractResult()),
-                    meta_map["place_of_work"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("place_of_work"):
+                    show_input(
+                        "place_of_work",
+                        extr.get("place_of_work", ExtractResult()),
+                        meta_map["place_of_work"],
+                        widget_prefix=step_name,
+                    )
 
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "department_name",
-                    extr.get("department_name", ExtractResult()),
-                    meta_map["department_name"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("department_name"):
+                    show_input(
+                        "department_name",
+                        extr.get("department_name", ExtractResult()),
+                        meta_map["department_name"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
-                show_input(
-                    "team_size",
-                    extr.get("team_size", ExtractResult()),
-                    meta_map["team_size"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("team_size"):
+                    show_input(
+                        "team_size",
+                        extr.get("team_size", ExtractResult()),
+                        meta_map["team_size"],
+                        widget_prefix=step_name,
+                    )
 
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "company_website",
-                    extr.get("company_website", ExtractResult()),
-                    meta_map["company_website"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("company_website"):
+                    show_input(
+                        "company_website",
+                        extr.get("company_website", ExtractResult()),
+                        meta_map["company_website"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
+                if value_missing("brand_name"):
+                    show_input(
+                        "brand_name",
+                        extr.get("brand_name", ExtractResult()),
+                        meta_map["brand_name"],
+                        widget_prefix=step_name,
+                    )
+
+            if value_missing("team_structure"):
                 show_input(
-                    "brand_name",
-                    extr.get("brand_name", ExtractResult()),
-                    meta_map["brand_name"],
+                    "team_structure",
+                    extr.get("team_structure", ExtractResult()),
+                    meta_map["team_structure"],
                     widget_prefix=step_name,
                 )
 
-            show_input(
-                "team_structure",
-                extr.get("team_structure", ExtractResult()),
-                meta_map["team_structure"],
-                widget_prefix=step_name,
-            )
-
-            show_input(
-                "reports_to",
-                extr.get("reports_to", ExtractResult()),
-                meta_map["reports_to"],
-                widget_prefix=step_name,
-            )
+            if value_missing("reports_to"):
+                show_input(
+                    "reports_to",
+                    extr.get("reports_to", ExtractResult()),
+                    meta_map["reports_to"],
+                    widget_prefix=step_name,
+                )
 
             with st.expander("Team & Culture Context", expanded=False):
                 cols = st.columns([4, 1])
@@ -1975,21 +2020,23 @@ def main():
                         current_ts.append(s)
                 ss["data"]["tech_stack"] = ", ".join(current_ts)
 
-                show_input(
-                    "culture_notes",
-                    extr.get("culture_notes", ExtractResult()),
-                    meta_map["culture_notes"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("culture_notes"):
+                    show_input(
+                        "culture_notes",
+                        extr.get("culture_notes", ExtractResult()),
+                        meta_map["culture_notes"],
+                        widget_prefix=step_name,
+                    )
 
                 cols = st.columns([4, 1])
                 with cols[0]:
-                    show_input(
-                        "team_challenges",
-                        extr.get("team_challenges", ExtractResult()),
-                        meta_map["team_challenges"],
-                        widget_prefix=step_name,
-                    )
+                    if value_missing("team_challenges"):
+                        show_input(
+                            "team_challenges",
+                            extr.get("team_challenges", ExtractResult()),
+                            meta_map["team_challenges"],
+                            widget_prefix=step_name,
+                        )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_team_challenges"):
                         with st.spinner("Generiere…"):
@@ -2014,12 +2061,13 @@ def main():
 
                 cols = st.columns([4, 1])
                 with cols[0]:
-                    show_input(
-                        "client_difficulties",
-                        extr.get("client_difficulties", ExtractResult()),
-                        meta_map["client_difficulties"],
-                        widget_prefix=step_name,
-                    )
+                    if value_missing("client_difficulties"):
+                        show_input(
+                            "client_difficulties",
+                            extr.get("client_difficulties", ExtractResult()),
+                            meta_map["client_difficulties"],
+                            widget_prefix=step_name,
+                        )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_client_difficulties"):
                         with st.spinner("Generiere…"):
@@ -2044,28 +2092,31 @@ def main():
                         cur_cd.append(s)
                 ss["data"]["client_difficulties"] = ", ".join(cur_cd)
 
-                show_input(
-                    "main_stakeholders",
-                    extr.get("main_stakeholders", ExtractResult()),
-                    meta_map["main_stakeholders"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("main_stakeholders"):
+                    show_input(
+                        "main_stakeholders",
+                        extr.get("main_stakeholders", ExtractResult()),
+                        meta_map["main_stakeholders"],
+                        widget_prefix=step_name,
+                    )
 
-                show_input(
-                    "team_motivation",
-                    extr.get("team_motivation", ExtractResult()),
-                    meta_map["team_motivation"],
-                    widget_prefix=step_name,
-                )
+                if value_missing("team_motivation"):
+                    show_input(
+                        "team_motivation",
+                        extr.get("team_motivation", ExtractResult()),
+                        meta_map["team_motivation"],
+                        widget_prefix=step_name,
+                    )
 
                 cols = st.columns([4, 1])
                 with cols[0]:
-                    show_input(
-                        "recent_team_changes",
-                        extr.get("recent_team_changes", ExtractResult()),
-                        meta_map["recent_team_changes"],
-                        widget_prefix=step_name,
-                    )
+                    if value_missing("recent_team_changes"):
+                        show_input(
+                            "recent_team_changes",
+                            extr.get("recent_team_changes", ExtractResult()),
+                            meta_map["recent_team_changes"],
+                            widget_prefix=step_name,
+                        )
                 with cols[1]:
                     if st.button("Generate Ideas", key="gen_recent_team_changes"):
                         with st.spinner("Generiere…"):
@@ -2088,67 +2139,39 @@ def main():
                         cur_rc.append(s)
                 ss["data"]["recent_team_changes"] = ", ".join(cur_rc)
 
-            show_input(
-                "office_language",
-                extr.get("office_language", ExtractResult()),
-                meta_map["office_language"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "office_type",
-                extr.get("office_type", ExtractResult()),
-                meta_map["office_type"],
-                widget_prefix=step_name,
-            )
+            if value_missing("office_language"):
+                show_input(
+                    "office_language",
+                    extr.get("office_language", ExtractResult()),
+                    meta_map["office_language"],
+                    widget_prefix=step_name,
+                )
+            if value_missing("office_type"):
+                show_input(
+                    "office_type",
+                    extr.get("office_type", ExtractResult()),
+                    meta_map["office_type"],
+                    widget_prefix=step_name,
+                )
 
         elif step_name == "ROLE":
             meta_map = {m["key"]: m for m in meta_fields}
 
             st.subheader("Role Summary")
-            show_input(
-                "role_description",
-                extr.get("role_description", ExtractResult()),
-                meta_map["role_description"],
-                widget_prefix=step_name,
-            )
+            show_missing("role_description", extr, meta_map, step_name)
             cols = st.columns(2)
             with cols[0]:
-                show_input(
-                    "role_type",
-                    extr.get("role_type", ExtractResult()),
-                    meta_map["role_type"],
-                    widget_prefix=step_name,
-                )
+                show_missing("role_type", extr, meta_map, step_name)
             with cols[1]:
-                show_input(
-                    "role_keywords",
-                    extr.get("role_keywords", ExtractResult()),
-                    meta_map["role_keywords"],
-                    widget_prefix=step_name,
-                )
+                show_missing("role_keywords", extr, meta_map, step_name)
 
             st.subheader("Responsibilities")
-            show_input(
-                "primary_responsibilities",
-                extr.get("primary_responsibilities", ExtractResult()),
-                meta_map["primary_responsibilities"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "key_responsibilities",
-                extr.get("key_responsibilities", ExtractResult()),
-                meta_map["key_responsibilities"],
-                widget_prefix=step_name,
-            )
+            show_missing("primary_responsibilities", extr, meta_map, step_name)
+            show_missing("key_responsibilities", extr, meta_map, step_name)
 
             sup_col, direct_col = st.columns(2)
             with sup_col:
-                show_input(
-                    "supervises",
-                    extr.get("supervises", ExtractResult()),
-                    meta_map["supervises"],
-                    widget_prefix=step_name,
-                )
+                show_missing("supervises", extr, meta_map, step_name)
             with direct_col:
                 if ss.get("data", {}).get("supervises"):
                     val = int(ss.get("data", {}).get("direct_reports_count", 0))
@@ -2165,192 +2188,62 @@ def main():
                     ss["data"]["direct_reports_count"] = 0
 
             with st.expander("Projects & Metrics", expanded=False):
-                show_input(
-                    "role_priority_projects",
-                    extr.get("role_priority_projects", ExtractResult()),
-                    meta_map["role_priority_projects"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "key_deliverables",
-                    extr.get("key_deliverables", ExtractResult()),
-                    meta_map["key_deliverables"],
-                    widget_prefix=step_name,
-                )
-                show_input(
+                show_missing("role_priority_projects", extr, meta_map, step_name)
+                show_missing("key_deliverables", extr, meta_map, step_name)
+                show_missing(
                     "role_performance_metrics",
-                    extr.get("role_performance_metrics", ExtractResult()),
-                    meta_map["role_performance_metrics"],
-                    widget_prefix=step_name,
+                    extr,
+                    meta_map,
+                    step_name,
                 )
-                show_input(
-                    "success_metrics",
-                    extr.get("success_metrics", ExtractResult()),
-                    meta_map["success_metrics"],
-                    widget_prefix=step_name,
-                )
+                show_missing("success_metrics", extr, meta_map, step_name)
 
             st.subheader("Tasks")
-            show_input(
-                "task_list",
-                extr.get("task_list", ExtractResult()),
-                meta_map["task_list"],
-                widget_prefix=step_name,
-            )
+            show_missing("task_list", extr, meta_map, step_name)
             with st.expander("Detailed Task Categories", expanded=False):
-                show_input(
-                    "technical_tasks",
-                    extr.get("technical_tasks", ExtractResult()),
-                    meta_map["technical_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "managerial_tasks",
-                    extr.get("managerial_tasks", ExtractResult()),
-                    meta_map["managerial_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "administrative_tasks",
-                    extr.get("administrative_tasks", ExtractResult()),
-                    meta_map["administrative_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "customer_facing_tasks",
-                    extr.get("customer_facing_tasks", ExtractResult()),
-                    meta_map["customer_facing_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "internal_reporting_tasks",
-                    extr.get("internal_reporting_tasks", ExtractResult()),
-                    meta_map["internal_reporting_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "performance_tasks",
-                    extr.get("performance_tasks", ExtractResult()),
-                    meta_map["performance_tasks"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "innovation_tasks",
-                    extr.get("innovation_tasks", ExtractResult()),
-                    meta_map["innovation_tasks"],
-                    widget_prefix=step_name,
-                )
+                show_missing("technical_tasks", extr, meta_map, step_name)
+                show_missing("managerial_tasks", extr, meta_map, step_name)
+                show_missing("administrative_tasks", extr, meta_map, step_name)
+                show_missing("customer_facing_tasks", extr, meta_map, step_name)
+                show_missing("internal_reporting_tasks", extr, meta_map, step_name)
+                show_missing("performance_tasks", extr, meta_map, step_name)
+                show_missing("innovation_tasks", extr, meta_map, step_name)
 
             st.subheader("Additional Requirements")
             cols = st.columns(3)
             with cols[0]:
-                show_input(
-                    "task_prioritization",
-                    extr.get("task_prioritization", ExtractResult()),
-                    meta_map["task_prioritization"],
-                    widget_prefix=step_name,
-                )
+                show_missing("task_prioritization", extr, meta_map, step_name)
             with cols[1]:
-                show_input(
-                    "decision_authority",
-                    extr.get("decision_authority", ExtractResult()),
-                    meta_map["decision_authority"],
-                    widget_prefix=step_name,
-                )
+                show_missing("decision_authority", extr, meta_map, step_name)
             with cols[2]:
-                show_input(
-                    "process_improvement",
-                    extr.get("process_improvement", ExtractResult()),
-                    meta_map["process_improvement"],
-                    widget_prefix=step_name,
-                )
+                show_missing("process_improvement", extr, meta_map, step_name)
 
             cols = st.columns(3)
             with cols[0]:
-                show_input(
-                    "innovation_expected",
-                    extr.get("innovation_expected", ExtractResult()),
-                    meta_map["innovation_expected"],
-                    widget_prefix=step_name,
-                )
+                show_missing("innovation_expected", extr, meta_map, step_name)
             with cols[1]:
-                show_input(
-                    "on_call",
-                    extr.get("on_call", ExtractResult()),
-                    meta_map["on_call"],
-                    widget_prefix=step_name,
-                )
+                show_missing("on_call", extr, meta_map, step_name)
             with cols[2]:
-                show_input(
-                    "physical_duties",
-                    extr.get("physical_duties", ExtractResult()),
-                    meta_map["physical_duties"],
-                    widget_prefix=step_name,
-                )
+                show_missing("physical_duties", extr, meta_map, step_name)
             cols = st.columns(3)
             with cols[0]:
-                show_input(
-                    "travel_required",
-                    extr.get("travel_required", ExtractResult()),
-                    meta_map["travel_required"],
-                    widget_prefix=step_name,
-                )
+                show_missing("travel_required", extr, meta_map, step_name)
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}
 
-            show_input(
-                "seniority_level",
-                extr.get("seniority_level", ExtractResult()),
-                meta_map["seniority_level"],
-                widget_prefix=step_name,
-            )
+            show_missing("seniority_level", extr, meta_map, step_name)
 
             # Core skills
-            show_input(
-                "must_have_skills",
-                extr.get("must_have_skills", ExtractResult()),
-                meta_map["must_have_skills"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "nice_to_have_skills",
-                extr.get("nice_to_have_skills", ExtractResult()),
-                meta_map["nice_to_have_skills"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "hard_skills",
-                extr.get("hard_skills", ExtractResult()),
-                meta_map["hard_skills"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "soft_skills",
-                extr.get("soft_skills", ExtractResult()),
-                meta_map["soft_skills"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "certifications_required",
-                extr.get("certifications_required", ExtractResult()),
-                meta_map["certifications_required"],
-                widget_prefix=step_name,
-            )
+            show_missing("must_have_skills", extr, meta_map, step_name)
+            show_missing("nice_to_have_skills", extr, meta_map, step_name)
+            show_missing("hard_skills", extr, meta_map, step_name)
+            show_missing("soft_skills", extr, meta_map, step_name)
+            show_missing("certifications_required", extr, meta_map, step_name)
 
             st.subheader("Language Skills")
-            show_input(
-                "language_requirements",
-                extr.get("language_requirements", ExtractResult()),
-                meta_map["language_requirements"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "languages_optional",
-                extr.get("languages_optional", ExtractResult()),
-                meta_map["languages_optional"],
-                widget_prefix=step_name,
-            )
+            show_missing("language_requirements", extr, meta_map, step_name)
+            show_missing("languages_optional", extr, meta_map, step_name)
 
             ind_required = st.checkbox(
                 "Industry experience",
@@ -2385,57 +2278,17 @@ def main():
             st.subheader("Key Competencies")
             comp_cols = st.columns(2)
             with comp_cols[0]:
-                show_input(
-                    "analytical_skills",
-                    extr.get("analytical_skills", ExtractResult()),
-                    meta_map["analytical_skills"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "project_management_skills",
-                    extr.get("project_management_skills", ExtractResult()),
-                    meta_map["project_management_skills"],
-                    widget_prefix=step_name,
-                )
+                show_missing("analytical_skills", extr, meta_map, step_name)
+                show_missing("project_management_skills", extr, meta_map, step_name)
             with comp_cols[1]:
-                show_input(
-                    "communication_skills",
-                    extr.get("communication_skills", ExtractResult()),
-                    meta_map["communication_skills"],
-                    widget_prefix=step_name,
-                )
-                show_input(
-                    "leadership_competencies",
-                    extr.get("leadership_competencies", ExtractResult()),
-                    meta_map["leadership_competencies"],
-                    widget_prefix=step_name,
-                )
+                show_missing("communication_skills", extr, meta_map, step_name)
+                show_missing("leadership_competencies", extr, meta_map, step_name)
 
             st.subheader("Technical Environment")
-            show_input(
-                "tool_proficiency",
-                extr.get("tool_proficiency", ExtractResult()),
-                meta_map["tool_proficiency"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "tech_stack",
-                extr.get("tech_stack", ExtractResult()),
-                meta_map["tech_stack"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "it_skills",
-                extr.get("it_skills", ExtractResult()),
-                meta_map["it_skills"],
-                widget_prefix=step_name,
-            )
-            show_input(
-                "soft_requirement_details",
-                extr.get("soft_requirement_details", ExtractResult()),
-                meta_map["soft_requirement_details"],
-                widget_prefix=step_name,
-            )
+            show_missing("tool_proficiency", extr, meta_map, step_name)
+            show_missing("tech_stack", extr, meta_map, step_name)
+            show_missing("it_skills", extr, meta_map, step_name)
+            show_missing("soft_requirement_details", extr, meta_map, step_name)
 
             st.subheader("Other Requirements")
             other_cols = st.columns(2)
@@ -2457,18 +2310,8 @@ def main():
 
                 cols_a, cols_b = st.columns(2)
                 with cols_a:
-                    show_input(
-                        "vacation_days",
-                        extr.get("vacation_days", ExtractResult()),
-                        meta_map["vacation_days"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "remote_policy",
-                        extr.get("remote_policy", ExtractResult()),
-                        meta_map["remote_policy"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("vacation_days", extr, meta_map, step_name)
+                    show_missing("remote_policy", extr, meta_map, step_name)
                     if ss.get("data", {}).get("remote_policy") not in {"", "Onsite"}:
                         pct = int(ss.get("data", {}).get("remote_percentage", 50))
                         pct = st.slider(
@@ -2476,46 +2319,26 @@ def main():
                         )
                         ss["data"]["remote_percentage"] = pct
 
-                    show_input(
-                        "flexible_hours",
-                        extr.get("flexible_hours", ExtractResult()),
-                        meta_map["flexible_hours"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("flexible_hours", extr, meta_map, step_name)
                     if ss.get("data", {}).get("flexible_hours") not in {"", "No"}:
                         txt = st.text_input(
                             "Flexibility Details", key="flexible_hours_details"
                         )
                         ss["data"]["flexible_hours_details"] = txt
 
-                    show_input(
-                        "company_car",
-                        extr.get("company_car", ExtractResult()),
-                        meta_map["company_car"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("company_car", extr, meta_map, step_name)
                     if ss.get("data", {}).get("company_car"):
                         car = st.text_input("Car Class", key="car_class")
                         ss["data"]["car_class"] = car
 
-                    show_input(
-                        "stock_options",
-                        extr.get("stock_options", ExtractResult()),
-                        meta_map["stock_options"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("stock_options", extr, meta_map, step_name)
                     if ss.get("data", {}).get("stock_options"):
                         opt = st.text_input(
                             "Stock Option Details", key="stock_options_details"
                         )
                         ss["data"]["stock_options_details"] = opt
 
-                    show_input(
-                        "bonus_scheme",
-                        extr.get("bonus_scheme", ExtractResult()),
-                        meta_map["bonus_scheme"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("bonus_scheme", extr, meta_map, step_name)
                     if ss.get("data", {}).get("bonus_scheme"):
                         txt = st.text_area(
                             meta_map["commission_structure"]["label"],
@@ -2524,60 +2347,19 @@ def main():
                         ss["data"]["commission_structure"] = txt
 
                 with cols_b:
-                    show_input(
-                        "relocation_support",
-                        extr.get("relocation_support", ExtractResult()),
-                        meta_map["relocation_support"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "childcare_support",
-                        extr.get("childcare_support", ExtractResult()),
-                        meta_map["childcare_support"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "learning_budget",
-                        extr.get("learning_budget", ExtractResult(value=10000)),
-                        meta_map["learning_budget"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "sabbatical_option",
-                        extr.get("sabbatical_option", ExtractResult()),
-                        meta_map["sabbatical_option"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "health_insurance",
-                        extr.get("health_insurance", ExtractResult()),
-                        meta_map["health_insurance"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "pension_plan",
-                        extr.get("pension_plan", ExtractResult()),
-                        meta_map["pension_plan"],
-                        widget_prefix=step_name,
-                    )
-                    show_input(
-                        "other_perks",
-                        extr.get("other_perks", ExtractResult()),
-                        meta_map["other_perks"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("relocation_support", extr, meta_map, step_name)
+                    show_missing("childcare_support", extr, meta_map, step_name)
+                    show_missing("learning_budget", extr, meta_map, step_name)
+                    show_missing("sabbatical_option", extr, meta_map, step_name)
+                    show_missing("health_insurance", extr, meta_map, step_name)
+                    show_missing("pension_plan", extr, meta_map, step_name)
+                    show_missing("other_perks", extr, meta_map, step_name)
                     if ss.get("data", {}).get("other_perks"):
                         txt = st.text_area(
                             "Other Perks Details", key="other_perks_details"
                         )
                         ss["data"]["other_perks_details"] = txt
-
-                    show_input(
-                        "visa_sponsorship",
-                        extr.get("visa_sponsorship", ExtractResult()),
-                        meta_map["visa_sponsorship"],
-                        widget_prefix=step_name,
-                    )
+                    show_missing("visa_sponsorship", extr, meta_map, step_name)
             else:
                 current_cols = 2
                 cols = st.columns(current_cols)
