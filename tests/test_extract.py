@@ -92,6 +92,27 @@ def test_extract_synonym_labels(monkeypatch):
     assert result["employment_type"].value.lower() == "teilzeit"
 
 
+def test_extract_ner_fallback(monkeypatch):
+    tool = load_tool_module()
+
+    async def dummy_fill(missing, text):
+        return {}
+
+    async def dummy_validate(data):
+        return {}
+
+    monkeypatch.setattr(tool, "llm_fill", dummy_fill)
+    monkeypatch.setattr(tool, "llm_validate", dummy_validate)
+
+    text = (
+        "Join S3 Solutions GmbH as Data Scientist. "
+        "The position is based at our Munich office."
+    )
+    result = asyncio.run(tool.extract(text))
+    assert result["company_name"].value == "S3 Solutions GmbH"
+    assert result["work_location_city"].value == "Munich"
+
+
 def test_llm_validate(monkeypatch):
     tool = load_tool_module()
 

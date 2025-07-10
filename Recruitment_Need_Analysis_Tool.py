@@ -11,6 +11,9 @@ import re
 import ast
 import logging
 import os
+from functools import lru_cache
+import spacy
+from spacy.language import Language
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
@@ -575,7 +578,9 @@ def search_company_name(text: str) -> ExtractResult | None:
     )
     m = re.search(pat_bei, text)
     if m:
-        return ExtractResult(m.group("company_name"), 0.8)
+        val = m.group("company_name")
+        if " " in val or re.search(r"gmbh|ag|kg|se|inc|ltd|llc|e\.v\.", val, re.I):
+            return ExtractResult(val, 0.8)
 
     pat_generic = (
         r"(?P<company_name>"
@@ -585,7 +590,9 @@ def search_company_name(text: str) -> ExtractResult | None:
     )
     m = re.search(pat_generic, text)
     if m:
-        return ExtractResult(m.group("company_name"), 0.7)
+        val = m.group("company_name")
+        if " " in val or re.search(r"gmbh|ag|kg|se|inc|ltd|llc|e\.v\.", val, re.I):
+            return ExtractResult(val, 0.7)
     return None
 
 
@@ -601,6 +608,34 @@ def search_city(text: str) -> ExtractResult | None:
     if m:
         return ExtractResult(m.group("work_location_city"), 0.7)
     return None
+
+
+@lru_cache(maxsize=1)
+def load_ner() -> Language:
+    """Load and cache the spaCy NER model."""
+
+    try:
+        return spacy.load("xx_ent_wiki_sm")
+    except Exception as exc:  # pragma: no cover - log only
+        logging.error("spaCy model load failed: %s", exc)
+        return spacy.blank("xx")
+
+
+def ner_fallback(text: str) -> dict[str, ExtractResult]:
+    """Return organization and city entities via spaCy."""
+
+    nlp = load_ner()
+    if not nlp.pipe_names:  # no NER component available
+        return {}
+    doc = nlp(text)
+    out: dict[str, ExtractResult] = {}
+    org = next((e.text for e in doc.ents if e.label_ == "ORG"), None)
+    city = next((e.text for e in doc.ents if e.label_ in {"GPE", "LOC"}), None)
+    if org:
+        out["company_name"] = ExtractResult(org, 0.6)
+    if city:
+        out["work_location_city"] = ExtractResult(city, 0.6)
+    return out
 
 
 # ── Utility dataclass ─────────────────────────────────────────────────────────
@@ -998,6 +1033,13 @@ async def extract(text: str) -> dict[str, ExtractResult]:
             interim["work_location_city"] = guess_city
             if "city" not in interim:
                 interim["city"] = guess_city
+
+    if {"company_name", "work_location_city"} - interim.keys():
+        for k, res in ner_fallback(text).items():
+            if k not in interim and res.value:
+                interim[k] = res
+                if k == "work_location_city" and "city" not in interim:
+                    interim["city"] = res
 
     for k, pat in FALLBACK_PATTERNS.items():
         if k not in interim:
