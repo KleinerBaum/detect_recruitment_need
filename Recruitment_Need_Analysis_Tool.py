@@ -200,7 +200,14 @@ def group_by_step(
 # ──────────────────────────────────────────────
 # helper to cut boilerplate
 def _simple(label_en: str, label_de: str, cap: str) -> str:
-    return rf"(?:{label_en}|{label_de})\s*:?\s*(?P<{cap}>.+)"
+    """Return a basic pattern matching a labeled value.
+
+    The pattern captures a single line following either the English or German
+    label. It is more restrictive than before to avoid grabbing unrelated text.
+    """
+
+    label = rf"(?:{label_en}|{label_de})"
+    return rf"{label}\s*[:\-]?\s*(?P<{cap}>[^\n\r]+)"
 
 
 REGEX_PATTERNS = {
@@ -223,7 +230,11 @@ REGEX_PATTERNS = {
     "work_schedule": _simple("Work\\s*Schedule", "Arbeitszeitmodell", "work_schedule"),
     "work_location_city": _simple("City|Ort", "Ort", "work_location_city"),
     # Company core
-    "company_name": _simple("Company|Employer", "Unternehmen", "company_name"),
+    "company_name": _simple(
+        "Company Name|Company|Employer|Firma",
+        "Unternehmen|Firmenname",
+        "company_name",
+    ),
     "city": _simple("City", "Stadt", "city"),
     "company_size": _simple("Company\\s*Size", "Mitarbeiterzahl", "company_size"),
     "industry": _simple("Industry", "Branche", "industry"),
@@ -505,18 +516,24 @@ FALLBACK_PATTERNS: dict[str, str] = {
 
 
 def search_company_name(text: str) -> ExtractResult | None:
+    """Try to guess the company name from common patterns."""
+
     pat_bei = (
-        r"(?<=bei\s)"
-        r"(?P<company_name>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&., \-]{2,}\s*(?:GmbH|AG|KG|SE|Inc\.|Ltd\.|LLC|e\.V\.))"
-        r"(?=\s|$)"
+        r"(?:(?<=bei\s)|(?<=at\s))"
+        r"(?P<company_name>"
+        r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&.,'-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&.,'-]+)*"
+        r"(?:\s+(?:GmbH(?: & Co\. KG)?|AG|KG|SE|UG(?: \(haftungsbeschränkt\))?|Inc\.|Ltd\.|LLC|e\.V\.))?"
+        r")(?=\s|$)"
     )
     m = re.search(pat_bei, text)
     if m:
         return ExtractResult(m.group("company_name"), 0.8)
 
     pat_generic = (
-        r"(?P<company_name>[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&., \-]{2,}\s*(?:GmbH|AG|KG|SE|Inc\.|Ltd\.|LLC|e\.V\.))"
-        r"(?=\s|$)"
+        r"(?P<company_name>"
+        r"[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&.,'-]+(?:\s+[A-ZÄÖÜ][A-Za-zÄÖÜäöüß&.,'-]+)*"
+        r"(?:\s+(?:GmbH(?: & Co\. KG)?|AG|KG|SE|UG(?: \(haftungsbeschränkt\))?|Inc\.|Ltd\.|LLC|e\.V\.))?"
+        r")(?=\s|$)"
     )
     m = re.search(pat_generic, text)
     if m:
@@ -833,6 +850,44 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
     return out
 
 
+async def llm_validate(data: dict[str, ExtractResult]) -> dict[str, ExtractResult]:
+    """Validate extracted values using a language model."""
+
+    if not data:
+        return {}
+
+    payload = {k: v.value for k, v in data.items()}
+    chat = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        max_tokens=500,
+        messages=[
+            {"role": "system", "content": LLM_PROMPT},
+            {
+                "role": "user",
+                "content": (
+                    "Check the following extracted data for plausibility. "
+                    "Return corrected JSON with confidence values."
+                    f"\nDATA:\n```{json.dumps(payload)}```"
+                ),
+            },
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    raw = safe_json_load(chat.choices[0].message.content or "")
+    out = {}
+    for k, node in raw.items():
+        if isinstance(node, dict):
+            val = node.get("value")
+            conf = float(node.get("confidence", 0.5)) if val else 0.0
+        else:
+            val = node
+            conf = 0.5 if val else 0.0
+        out[k] = ExtractResult(val, conf)
+    return out
+
+
 # ── Extraction orchestrator ---------------------------------------------------
 async def extract(text: str) -> dict[str, ExtractResult]:
     interim: dict[str, ExtractResult] = {
@@ -874,6 +929,9 @@ async def extract(text: str) -> dict[str, ExtractResult]:
 
     missing = [k for k in REGEX_PATTERNS.keys() if k not in interim]
     interim.update(await llm_fill(missing, text))
+
+    validated = await llm_validate(interim)
+    interim.update(validated)
     return interim
 
 

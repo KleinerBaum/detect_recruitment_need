@@ -31,6 +31,10 @@ Tech Stack and Team Challenges offer a **Generate Ideas** button that fetches AI
 suggestions you can insert directly. Missing data for the company and the
 department is highlighted in two columns below the extracted values.
 
+Regex patterns for key information have been tightened and now support German
+and English labels. Extracted values are validated by an LLM to increase
+accuracy.
+
 ## Wizard Steps
 
 The wizard collects data in the following order:
