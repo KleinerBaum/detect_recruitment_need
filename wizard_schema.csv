@@ -13,6 +13,7 @@ COMPANY,company_name,text_input,1,Company Name,,Firmenname
 COMPANY,city,text_input,1,Company City,,Stadt (Sitz der Firma)
 COMPANY,company_size,selectbox,0,Company Size,1-10;11-50;51-200;201-500;501-1000;1001-5000;5001+,Unternehmensgröße auswählen
 COMPANY,industry,selectbox,0,Industry,IT;Consulting;Finance;Healthcare;Manufacturing;Retail;Automotive;Construction;Media;Other,Branche auswählen
+COMPANY,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
 COMPANY,headquarters_location,text_input,0,Headquarters Location,,Hauptsitz
 COMPANY,place_of_work,text_input,0,Place of Work,,Genaue Arbeitsstätte
 COMPANY,company_website,text_input,0,Company Website,,Firmenwebsite (URL)
@@ -84,6 +85,7 @@ SKILLS,leadership_competencies,checkbox,0,Leadership Competencies,,Führungskomp
 SKILLS,industry_experience,checkbox,0,Industry Experience,,Branchenerfahrung
 SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere Anforderungen
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
+SKILLS,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
 BENEFITS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
 BENEFITS,bonus_scheme,checkbox,0,Bonus Scheme,,Bonusregelung
@@ -102,8 +104,6 @@ BENEFITS,health_insurance,checkbox,0,Health Insurance,,Zusatzversicherung?
 BENEFITS,pension_plan,checkbox,0,Pension Plan,,Altersvorsorge?
 BENEFITS,stock_options,checkbox,0,Stock Options,,Aktienoptionen?
 BENEFITS,other_perks,checkbox,0,Other Perks,,Weitere Benefits
-BASIC,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
-TARGET_GROUP,target_industries,text_area,0,Target Industries,,Branchen der Zielgruppe
 INTERVIEW,recruitment_contact_email,text_input,1,Recruitment Contact Email,,E-Mail für Bewerbungen
 INTERVIEW,recruitment_contact_phone,text_input,0,Recruitment Contact Phone,,Telefonnummer für Bewerbungen
 INTERVIEW,recruitment_steps,text_area,0,Recruitment Steps,,Bewerbungsprozess
