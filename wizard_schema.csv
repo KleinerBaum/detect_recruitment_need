@@ -54,8 +54,11 @@ ROLE,decision_authority,checkbox,0,Decision Authority,,Entscheidungskompetenz
 ROLE,process_improvement,checkbox,0,Process Improvement,,Prozessoptimierung gefragt?
 ROLE,innovation_expected,checkbox,0,Innovation Expected,,Innovationsgrad gefordert?
 ROLE,travel_required,selectbox,0,Travel Required,No;Rarely;Occasionally;Regularly;Frequently,Reiseanteil
+ROLE,travel_details,text_input,0,Travel Details,,Häufigkeit oder Prozent der Reisetätigkeit
 ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
+ROLE,on_call_expectations,text_input,0,On Call Times,,Erwartete Bereitschaftszeiten
 ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
+ROLE,physical_duties_description,text_area,0,Physical Duties Description,,Beschreibung der körperlichen Tätigkeiten
 ROLE,daily_tools,text_area,0,Daily Tools,,Tägliche Tools/Programme
 SKILLS,seniority_level,selectbox,1,Seniority Level,Junior;Professional;Senior;Lead;Head;C-Level;Student;Intern,Karrierestufe auswählen
 SKILLS,must_have_skills,text_area,1,Must Have Skills,,Erforderliche Kompetenzen/Skills
