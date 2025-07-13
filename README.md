@@ -66,3 +66,10 @@ target endpoint. Occupation lookup and ESCO skill suggestions are available dire
 
 The helper uses the ``hasEssentialSkill`` relation to fetch essential skills for
 an occupation from the ESCO API.
+
+## Vector Search
+
+Missing fields can be filled via Retrieval-Augmented Generation. Relevant job ads
+and CV snippets are retrieved from the pre-trained "vacalyser" vector store and
+passed to the LLM. Set ``VACALYSER_VECTOR_STORE`` to override the default store
+ID.
