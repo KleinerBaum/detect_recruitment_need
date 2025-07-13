@@ -58,6 +58,8 @@ _file_tools = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
 _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
+create_pdf = _file_tools.create_pdf
+create_docx = _file_tools.create_docx
 
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
@@ -3100,6 +3102,17 @@ def main():
         st.subheader("Expected Annual Salary")
         display_salary_plot()
 
+        ss.setdefault("font_choice", "Arial")
+        st.selectbox(
+            "Font",
+            ["Arial", "Helvetica", "Courier", "Times"],
+            key="font_choice",
+        )
+        logo_file = st.file_uploader(
+            "Upload Logo", type=["png", "jpg", "jpeg"], key="logo_file"
+        )
+        logo_bytes = logo_file.getvalue() if logo_file else None
+
         st.header("Next Step – Use the collected data!")
 
         btn_cols = st.columns(6)
@@ -3171,6 +3184,28 @@ def main():
                 st.text_area("Change Request", key=f"chg_{key}", value="")
                 st.button(
                     "Apply", key=f"apply_{key}", on_click=apply_change, args=(key,)
+                )
+                pdf_bytes = create_pdf(
+                    ss[f"out_{key}"],
+                    font=ss.get("font_choice", "Arial"),
+                    logo=logo_bytes,
+                )
+                st.download_button(
+                    "Download PDF",
+                    pdf_bytes,
+                    file_name=f"{key}.pdf",
+                    mime="application/pdf",
+                )
+                doc_bytes = create_docx(
+                    ss[f"out_{key}"],
+                    font=ss.get("font_choice", "Arial"),
+                    logo=logo_bytes,
+                )
+                st.download_button(
+                    "Download DOCX",
+                    doc_bytes,
+                    file_name=f"{key}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 )
 
         step_labels = [title for title, _ in STEPS]
