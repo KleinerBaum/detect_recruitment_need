@@ -37,6 +37,8 @@ that the extraction finished.
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase
 accuracy. Labels may now be prefixed with dashes or bullet characters.
+If the patterns fail, a lightweight spaCy NER model guesses the company name
+and city from the text.
 
 ## Wizard Steps
 
