@@ -29,3 +29,7 @@ flake8==7.3.0              # linter/quality checks :contentReference[oaicite:9]{
 types-requests==2.32.4.20250611  # typing stubs for “requests” :contentReference[oaicite:10]{index=10}
 lxml==5.2.1
 pdfplumber
+
+langchain
+langchain-openai
+
