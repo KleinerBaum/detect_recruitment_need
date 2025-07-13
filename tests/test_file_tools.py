@@ -62,3 +62,9 @@ def test_create_pdf_and_docx() -> None:
     docx_bytes = create_docx("Hello DOCX", font="Arial", logo=logo)
     doc = docx.Document(io.BytesIO(docx_bytes))
     assert doc.paragraphs[-1].text == "Hello DOCX"
+
+
+def test_create_pdf_handles_long_word() -> None:
+    long_word = "A" * 1000
+    pdf_bytes = create_pdf(long_word, font="Arial")
+    assert pdf_bytes.startswith(b"%PDF")
