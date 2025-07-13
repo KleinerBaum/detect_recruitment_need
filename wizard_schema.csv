@@ -55,9 +55,14 @@ ROLE,decision_authority,checkbox,0,Decision Authority,,Entscheidungskompetenz
 ROLE,process_improvement,checkbox,0,Process Improvement,,Prozessoptimierung gefragt?
 ROLE,innovation_expected,checkbox,0,Innovation Expected,,Innovationsgrad gefordert?
 ROLE,travel_required,selectbox,0,Travel Required,No;Rarely;Occasionally;Regularly;Frequently,Reiseanteil
-ROLE,travel_details,text_input,0,Travel Details,,Häufigkeit oder Prozent der Reisetätigkeit
+ROLE,travel_details,text_area,0,Travel Details,,Zusätzliche Hinweise zur Reisetätigkeit
+ROLE,travel_region,text_input,0,Travel Region,,Region oder Länder
+ROLE,travel_length_days,number_input,0,Travel Length (days),,Dauer je Reise
+ROLE,travel_frequency_number,number_input,0,Travel Frequency,,Anzahl der Reisen
+ROLE,travel_frequency_unit,selectbox,0,Frequency Unit,per week;per month;per quarter;per year,Zeitraum der Reisetätigkeit
+ROLE,weekend_travel,checkbox,0,Weekend Travel?,,Wochenendreisen notwendig?
 ROLE,on_call,checkbox,0,On Call,,Bereitschaftsdienst?
-ROLE,on_call_expectations,text_input,0,On Call Times,,Erwartete Bereitschaftszeiten
+ROLE,on_call_expectations,week_schedule,0,On Call Times,,Bereitschaftszeiten pro Tag
 ROLE,physical_duties,checkbox,0,Physical Duties,,Physisch anstrengende Tätigkeit?
 ROLE,physical_duties_description,text_area,0,Physical Duties Description,,Beschreibung der körperlichen Tätigkeiten
 ROLE,daily_tools,text_area,0,Daily Tools,,Tägliche Tools/Programme
