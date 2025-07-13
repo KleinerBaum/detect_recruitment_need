@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import List, Sequence
 
-import faiss
+import faiss  # type: ignore[import]
 import numpy as np
 from openai import AsyncOpenAI
 from sentence_transformers import SentenceTransformer

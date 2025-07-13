@@ -803,6 +803,30 @@ def parse_skill_list(raw: str | list[str] | None) -> list[str]:
     return [s.strip() for s in items if s and s.strip()]
 
 
+def parse_salary_range(value: str) -> tuple[int, int] | None:
+    """Return numeric bounds from a salary range string."""
+
+    digits = [int(x) for x in re.findall(r"\d+", value.replace(",", ""))]
+    if len(digits) >= 2:
+        return digits[0], digits[1]
+    if len(digits) == 1:
+        return digits[0], digits[0]
+    return None
+
+
+def salary_deviation_high(
+    entered: tuple[int, int], suggested: tuple[int, int], threshold: float = 0.2
+) -> bool:
+    """Return ``True`` if ``entered`` deviates strongly from ``suggested``."""
+
+    lower, upper = entered
+    s_lower, s_upper = suggested
+    return (
+        abs(lower - s_lower) > s_lower * threshold
+        or abs(upper - s_upper) > s_upper * threshold
+    )
+
+
 def selectable_buttons(
     options: list[str], label: str, session_key: str, cols: int = 3
 ) -> list[str]:
@@ -1267,10 +1291,18 @@ def show_input(
 
     elif field_type == "slider":
         digits = [int(x) for x in re.findall(r"\d+", str(val))]
+        title = str(ss.get("data", {}).get("job_title", ""))
+        level = str(ss.get("data", {}).get("seniority_level", ""))
+        suggested: tuple[int, int] | None = None
+        if key == "salary_range" and title and level:
+            suggested = parse_salary_range(estimate_salary_range(title, level))
+
         if len(digits) >= 2:
             default_range = (digits[0], digits[1])
         elif len(digits) == 1:
             default_range = (digits[0], digits[0])
+        elif suggested:
+            default_range = suggested
         else:
             default_range = (50000, 60000)
 
@@ -1284,6 +1316,10 @@ def show_input(
             help=helptext,
         )
         val = f"{selected[0]}–{selected[1]}"
+        if key == "salary_range" and suggested:
+            st.caption(f"Suggested range: {suggested[0]}–{suggested[1]} €")
+            if salary_deviation_high(selected, suggested):
+                st.warning("Entered salary deviates from suggestion.")
 
     else:
         val = st.text_input(label, value=val or "", key=widget_key, help=helptext)
