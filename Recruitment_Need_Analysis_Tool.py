@@ -1717,6 +1717,68 @@ def set_background(image_path: Path, opacity: float = 0.5) -> None:
 set_background(img_path, opacity=0.5)
 
 
+def render_header() -> str:
+    """Render header with language toggle, logo and page links."""
+
+    labels = {
+        "Deutsch": {"adv": "Vorteile", "tech": "Die Technologie dahinter"},
+        "English": {"adv": "Advantages", "tech": "The Technology behind"},
+    }
+
+    cols = st.columns([2, 2, 2])
+    with cols[0]:
+        lang = st.radio("", ("Deutsch", "English"), horizontal=True, key="nav_lang")
+    with cols[1]:
+        st.image("images/color1_logo_transparent_background.png", width=150)
+    with cols[2]:
+        st.page_link(
+            "pages/🏠_Advantages.py",
+            label=labels[st.session_state.get("nav_lang", "English")]["adv"],
+            icon="🏠",
+        )
+        st.page_link(
+            "pages/💡_Tech_Overview.py",
+            label=labels[st.session_state.get("nav_lang", "English")]["tech"],
+            icon="💡",
+        )
+    st.markdown(
+        "<h2 style='text-align:center'>Recruitment Need Analysis 🧭</h2>",
+        unsafe_allow_html=True,
+    )
+    return lang
+
+
+def display_sidebar_data(current_step: int) -> None:
+    """Show stored values grouped by step in the sidebar."""
+
+    data = st.session_state.get("data", {})
+    extracted = st.session_state.get("extracted", {})
+    order = st.session_state.get("ORDER")
+    if not order:
+        return
+    for i, step in enumerate(order, start=1):
+        values = {k: data.get(k) for k in extracted.get(step, {}) if data.get(k)}
+        if not values:
+            continue
+        with st.sidebar.expander(step.title(), expanded=current_step == i):
+            for k, v in values.items():
+                st.write(f"**{k.replace('_', ' ').title()}:** {v}")
+
+
+def display_extraction_tabs() -> None:
+    """Render editable tabs with extracted data."""
+
+    extracted = st.session_state.get("extracted", {})
+    order = st.session_state.get("ORDER")
+    if not order or not extracted:
+        return
+    tabs = st.tabs([s.title() for s in order if s in extracted])
+    for tab, step in zip(tabs, [s for s in order if s in extracted]):
+        keys = [k for k in extracted.get(step, {})]
+        with tab:
+            display_extracted_values_editable(extracted.get(step, {}), keys, step)
+
+
 # Mapping for subtitles per wizard step
 STEP_SUBTITLES = {
     "BASIC": (
@@ -1961,58 +2023,18 @@ def main():
     ss.setdefault("extracted", {})
     ss.setdefault("benefit_list", [])
     ss["_used_widget_keys"] = set()
+    ss.setdefault("ORDER", ORDER)
+
+    lang_label = render_header()
+    display_sidebar_data(ss.get("step", 0))
 
     def goto(i: int):
         ss["step"] = i
 
     step = ss["step"]
 
-    def render_page_links() -> str:
-        """Display navigation links and language toggle.
-
-        Returns
-        -------
-        str
-            Selected language label ("Deutsch" or "English").
-        """
-
-        labels = {
-            "Deutsch": {
-                "adv": "Vorteile",
-                "tech": "Die Technologie dahinter",
-            },
-            "English": {"adv": "Advantages", "tech": "The Technology behind"},
-        }
-
-        link_cols = st.columns([8, 2, 2, 3])
-        with link_cols[1]:
-            st.page_link(
-                "pages/🏠_Advantages.py",
-                label=labels[st.session_state.get("nav_lang", "English")]["adv"],
-                icon="🏠",
-            )
-        with link_cols[2]:
-            st.page_link(
-                "pages/💡_Tech_Overview.py",
-                label=labels[st.session_state.get("nav_lang", "English")]["tech"],
-                icon="💡",
-            )
-        with link_cols[3]:
-            lang_label = st.radio(
-                "German-English",
-                ("Deutsch", "English"),
-                horizontal=True,
-                key="nav_lang",
-            )
-        return lang_label
-
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
-        lang_label = render_page_links()
-        # Neat welcome design
-        with open("images/color1_logo_transparent_background.png", "rb") as img_file:
-            logo_b64 = base64.b64encode(img_file.read()).decode()
-
         intro = {
             "Deutsch": [
                 "Willkommen! Dieses Tool hilft dir, schnell ein vollst\u00e4ndiges Anforderungsprofil zu erstellen.",
@@ -2027,17 +2049,11 @@ def main():
         }
 
         st.markdown(
-            f"""
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h2 class="black-text" style="font-size:26pt;margin-bottom:0;">Recruitment Need Analysis 🧭</h2>
-            <img src="data:image/png;base64,{logo_b64}" style="width:200px;" />
-        </div>
-        <div class="black-text" style="text-align:center;">
-            <p>{intro[lang_label][0]}</p>
-            <p>{intro[lang_label][1]}</p>
-            <p>{intro[lang_label][2]}</p>
-        </div>
-        """,
+            f"<div class='black-text' style='text-align:center;'>"
+            f"<p>{intro[lang_label][0]}</p>"
+            f"<p>{intro[lang_label][1]}</p>"
+            f"<p>{intro[lang_label][2]}</p>"
+            "</div>",
             unsafe_allow_html=True,
         )
 
@@ -2098,6 +2114,8 @@ def main():
             if ss.pop("extraction_success", False):
                 status_box.success("Extraction complete!", icon="🔥")
 
+            display_extraction_tabs()
+
             missing_msg = {
                 "Deutsch": "Starte danach, fehlende Daten in deiner Spezifikation aufzudecken, um Kosten zu minimieren und maximalen Recruiting-Erfolg zu sichern.",
                 "English": "Start discovering missing data in your specification in order to minimise Costs and to ensure maximum recruitment Success",
@@ -2139,10 +2157,8 @@ def main():
     # ----------- 1..n: Wizard -----------
     elif 1 <= step < len(STEPS) + 1:
         step_idx = step - 1
-        _ = render_page_links()
         step_name = ORDER[step_idx]
         meta_fields = SCHEMA[step_name]  # <-- Zuerst setzen!
-        fields = [item["key"] for item in meta_fields]
         extr: dict[str, ExtractResult] = ss.get("extracted", {}).get(step_name, {})
 
         # Headline & Subtitle
@@ -2170,9 +2186,6 @@ def main():
 
         if step_name == "INTERVIEW":
             display_interview_section(meta_fields, extr)
-
-        # Extrahierte Werte kompakt darstellen
-        display_extracted_values_editable(extr, fields, step_name)
 
         # Prominently request missing fields
         if step_name == "BASIC":
