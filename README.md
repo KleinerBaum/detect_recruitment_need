@@ -28,6 +28,9 @@ app proposes local perks such as club memberships or discounted facilities
 (e.g. "Fortuna Düsseldorf" membership). Regional perks now also exist for
 Berlin, München, Hamburg and Frankfurt.
 
+Remote policy is automatically synced with the selected work schedule.
+Choosing "Hybrid" directly asks for the remote percentage once.
+
 The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 *Team & Culture Context* now shows three bordered boxes. Each field provides a
 **Generate Ideas** button above the input and AI suggestions appear as pill
