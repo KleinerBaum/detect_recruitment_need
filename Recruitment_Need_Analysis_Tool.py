@@ -82,7 +82,12 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         SCHEMA[step].append(row)
         KEY_TO_STEP[row["key"]] = step
 
-DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
+DATE_KEYS = {
+    "date_of_employment_start",
+    "application_deadline",
+    "probation_period",
+    "contract_end_date",
+}
 INDUSTRY_OPTIONS = [
     "IT",
     "Finance",
@@ -357,6 +362,9 @@ REGEX_PATTERNS = {
     "date_of_employment_start": _simple(
         "Start\\s*Date|Begin\\s*Date", "Eintrittsdatum", "date_of_employment_start"
     ),
+    "contract_end_date": _simple(
+        "End\\s*Date|Contract\\s*End", "Vertragsende|Enddatum", "contract_end_date"
+    ),
     "work_schedule": _simple("Work\\s*Schedule", "Arbeitszeitmodell", "work_schedule"),
     "work_location_city": _simple("City|Ort", "Ort", "work_location_city"),
     # Company core
@@ -538,6 +546,7 @@ REGEX_PATTERNS = {
     "commission_structure": _simple(
         "Commission\\s*Structure", "Provisionsmodell", "commission_structure"
     ),
+    "bonus_percentage": r"(?P<bonus_percentage>\d{1,3}\s*%)",
     "variable_comp": _simple(
         "Variable\\s*Comp", "Variable\\s*Vergütung", "variable_comp"
     ),
@@ -1519,6 +1528,8 @@ def display_summary_overview() -> None:
         st.write(f"**Start Date Target:** {val('date_of_employment_start')}")
         st.write(f"**Place of Work:** {val('place_of_work')}")
         st.write(f"**Contract Type:** {val('contract_type')}")
+        if ss.get("data", {}).get("contract_type") == "Fixed-Term":
+            st.write(f"**Contract End Date:** {val('contract_end_date')}")
         st.write(f"**Work Schedule:** {val('work_schedule')}")
 
     with col2:
@@ -1546,6 +1557,8 @@ def display_summary_overview() -> None:
         st.markdown("### Benefits")
         st.write(f"**Salary Range (EUR):** {val('salary_range')}")
         st.write(f"**Variable Comp:** {val('variable_comp')}")
+        if ss.get("data", {}).get("bonus_scheme"):
+            st.write(f"**Bonus Percentage (%):** {val('bonus_percentage')}")
         st.write(f"**Vacation Days:** {val('vacation_days')}")
         st.write(f"**Remote Policy:** {val('remote_policy')}")
         st.write(f"**Flexible Hours:** {val('flexible_hours')}")
@@ -2214,6 +2227,15 @@ def main():
                         meta_map["contract_type"],
                         widget_prefix=step_name,
                     )
+                if ss.get("data", {}).get(
+                    "contract_type"
+                ) == "Fixed-Term" and value_missing("contract_end_date"):
+                    show_input(
+                        "contract_end_date",
+                        extr.get("contract_end_date", ExtractResult()),
+                        meta_map["contract_end_date"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
                 if value_missing("work_schedule"):
                     show_input(
@@ -2687,6 +2709,14 @@ def main():
                             key="commission_structure",
                         )
                         ss["data"]["commission_structure"] = txt
+                        pct = st.number_input(
+                            meta_map["bonus_percentage"]["label"],
+                            min_value=0.0,
+                            max_value=100.0,
+                            step=0.5,
+                            key="bonus_percentage",
+                        )
+                        ss["data"]["bonus_percentage"] = pct
 
                 with cols_b:
                     show_missing("relocation_support", extr, meta_map, step_name)
