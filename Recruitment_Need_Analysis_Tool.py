@@ -124,7 +124,23 @@ LOCAL_BENEFITS: dict[str, list[str]] = {
     "düsseldorf": [
         "Fortuna Düsseldorf Vereinsmitgliedschaft",
         "Zugang zur Driving Range auf https://www.golf-duesseldorf.de/driving-range/",
-    ]
+    ],
+    "berlin": [
+        "BVG-Firmenticket",
+        "Urban Sports Club Zuschuss",
+    ],
+    "münchen": [
+        "Vergünstigter Eintritt in die Therme Erding",
+        "BahnCard 50 für Pendler",
+    ],
+    "hamburg": [
+        "HVV-ProfiTicket",
+        "Segelkurse auf der Alster",
+    ],
+    "frankfurt": [
+        "MuseumsuferCard mit Rabatt",
+        "Fitnessstudio-Zuschuss",
+    ],
 }
 
 
@@ -835,6 +851,20 @@ def update_benefit_preferences(city: str) -> None:
     """Update session benefit suggestions based on location."""
 
     ss["local_benefits"] = LOCAL_BENEFITS.get(city.lower(), [])
+
+
+def calc_extraction_progress() -> int:
+    """Return extraction completion percentage."""
+
+    total = len(KEY_TO_STEP)
+    if not total:
+        return 0
+    done = 0
+    for step in ss.get("extracted", {}).values():
+        for res in step.values():
+            if getattr(res, "value", None):
+                done += 1
+    return int(done * 100 / total)
 
 
 async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
@@ -2026,6 +2056,8 @@ def main():
 
         with center_col:
             status_box = st.empty()
+            progress = calc_extraction_progress()
+            st.caption(f"Extraktion: {progress}%")
             st.text_input(
                 "Stellentitel" if lang_label == "Deutsch" else "Job Title",
                 value=job_title_default or "",
@@ -2038,37 +2070,21 @@ def main():
                 key="job_url",
             )
 
-            if st.button(
-                "URL analysieren" if lang_label == "Deutsch" else "Parse URL",
-                key="fetch_url",
-            ):
-                if url:
-                    if ss.get("parsed_url") != url:
-                        with status_box.container():
-                            with st.spinner("Extracting…"):
-                                text = http_text(url)
-                                if text:
-                                    flat = asyncio.run(extract(text))
-                                    ss["extracted"] = group_by_step(flat)
-                                    title_res = (
-                                        ss["extracted"]
-                                        .get("BASIC", {})
-                                        .get("job_title")
-                                    )
-                                    if (
-                                        isinstance(title_res, ExtractResult)
-                                        and title_res.value
-                                    ):
-                                        ss["data"]["job_title"] = title_res.value
-                                    ss["parsed_url"] = url
-                        ss["extraction_success"] = True
-                        st.rerun()
-                else:
-                    status_box.warning(
-                        "Bitte eine URL eingeben"
-                        if lang_label == "Deutsch"
-                        else "Please enter a URL"
-                    )
+            if url and ss.get("parsed_url") != url:
+                with status_box.container():
+                    with st.spinner("Extracting…"):
+                        text = http_text(url)
+                        if text:
+                            flat = asyncio.run(extract(text))
+                            ss["extracted"] = group_by_step(flat)
+                            title_res = (
+                                ss["extracted"].get("BASIC", {}).get("job_title")
+                            )
+                            if isinstance(title_res, ExtractResult) and title_res.value:
+                                ss["data"]["job_title"] = title_res.value
+                            ss["parsed_url"] = url
+                ss["extraction_success"] = True
+                st.rerun()
 
             up = st.file_uploader(
                 (
