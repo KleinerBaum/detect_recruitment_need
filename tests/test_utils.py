@@ -38,3 +38,10 @@ def test_http_text_handles_http_error(monkeypatch):
 
     monkeypatch.setattr(tool.httpx, "get", raise_error)
     assert tool.http_text("http://example.com") == ""
+
+
+def test_sanitize_value():
+    tool = load_tool_module()
+    assert tool.sanitize_value("  Foo \n") == "Foo"
+    assert tool.sanitize_value(12.0) == "12"
+    assert tool.sanitize_value(None) is None

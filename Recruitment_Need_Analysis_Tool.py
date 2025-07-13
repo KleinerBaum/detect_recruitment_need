@@ -166,6 +166,25 @@ def safe_json_load(text: str) -> dict:
                     return {}
 
 
+def sanitize_value(val: Any) -> str | None:
+    """Return a cleaned string or ``None``.
+
+    Strings are stripped of surrounding whitespace and control characters.
+    Numeric inputs are formatted without trailing zeros. Everything else is
+    coerced to ``str``.
+    """
+
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        # format floats without scientific notation
+        return ("%g" % val).strip()
+    cleaned = str(val)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = cleaned.strip("\u200b")
+    return cleaned or None
+
+
 # ★ mandatory
 MUST_HAVE_KEYS = {
     "job_title",
@@ -672,7 +691,7 @@ def pattern_search(text: str, key: str, pat: str) -> ExtractResult:
     # gängige Labels am Zeilenanfang entfernen
     val = re.sub(r"^(?:Name|City|Ort|Stadt)\s*[:\-]?\s*", "", val, flags=re.I)
 
-    return ExtractResult(value=val, confidence=0.9)
+    return ExtractResult(value=sanitize_value(val), confidence=0.9)
 
 
 # ── Cached loaders ------------------------------------------------------------
@@ -792,7 +811,8 @@ async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
     )
 
     raw = safe_json_load(chat.choices[0].message.content or "")
-    return [s.strip() for s in raw.get("skills", []) if s]
+    items = [sanitize_value(s) for s in raw.get("skills", []) if s]
+    return [i for i in items if i]
 
 
 async def suggest_hard_skills(data: dict) -> list[str]:
@@ -866,7 +886,8 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
     )
 
     raw = safe_json_load(chat.choices[0].message.content or "")
-    return [b.strip() for b in raw.get("benefits", []) if b]
+    items = [sanitize_value(b) for b in raw.get("benefits", []) if b]
+    return [i for i in items if i]
 
 
 async def suggest_benefits_by_title(data: dict, count: int) -> list[str]:
@@ -900,7 +921,8 @@ async def _suggest_items(prompt: str, key: str) -> list[str]:
         response_format={"type": "json_object"},
     )
     raw = safe_json_load(chat.choices[0].message.content or "")
-    return [str(x).strip() for x in raw.get(key, []) if x]
+    items = [sanitize_value(x) for x in raw.get(key, []) if x]
+    return [i for i in items if i]
 
 
 async def suggest_team_challenges(data: dict, count: int = 5) -> list[str]:
@@ -972,7 +994,7 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
             node = raw.get(k, {})
             val = node.get("value") if isinstance(node, dict) else node
             conf = node.get("confidence", 0.5) if isinstance(node, dict) else 0.5
-            out[k] = ExtractResult(val, float(conf) if val else 0.0)
+            out[k] = ExtractResult(sanitize_value(val), float(conf) if val else 0.0)
     return out
 
 
@@ -1010,7 +1032,7 @@ async def llm_validate(data: dict[str, ExtractResult]) -> dict[str, ExtractResul
         else:
             val = node
             conf = 0.5 if val else 0.0
-        out[k] = ExtractResult(val, conf)
+        out[k] = ExtractResult(sanitize_value(val), conf)
     return out
 
 
