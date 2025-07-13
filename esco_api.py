@@ -11,6 +11,25 @@ import httpx
 BASE_URL = os.getenv("ESCO_API_BASE_URL", "https://ec.europa.eu/esco/api")
 
 
+def _get_lang_entry(data: Any, language: str) -> str | None:
+    """Return a localized string from a multilingual mapping."""
+
+    if not isinstance(data, dict):
+        return data if isinstance(data, str) else None
+
+    entry = data.get(language)
+    if entry is None:
+        entry = data.get("en")
+    if entry is None and data:
+        entry = next(iter(data.values()))
+
+    if isinstance(entry, dict):
+        return entry.get("literal") or entry.get("title") or entry.get("label")
+    if isinstance(entry, str):
+        return entry
+    return None
+
+
 def search_occupations(
     text: str, language: str = "en", limit: int = 10
 ) -> list[dict[str, Any]]:
@@ -94,7 +113,16 @@ def fetch_occupation_details(uri: str, language: str = "en") -> dict[str, Any]:
     try:
         resp = httpx.get(f"{BASE_URL}/resource/occupation", params=params, timeout=10)
         resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+        if "description" in data:
+            desc = _get_lang_entry(data["description"], language)
+            if desc is not None:
+                data["description"] = desc
+        if "preferredLabel" in data:
+            label = _get_lang_entry(data["preferredLabel"], language)
+            if label is not None:
+                data["preferredLabel"] = label
+        return data
     except httpx.HTTPError as exc:  # pragma: no cover - log only
         logging.error("ESCO occupation details failed: %s", exc)
         return {}
