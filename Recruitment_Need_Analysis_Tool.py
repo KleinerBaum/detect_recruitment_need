@@ -24,6 +24,7 @@ import httpx
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
+
 import importlib.util
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
@@ -57,6 +58,16 @@ _file_tools = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
 _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
+
+_vs_spec = importlib.util.spec_from_file_location(
+    "vector_search",
+    Path(__file__).resolve().parent / "services" / "vector_search.py",
+)
+assert _vs_spec is not None
+_vs_mod = importlib.util.module_from_spec(_vs_spec)
+assert _vs_spec.loader is not None
+_vs_spec.loader.exec_module(_vs_mod)
+VectorStore = _vs_mod.VectorStore
 
 SCHEMA: dict[str, list[dict[str, str]]] = {}
 KEY_TO_STEP: dict[str, str] = {}
@@ -107,6 +118,7 @@ if not api_key:
     st.stop()
 
 client = AsyncOpenAI(api_key=api_key)
+vector_store = VectorStore(client)
 
 LOCAL_BENEFITS: dict[str, list[str]] = {
     "düsseldorf": [
@@ -970,13 +982,16 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
     if not missing_keys:
         return {}
 
+    context_snippets = await vector_store.search(text[:1000], top_k=3)
+    context_block = "\n---\n".join(context_snippets)
+
     CHUNK = 40  # keep replies short
     out: dict[str, ExtractResult] = {}
     for i in range(0, len(missing_keys), CHUNK):
         subset = missing_keys[i : i + CHUNK]
         user_msg = (
             f"Extract the following keys and return STRICT JSON only:\n{subset}\n\n"
-            f"TEXT:\n```{text[:12_000]}```"
+            f"CONTEXT:\n{context_block}\n\nTEXT:\n```{text[:12_000]}```"
         )
         chat = await client.chat.completions.create(
             model="gpt-4o-mini",
