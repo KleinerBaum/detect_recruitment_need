@@ -867,6 +867,16 @@ def calc_extraction_progress() -> int:
     return int(done * 100 / total)
 
 
+def calc_required_completion() -> int:
+    """Return completion percentage for mandatory fields."""
+
+    total = len(MUST_HAVE_KEYS)
+    if not total:
+        return 0
+    done = sum(1 for k in MUST_HAVE_KEYS if not value_missing(k))
+    return int(done * 100 / total)
+
+
 async def _suggest_skills(data: dict, kind: str, count: int) -> list[str]:
     existing: list[str] = []
     for key in [
@@ -1191,9 +1201,10 @@ def show_input(
     field_type = meta.get("field_type", meta.get("field", "text_input"))
     helptext = meta.get("helptext", "")
     required = str(meta.get("is_must", "0")) == "1"
-    label = ("★ " if required else "") + meta.get(
-        "label", key.replace("_", " ").title()
-    )
+    label_text = meta.get("label", key.replace("_", " ").title())
+    label = ("★ " if required else "") + label_text
+    if required and value_missing(key):
+        label = f":red[{label}]"
     # Extract value
     val = getattr(default, "value", default)
 
@@ -1208,6 +1219,7 @@ def show_input(
             candidate = f"{widget_key}_{suffix}"
         widget_key = candidate
     used.add(widget_key)
+    placeholder = "Required" if required and value_missing(key) else ""
     if field_type == "text_area":
         val = st.text_area(
             label,
@@ -1215,6 +1227,7 @@ def show_input(
             help=helptext,
             key=widget_key,
             height=100,
+            placeholder=placeholder,
         )
 
     elif field_type == "selectbox":
@@ -1286,7 +1299,13 @@ def show_input(
         val = f"{selected[0]}–{selected[1]}"
 
     else:
-        val = st.text_input(label, value=val or "", key=widget_key, help=helptext)
+        val = st.text_input(
+            label,
+            value=val or "",
+            key=widget_key,
+            help=helptext,
+            placeholder=placeholder,
+        )
 
     # Save to session state
     st.session_state["data"][key] = val
@@ -2074,6 +2093,8 @@ def main():
             status_box = st.empty()
             progress = calc_extraction_progress()
             st.caption(f"Extraktion: {progress}%")
+            req = calc_required_completion()
+            st.progress(req / 100, text=f"Profile completion: {req}%")
             st.text_input(
                 "Stellentitel" if lang_label == "Deutsch" else "Job Title",
                 value=job_title_default or "",
@@ -2183,6 +2204,9 @@ def main():
                 f"<div style='text-align:center; color:#bbb; margin-bottom:24px'>{subtitle}</div>",
                 unsafe_allow_html=True,
             )
+
+        progress = calc_required_completion()
+        st.progress(progress / 100, text=f"Profile completion: {progress}%")
 
         if step_name == "INTERVIEW":
             display_interview_section(meta_fields, extr)

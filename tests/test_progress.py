@@ -23,3 +23,13 @@ def test_calc_extraction_progress():
     }
     pct = tool.calc_extraction_progress()
     assert pct > 0
+
+
+def test_calc_required_completion():
+    tool = load_tool_module()
+    tool.ss.clear()
+    tool.ss["data"] = {}
+    start = tool.calc_required_completion()
+    tool.ss["data"]["job_title"] = "foo"
+    later = tool.calc_required_completion()
+    assert later > start
