@@ -3,6 +3,7 @@ BASIC,job_title,text_input,1,Job Title,,Bitte den exakten Jobtitel angeben
 BASIC,employment_type,selectbox,1,Employment Type,Full-time;Part-time;Freelance;Internship;Werkstudent;Praktikum;Mini-Job;Other,Beschäftigungsart auswählen
 BASIC,contract_type,selectbox,1,Contract Type,Permanent;Temporary;Fixed-Term;Freelancer;Project;Aushilfe;Werkvertrag;Zeitarbeit,Vertragsart auswählen
 BASIC,date_of_employment_start,date_input,0,Start Date Target,,Geplantes Startdatum
+BASIC,contract_end_date,date_input,0,Contract End Date,,Vertragsende bei Befristung
 BASIC,work_schedule,selectbox,0,Work Schedule,Full-time;Part-time;Flexitime;Shift;Weekend;Night;Remote;Hybrid,Arbeitszeitmodell auswählen
 BASIC,work_location_city,text_input,1,Work Location City,,Arbeitsort (Stadt)
 BASIC,salary_currency,selectbox,1,Salary Currency,EUR;USD;GBP;CHF;PLN;Other,Währung
@@ -82,6 +83,7 @@ SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
 BENEFITS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
 BENEFITS,bonus_scheme,checkbox,0,Bonus Scheme,,Bonusregelung
 BENEFITS,commission_structure,text_area,0,Commission Structure,,Provisionsmodell
+BENEFITS,bonus_percentage,number_input,0,Bonus Percentage (%),,Prozentualer Anteil am Gehalt
 BENEFITS,variable_comp,text_area,0,Variable Comp,,Variable Vergütung
 BENEFITS,vacation_days,number_input,0,Vacation Days,,Urlaubstage
 BENEFITS,remote_policy,selectbox,0,Remote Policy,Onsite;Remote;Hybrid;Flexible;Home Office;After Probation,Homeoffice-Regelung
