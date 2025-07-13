@@ -13,6 +13,8 @@ python-dotenv
 python-dateutil==2.9.0.post0
 types-python-dateutil
 types-fpdf2
+sentence-transformers
+faiss-cpu
 plotly
 spacy==3.8.7
 https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.8.0/xx_ent_wiki_sm-3.8.0-py3-none-any.whl
