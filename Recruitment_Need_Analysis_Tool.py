@@ -1127,6 +1127,39 @@ async def suggest_role_description(data: dict) -> str:
     )
 
 
+def get_esco_tasks(job_title: str, *, limit: int = 10) -> list[str]:
+    """Return up to ``limit`` task titles from ESCO for the given job title."""
+
+    if not job_title:
+        return []
+    occs = search_occupations(job_title, limit=1)
+    if not occs:
+        return []
+    uri = occs[0].get("uri", "")
+    if not uri:
+        return []
+    skills = get_skills_for_occupation(uri, limit=limit)
+    tasks: list[str] = []
+    for item in skills:
+        label = item.get("label") or item.get("title") or item.get("preferredLabel")
+        if label:
+            tasks.append(str(label))
+    return tasks[:limit]
+
+
+async def suggest_tasks(data: dict, count: int = 10) -> list[str]:
+    """Return task suggestions via OpenAI based on the role data."""
+
+    prompt = (
+        f"List up to {count} key tasks for a role titled '{data.get('job_title', '')}'. "
+        f"Role description: '{data.get('role_description', '')}'. "
+        f"Role type: '{data.get('role_type', '')}'. "
+        f"Keywords: '{data.get('role_keywords', '')}'. "
+        'Return JSON object {"tasks": [..]} with one task per list item.'
+    )
+    return await _suggest_items(prompt, "tasks")
+
+
 async def suggest_recruitment_steps(data: dict, count: int = 5) -> list[str]:
     """Suggest common steps in the recruitment process."""
 
@@ -1649,6 +1682,10 @@ def display_summary_overview() -> None:
         st.markdown("### About the Role")
         st.write(f"**Role Description:** {val('role_description')}")
         st.write(f"**Task List:** {val('task_list')}")
+        if ss.get("selected_tasks"):
+            st.write(
+                f"**Selected Tasks:** {', '.join(cast(list[str], ss['selected_tasks']))}"
+            )
         st.write(f"**Technical Tasks:** {val('technical_tasks')}")
         st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
         st.write(f"**Role Keywords:** {val('role_keywords')}")
@@ -1884,11 +1921,17 @@ def display_sidebar_data(current_step: int) -> None:
         return
     for i, step in enumerate(order, start=1):
         values = {k: data.get(k) for k in extracted.get(step, {}) if data.get(k)}
-        if not values:
+        has_tasks = step == "ROLE" and st.session_state.get("selected_tasks")
+        if not values and not has_tasks:
             continue
         with st.sidebar.expander(step.title(), expanded=current_step == i):
             for k, v in values.items():
                 st.write(f"**{k.replace('_', ' ').title()}:** {v}")
+            if has_tasks:
+                st.write(
+                    "**Selected Tasks:** "
+                    + ", ".join(cast(list[str], st.session_state["selected_tasks"]))
+                )
 
 
 def display_extraction_tabs() -> None:
@@ -2148,6 +2191,7 @@ def main():
     ss.setdefault("data", {})
     ss.setdefault("extracted", {})
     ss.setdefault("benefit_list", [])
+    ss.setdefault("selected_tasks", [])
     ss["_used_widget_keys"] = set()
     ss.setdefault("ORDER", ORDER)
 
@@ -2683,6 +2727,41 @@ def main():
 
             st.subheader("Tasks")
             show_missing("task_list", extr, meta_map, step_name)
+            row = st.columns([2, 1, 1])
+            if row[1].button("AI Tasks", key="gen_ai_tasks"):
+                with st.spinner("Generating…"):
+                    try:
+                        ss["ai_task_suggestions"] = asyncio.run(
+                            suggest_tasks(ss["data"])
+                        )
+                    except Exception as e:
+                        logging.error("task suggestion failed: %s", e)
+                        ss["ai_task_suggestions"] = []
+            if row[2].button("ESCO Tasks", key="gen_esco_tasks"):
+                with st.spinner("Fetching…"):
+                    try:
+                        title = ss.get("data", {}).get("job_title", "")
+                        ss["esco_task_suggestions"] = get_esco_tasks(title)
+                    except Exception as e:
+                        logging.error("ESCO task lookup failed: %s", e)
+                        ss["esco_task_suggestions"] = []
+            ai_sel = st.pills(
+                "",
+                ss.get("ai_task_suggestions", []),
+                selection_mode="multi",
+                key="sel_ai_tasks",
+            )
+            esco_sel = st.pills(
+                "",
+                ss.get("esco_task_suggestions", []),
+                selection_mode="multi",
+                key="sel_esco_tasks",
+            )
+            chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
+            for t in (ai_sel or []) + (esco_sel or []):
+                if t not in chosen_tasks:
+                    chosen_tasks.append(t)
+            ss["selected_tasks"] = chosen_tasks
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)

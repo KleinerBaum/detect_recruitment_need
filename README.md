@@ -32,6 +32,9 @@ The **ROLE & TASKS** step now features a *Generate Role Description* button
 that drafts a short description using similar job ads. In the **INTERVIEW**
 step you can also request suggested recruitment steps and sample interview
 questions.
+You can now generate task suggestions via OpenAI or the ESCO API. Each
+suggested task appears as a pill button and selections are stored under
+"selected_tasks".
 
 The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 *Team & Culture Context* now shows three bordered boxes. Each field provides a
