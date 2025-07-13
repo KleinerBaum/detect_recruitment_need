@@ -46,6 +46,8 @@ message with a 🔥 icon confirms
 that the extraction finished. Entering a job ad URL now triggers extraction
 automatically and the welcome page shows how many fields were filled in
 percentage.
+Until you provide data the sidebar displays a short note telling you where
+all collected information will appear.
 
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase

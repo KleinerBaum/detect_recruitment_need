@@ -321,6 +321,15 @@ SIDEBAR_TITLES = {
     },
 }
 
+# Sidebar placeholder shown before any data is entered
+SIDEBAR_PLACEHOLDER = {
+    "Deutsch": (
+        "Hier werden wir alle gesammelten Informationen zu Deiner Vakanz "
+        "präsentieren."
+    ),
+    "English": ("Here we will present all collected information about your vacancy."),
+}
+
 STEPS: list[tuple[str, list[str]]] = [
     (
         STEP_TITLES.get(name, name.title().replace("_", " ")),
@@ -1981,6 +1990,18 @@ def display_sidebar_data(current_step: int, lang: str) -> None:
     extracted = st.session_state.get("extracted", {})
     order = st.session_state.get("ORDER")
     if not order:
+        return
+
+    # Show placeholder if no values have been collected yet
+    has_content = False
+    for step in order:
+        values = {k: data.get(k) for k in extracted.get(step, {}) if data.get(k)}
+        has_tasks = step == "ROLE" and st.session_state.get("selected_tasks")
+        if values or has_tasks:
+            has_content = True
+            break
+    if not has_content:
+        st.sidebar.write(SIDEBAR_PLACEHOLDER.get(lang, SIDEBAR_PLACEHOLDER["English"]))
         return
 
     titles = SIDEBAR_TITLES.get(lang, SIDEBAR_TITLES["English"])
