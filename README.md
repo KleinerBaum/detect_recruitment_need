@@ -32,7 +32,8 @@ The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 **Generate Ideas** button above the input and AI suggestions appear as pill
 buttons. Missing data remains highlighted in two columns below the extracted
 values. After uploading a file a small success message with a 🔥 icon confirms
-that the extraction finished.
+that the extraction finished. You can also paste a job ad URL to analyse the
+posting directly.
 
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase

@@ -1955,6 +1955,43 @@ def main():
                 label_visibility="visible",
             )
 
+            url = st.text_input(
+                "Stellen-URL" if lang_label == "Deutsch" else "Job Ad URL",
+                key="job_url",
+            )
+
+            if st.button(
+                "URL analysieren" if lang_label == "Deutsch" else "Parse URL",
+                key="fetch_url",
+            ):
+                if url:
+                    if ss.get("parsed_url") != url:
+                        with status_box.container():
+                            with st.spinner("Extracting…"):
+                                text = http_text(url)
+                                if text:
+                                    flat = asyncio.run(extract(text))
+                                    ss["extracted"] = group_by_step(flat)
+                                    title_res = (
+                                        ss["extracted"]
+                                        .get("BASIC", {})
+                                        .get("job_title")
+                                    )
+                                    if (
+                                        isinstance(title_res, ExtractResult)
+                                        and title_res.value
+                                    ):
+                                        ss["data"]["job_title"] = title_res.value
+                                    ss["parsed_url"] = url
+                        ss["extraction_success"] = True
+                        st.rerun()
+                else:
+                    status_box.warning(
+                        "Bitte eine URL eingeben"
+                        if lang_label == "Deutsch"
+                        else "Please enter a URL"
+                    )
+
             up = st.file_uploader(
                 (
                     "Stellenbeschreibung hochladen (PDF oder DOCX)"
