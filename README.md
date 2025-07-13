@@ -24,16 +24,18 @@ annual salary.
 The **BENEFITS** step generates benefit suggestions based on the job title, the
 company location and typical competitor offerings. Each suggestion appears as a
 button that you can toggle to add it to your benefit list. For some cities the
-app proposes local perks such as club memberships or discounted facilities (for
-example a "Fortuna Düsseldorf" membership when the location is Düsseldorf).
+app proposes local perks such as club memberships or discounted facilities
+(e.g. "Fortuna Düsseldorf" membership). Regional perks now also exist for
+Berlin, München, Hamburg and Frankfurt.
 
 The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 *Team & Culture Context* now shows three bordered boxes. Each field provides a
 **Generate Ideas** button above the input and AI suggestions appear as pill
 buttons. Missing data remains highlighted in two columns below the extracted
 values. After uploading a file a small success message with a 🔥 icon confirms
-that the extraction finished. You can also paste a job ad URL to analyse the
-posting directly.
+that the extraction finished. Entering a job ad URL now triggers extraction
+automatically and the welcome page shows how many fields were filled in
+percentage.
 
 Regex patterns for key information have been tightened and now support German
 and English labels. Extracted values are validated by an LLM to increase

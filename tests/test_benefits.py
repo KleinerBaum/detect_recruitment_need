@@ -25,7 +25,7 @@ async def dummy_create(*args, **kwargs):
 def test_suggest_benefits_functions(monkeypatch):
     tool = load_tool_module()
     monkeypatch.setattr(tool.client.chat.completions, "create", dummy_create)
-    data = {"job_title": "Engineer", "city": "Berlin"}
+    data = {"job_title": "Engineer", "city": "Metropolis"}
     out1 = asyncio.run(tool.suggest_benefits_by_title(data, 5))
     out2 = asyncio.run(tool.suggest_benefits_by_location(data, 5))
     out3 = asyncio.run(tool.suggest_benefits_competitors(data, 5))
