@@ -89,3 +89,11 @@ Missing fields can be filled via Retrieval-Augmented Generation. Relevant job ad
 and CV snippets are retrieved from the pre-trained "vacalyser" vector store and
 passed to the LLM. Set ``VACALYSER_VECTOR_STORE`` to override the default store
 ID.
+
+## Wizard RL Helpers
+
+The module ``wizard_rl.py`` contains utilities to load wizard schemas,
+convert the current session state into feature vectors and persist simple
+navigation policies. A minimal ``VacalyserWizardEnv`` environment is also
+available to experiment with reinforcement learning approaches for skipping
+irrelevant steps.
