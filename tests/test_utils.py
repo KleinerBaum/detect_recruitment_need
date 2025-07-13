@@ -40,6 +40,12 @@ def test_http_text_handles_http_error(monkeypatch):
     assert tool.http_text("http://example.com") == ""
 
 
+def test_html_text_removes_scripts():
+    tool = load_tool_module()
+    html = "<p>Hello</p><script>alert(1)</script>"
+    assert tool.html_text(html) == "Hello"
+
+
 def test_sanitize_value():
     tool = load_tool_module()
     assert tool.sanitize_value("  Foo \n") == "Foo"
