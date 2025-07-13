@@ -82,7 +82,12 @@ with open("wizard_schema.csv", newline="", encoding="utf-8") as f:
         SCHEMA[step].append(row)
         KEY_TO_STEP[row["key"]] = step
 
-DATE_KEYS = {"date_of_employment_start", "application_deadline", "probation_period"}
+DATE_KEYS = {
+    "date_of_employment_start",
+    "application_deadline",
+    "probation_period",
+    "contract_end_date",
+}
 INDUSTRY_OPTIONS = [
     "IT",
     "Finance",
@@ -357,6 +362,9 @@ REGEX_PATTERNS = {
     "date_of_employment_start": _simple(
         "Start\\s*Date|Begin\\s*Date", "Eintrittsdatum", "date_of_employment_start"
     ),
+    "contract_end_date": _simple(
+        "End\\s*Date|Contract\\s*End", "Vertragsende|Enddatum", "contract_end_date"
+    ),
     "work_schedule": _simple("Work\\s*Schedule", "Arbeitszeitmodell", "work_schedule"),
     "work_location_city": _simple("City|Ort", "Ort", "work_location_city"),
     # Company core
@@ -538,6 +546,7 @@ REGEX_PATTERNS = {
     "commission_structure": _simple(
         "Commission\\s*Structure", "Provisionsmodell", "commission_structure"
     ),
+    "bonus_percentage": r"(?P<bonus_percentage>\d{1,3}\s*%)",
     "variable_comp": _simple(
         "Variable\\s*Comp", "Variable\\s*Vergütung", "variable_comp"
     ),
@@ -803,6 +812,30 @@ def parse_skill_list(raw: str | list[str] | None) -> list[str]:
     return [s.strip() for s in items if s and s.strip()]
 
 
+def parse_salary_range(value: str) -> tuple[int, int] | None:
+    """Return numeric bounds from a salary range string."""
+
+    digits = [int(x) for x in re.findall(r"\d+", value.replace(",", ""))]
+    if len(digits) >= 2:
+        return digits[0], digits[1]
+    if len(digits) == 1:
+        return digits[0], digits[0]
+    return None
+
+
+def salary_deviation_high(
+    entered: tuple[int, int], suggested: tuple[int, int], threshold: float = 0.2
+) -> bool:
+    """Return ``True`` if ``entered`` deviates strongly from ``suggested``."""
+
+    lower, upper = entered
+    s_lower, s_upper = suggested
+    return (
+        abs(lower - s_lower) > s_lower * threshold
+        or abs(upper - s_upper) > s_upper * threshold
+    )
+
+
 def selectable_buttons(
     options: list[str], label: str, session_key: str, cols: int = 3
 ) -> list[str]:
@@ -851,6 +884,21 @@ def update_benefit_preferences(city: str) -> None:
     """Update session benefit suggestions based on location."""
 
     ss["local_benefits"] = LOCAL_BENEFITS.get(city.lower(), [])
+
+
+def sync_remote_policy(data: dict[str, Any]) -> None:
+    """Synchronize remote policy with the selected work schedule."""
+
+    schedule = data.get("work_schedule")
+    if schedule == "Remote":
+        data["remote_policy"] = "Remote"
+        data["remote_percentage"] = 100
+    elif schedule == "Hybrid":
+        data["remote_policy"] = "Hybrid"
+        data.setdefault("remote_percentage", 50)
+    else:
+        data.setdefault("remote_policy", "Onsite")
+        data.pop("remote_percentage", None)
 
 
 def calc_extraction_progress() -> int:
@@ -1308,10 +1356,18 @@ def show_input(
 
     elif field_type == "slider":
         digits = [int(x) for x in re.findall(r"\d+", str(val))]
+        title = str(ss.get("data", {}).get("job_title", ""))
+        level = str(ss.get("data", {}).get("seniority_level", ""))
+        suggested: tuple[int, int] | None = None
+        if key == "salary_range" and title and level:
+            suggested = parse_salary_range(estimate_salary_range(title, level))
+
         if len(digits) >= 2:
             default_range = (digits[0], digits[1])
         elif len(digits) == 1:
             default_range = (digits[0], digits[0])
+        elif suggested:
+            default_range = suggested
         else:
             default_range = (50000, 60000)
 
@@ -1325,6 +1381,10 @@ def show_input(
             help=helptext,
         )
         val = f"{selected[0]}–{selected[1]}"
+        if key == "salary_range" and suggested:
+            st.caption(f"Suggested range: {suggested[0]}–{suggested[1]} €")
+            if salary_deviation_high(selected, suggested):
+                st.warning("Entered salary deviates from suggestion.")
 
     else:
         val = st.text_input(label, value=val or "", key=widget_key, help=helptext)
@@ -1560,6 +1620,8 @@ def display_summary_overview() -> None:
         st.write(f"**Start Date Target:** {val('date_of_employment_start')}")
         st.write(f"**Place of Work:** {val('place_of_work')}")
         st.write(f"**Contract Type:** {val('contract_type')}")
+        if ss.get("data", {}).get("contract_type") == "Fixed-Term":
+            st.write(f"**Contract End Date:** {val('contract_end_date')}")
         st.write(f"**Work Schedule:** {val('work_schedule')}")
 
     with col2:
@@ -1587,6 +1649,8 @@ def display_summary_overview() -> None:
         st.markdown("### Benefits")
         st.write(f"**Salary Range (EUR):** {val('salary_range')}")
         st.write(f"**Variable Comp:** {val('variable_comp')}")
+        if ss.get("data", {}).get("bonus_scheme"):
+            st.write(f"**Bonus Percentage (%):** {val('bonus_percentage')}")
         st.write(f"**Vacation Days:** {val('vacation_days')}")
         st.write(f"**Remote Policy:** {val('remote_policy')}")
         st.write(f"**Flexible Hours:** {val('flexible_hours')}")
@@ -2255,6 +2319,15 @@ def main():
                         meta_map["contract_type"],
                         widget_prefix=step_name,
                     )
+                if ss.get("data", {}).get(
+                    "contract_type"
+                ) == "Fixed-Term" and value_missing("contract_end_date"):
+                    show_input(
+                        "contract_end_date",
+                        extr.get("contract_end_date", ExtractResult()),
+                        meta_map["contract_end_date"],
+                        widget_prefix=step_name,
+                    )
             with cols[1]:
                 if value_missing("work_schedule"):
                     show_input(
@@ -2263,20 +2336,19 @@ def main():
                         meta_map["work_schedule"],
                         widget_prefix=step_name,
                     )
-                if (
-                    not value_missing("work_schedule")
-                    and ss.get("data", {}).get("work_schedule") == "Hybrid"
-                ):
-                    default_pct = int(ss.get("data", {}).get("onsite_percentage", 50))
+                sync_remote_policy(ss["data"])
+                schedule = ss.get("data", {}).get("work_schedule")
+                if schedule == "Hybrid":
+                    default_pct = int(ss.get("data", {}).get("remote_percentage", 50))
                     pct = st.slider(
-                        "% Onsite vs Remote",
+                        "% Remote",
                         min_value=0,
                         max_value=100,
                         value=default_pct,
                         step=5,
-                        key="onsite_percentage",
+                        key="remote_percentage",
                     )
-                    ss["data"]["onsite_percentage"] = pct
+                    ss["data"]["remote_percentage"] = pct
         elif step_name == "COMPANY":
             meta_map = {m["key"]: m for m in meta_fields}
             cols = st.columns(2)
@@ -2590,11 +2662,39 @@ def main():
                 show_missing("innovation_expected", extr, meta_map, step_name)
             with cols[1]:
                 show_missing("on_call", extr, meta_map, step_name)
+                if ss.get("data", {}).get("on_call"):
+                    show_input(
+                        "on_call_expectations",
+                        extr.get("on_call_expectations", ExtractResult()),
+                        meta_map["on_call_expectations"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["on_call_expectations"] = ""
             with cols[2]:
                 show_missing("physical_duties", extr, meta_map, step_name)
+                if ss.get("data", {}).get("physical_duties"):
+                    show_input(
+                        "physical_duties_description",
+                        extr.get("physical_duties_description", ExtractResult()),
+                        meta_map["physical_duties_description"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["physical_duties_description"] = ""
             cols = st.columns(3)
             with cols[0]:
                 show_missing("travel_required", extr, meta_map, step_name)
+                travel_val = ss.get("data", {}).get("travel_required")
+                if travel_val and str(travel_val) != "No":
+                    show_input(
+                        "travel_details",
+                        extr.get("travel_details", ExtractResult()),
+                        meta_map["travel_details"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["travel_details"] = ""
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}
@@ -2695,7 +2795,10 @@ def main():
                 with cols_a:
                     show_missing("vacation_days", extr, meta_map, step_name)
                     show_missing("remote_policy", extr, meta_map, step_name)
-                    if ss.get("data", {}).get("remote_policy") not in {"", "Onsite"}:
+                    if ss.get("data", {}).get("remote_policy") not in {
+                        "",
+                        "Onsite",
+                    } and value_missing("remote_percentage"):
                         pct = int(ss.get("data", {}).get("remote_percentage", 50))
                         pct = st.slider(
                             "% Remote", 0, 100, pct, 5, key="remote_percentage"
@@ -2728,6 +2831,14 @@ def main():
                             key="commission_structure",
                         )
                         ss["data"]["commission_structure"] = txt
+                        pct = st.number_input(
+                            meta_map["bonus_percentage"]["label"],
+                            min_value=0.0,
+                            max_value=100.0,
+                            step=0.5,
+                            key="bonus_percentage",
+                        )
+                        ss["data"]["bonus_percentage"] = pct
 
                 with cols_b:
                     show_missing("relocation_support", extr, meta_map, step_name)

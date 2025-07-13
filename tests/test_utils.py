@@ -51,3 +51,27 @@ def test_sanitize_value():
     assert tool.sanitize_value("  Foo \n") == "Foo"
     assert tool.sanitize_value(12.0) == "12"
     assert tool.sanitize_value(None) is None
+
+
+def test_sync_remote_policy_hybrid():
+    tool = load_tool_module()
+    data = {"work_schedule": "Hybrid"}
+    tool.sync_remote_policy(data)
+    assert data["remote_policy"] == "Hybrid"
+    assert data["remote_percentage"] == 50
+
+
+def test_sync_remote_policy_remote():
+    tool = load_tool_module()
+    data = {"work_schedule": "Remote"}
+    tool.sync_remote_policy(data)
+    assert data["remote_policy"] == "Remote"
+    assert data["remote_percentage"] == 100
+
+
+def test_sync_remote_policy_other():
+    tool = load_tool_module()
+    data = {"work_schedule": "Full-time"}
+    tool.sync_remote_policy(data)
+    assert data["remote_policy"] == "Onsite"
+    assert "remote_percentage" not in data
