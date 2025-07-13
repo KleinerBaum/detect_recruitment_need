@@ -62,10 +62,14 @@ def test_suggest(monkeypatch):
 
 def test_fetch_occupation_details(monkeypatch):
     mod = load_module()
-    data = {"description": "desc"}
+    data = {
+        "description": {"en": {"literal": "desc"}},
+        "preferredLabel": {"en": "Manager"},
+    }
     monkeypatch.setattr(mod.httpx, "get", DummyClient(data).get)
     res = mod.fetch_occupation_details("uri")
-    assert res == data
+    assert res["description"] == "desc"
+    assert res["preferredLabel"] == "Manager"
 
 
 def test_bulk_search_occupations(monkeypatch):
