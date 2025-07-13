@@ -2252,6 +2252,15 @@ def predict_annual_salary(
 
 
 # ── Streamlit main ------------------------------------------------------------
+def scroll_to_top() -> None:
+    """Scroll the Streamlit page to the top."""
+
+    st.components.v1.html(
+        "<script>window.scrollTo({top: 0, behavior: 'auto'});</script>",
+        height=0,
+    )
+
+
 def main():
     st.set_page_config(
         page_title="🧭 Recruitment Need Analysis Tool",
@@ -2275,6 +2284,9 @@ def main():
         ss["step"] = i
 
     step = ss["step"]
+    if ss.get("_prev_step") != step:
+        scroll_to_top()
+    ss["_prev_step"] = step
 
     # ----------- 0: Welcome / Upload-Page -----------
     if step == 0:
