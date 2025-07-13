@@ -1440,15 +1440,38 @@ def display_missing_basic_inputs(
 
 
 def display_summary() -> None:
-    """Show all collected data grouped by step with inline editing."""
+    """Show all collected data grouped by step with inline editing.
+
+    Required fields are shown directly, optional fields are displayed collapsed
+    within each step.
+    """
     for step_name in ORDER:
         if step_name not in SCHEMA:
             continue
         with st.expander(STEP_TITLES.get(step_name, step_name.title()), expanded=False):
-            for meta in SCHEMA[step_name]:
+            mandatory = [
+                meta for meta in SCHEMA[step_name] if meta["key"] in MUST_HAVE_KEYS
+            ]
+            optional = [
+                meta for meta in SCHEMA[step_name] if meta["key"] not in MUST_HAVE_KEYS
+            ]
+
+            for meta in mandatory:
                 key = meta["key"]
                 result = ExtractResult(ss["data"].get(key), 1.0)
                 show_input(key, result, meta, widget_prefix=f"summary_{step_name}")
+
+            if optional:
+                with st.expander("Additional Fields", expanded=False):
+                    for meta in optional:
+                        key = meta["key"]
+                        result = ExtractResult(ss["data"].get(key), 1.0)
+                        show_input(
+                            key,
+                            result,
+                            meta,
+                            widget_prefix=f"summary_{step_name}",
+                        )
 
 
 def display_summary_overview() -> None:
