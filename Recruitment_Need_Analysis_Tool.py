@@ -110,6 +110,10 @@ st.markdown(
     input.must_req:placeholder-shown {
         border: 1px solid #e74c3c !important;   /* override Streamlit default */
     }
+    /* hide default page navigation in sidebar */
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -291,6 +295,28 @@ ORDER = [
 STEP_TITLES = {
     "COMPANY": "Company & Department",
     "ROLE": "Role & Tasks",
+}
+
+# Sidebar titles per language
+SIDEBAR_TITLES = {
+    "English": {
+        "BASIC": "Basic",
+        "COMPANY": "Company & Department",
+        "ROLE": "Role & Tasks",
+        "SKILLS": "Skills",
+        "BENEFITS": "Benefits",
+        "INTERVIEW": "Interview",
+        "SUMMARY": "Summary",
+    },
+    "Deutsch": {
+        "BASIC": "Basisdaten",
+        "COMPANY": "Unternehmen & Abteilung",
+        "ROLE": "Rolle & Aufgaben",
+        "SKILLS": "Fähigkeiten",
+        "BENEFITS": "Benefits",
+        "INTERVIEW": "Interview",
+        "SUMMARY": "Zusammenfassung",
+    },
 }
 
 STEPS: list[tuple[str, list[str]]] = [
@@ -1874,19 +1900,34 @@ def render_header() -> str:
     return lang
 
 
-def display_sidebar_data(current_step: int) -> None:
-    """Show stored values grouped by step in the sidebar."""
+def display_sidebar_data(current_step: int, lang: str) -> None:
+    """Show stored values grouped by wizard step in the sidebar.
+
+    Args:
+        current_step: Index of the active wizard step.
+        lang: Selected UI language ("Deutsch" or "English").
+    """
 
     data = st.session_state.get("data", {})
     extracted = st.session_state.get("extracted", {})
     order = st.session_state.get("ORDER")
     if not order:
         return
+
+    titles = SIDEBAR_TITLES.get(lang, SIDEBAR_TITLES["English"])
+    heading = "Gefundene Daten" if lang == "Deutsch" else "Identified Data"
+    heading_shown = False
+
     for i, step in enumerate(order, start=1):
         values = {k: data.get(k) for k in extracted.get(step, {}) if data.get(k)}
         if not values:
             continue
-        with st.sidebar.expander(step.title(), expanded=current_step == i):
+        if not heading_shown:
+            st.sidebar.subheader(heading)
+            heading_shown = True
+        with st.sidebar.expander(
+            titles.get(step, step.title()), expanded=current_step == i
+        ):
             for k, v in values.items():
                 st.write(f"**{k.replace('_', ' ').title()}:** {v}")
 
@@ -2152,7 +2193,7 @@ def main():
     ss.setdefault("ORDER", ORDER)
 
     lang_label = render_header()
-    display_sidebar_data(ss.get("step", 0))
+    display_sidebar_data(ss.get("step", 0), lang_label)
 
     def goto(i: int):
         ss["step"] = i
