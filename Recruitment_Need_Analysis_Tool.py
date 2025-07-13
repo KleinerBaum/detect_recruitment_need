@@ -1050,6 +1050,47 @@ async def suggest_tech_stack(data: dict, count: int = 5) -> list[str]:
     return await _suggest_items(prompt, "items")
 
 
+async def suggest_role_description(data: dict) -> str:
+    """Return a short role description based on similar ads."""
+
+    query = f"{data.get('job_title', '')} {data.get('task_list', '')}".strip()
+    snippets = await vector_store.search(query, top_k=3) if query else []
+    context = "\n".join(snippets)
+    prompt = (
+        "Write 2–3 sentences describing the role titled "
+        f"'{data.get('job_title', '')}'.\nContext:\n{context}"
+    )
+    return await generate_text(
+        prompt,
+        model="gpt-4o-mini",
+        temperature=0.3,
+        max_tokens=150,
+        system_msg="You are a professional copywriter for job ads.",
+    )
+
+
+async def suggest_recruitment_steps(data: dict, count: int = 5) -> list[str]:
+    """Suggest common steps in the recruitment process."""
+
+    prompt = (
+        f"List up to {count} typical recruitment steps for a role titled "
+        f"'{data.get('job_title', '')}'. "
+        'Return JSON object {"items": [..]} with one step per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
+async def suggest_interview_questions(data: dict, count: int = 5) -> list[str]:
+    """Suggest interview questions tailored to the role."""
+
+    prompt = (
+        f"List up to {count} insightful interview questions for a "
+        f"{data.get('job_title', '')} position. "
+        'Return JSON object {"items": [..]} with one question per list item.'
+    )
+    return await _suggest_items(prompt, "items")
+
+
 # ── GPT fill ------------------------------------------------------------------
 async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResult]:
     if not missing_keys:
