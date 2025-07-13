@@ -7,6 +7,7 @@ import logging
 
 from PyPDF2 import PdfReader
 from fpdf import FPDF
+from fpdf.enums import WrapMode
 import docx
 from docx.shared import Inches
 
@@ -54,7 +55,11 @@ def create_pdf(text: str, *, font: str = "Arial", logo: bytes | None = None) -> 
         pdf.ln(25)
 
     for line in text.splitlines():
-        pdf.multi_cell(0, 10, text=line)
+        try:
+            pdf.multi_cell(0, 10, text=line)
+        except Exception as exc:  # pragma: no cover - log only
+            logging.error("PDF line too wide: %s", exc)
+            pdf.multi_cell(0, 10, text=line, wrapmode=WrapMode.CHAR)
     return bytes(pdf.output())
 
 
