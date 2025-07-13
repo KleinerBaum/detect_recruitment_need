@@ -838,6 +838,15 @@ def parse_skill_list(raw: str | list[str] | None) -> list[str]:
     return [s.strip() for s in items if s and s.strip()]
 
 
+def collect_unique_items(keys: list[str], data: dict[str, Any]) -> list[str]:
+    """Return deduplicated items from ``data`` for the given keys."""
+
+    items: list[str] = []
+    for key in keys:
+        items.extend(parse_skill_list(data.get(key)))
+    return sorted({i for i in items if i})
+
+
 def parse_salary_range(value: str) -> tuple[int, int] | None:
     """Return numeric bounds from a salary range string."""
 
@@ -2058,6 +2067,32 @@ async def generate_boolean_search(data: dict) -> str:
     )
 
 
+async def generate_ideal_candidate_profile(
+    data: dict,
+    tasks: list[tuple[str, int]],
+    skills: list[tuple[str, int]],
+) -> str:
+    """Create a short profile summary based on prioritized tasks and skills."""
+
+    payload = {
+        "tasks": tasks,
+        "skills": skills,
+    }
+    prompt = (
+        "Summarise the ideal candidate for this role based on the provided "
+        f"job data and priorities.\nJob Data: {json.dumps(data)}\n"
+        f"Selected: {json.dumps(payload)}"
+    )
+    system_msg = "You are an expert recruiter generating concise candidate profiles."
+    return await generate_text(
+        prompt,
+        model="gpt-4o-mini",
+        temperature=0.4,
+        max_tokens=200,
+        system_msg=system_msg,
+    )
+
+
 # --- d) Arbeitsvertrag-Generator ---
 async def generate_contract(data: dict) -> str:
     """Create a basic employment contract draft from the extracted core data.
@@ -2443,6 +2478,13 @@ def main():
                         "industry",
                         extr.get("industry", ExtractResult()),
                         meta_map["industry"],
+                        widget_prefix=step_name,
+                    )
+                if value_missing("target_industries"):
+                    show_input(
+                        "target_industries",
+                        extr.get("target_industries", ExtractResult()),
+                        meta_map["target_industries"],
                         widget_prefix=step_name,
                     )
             with cols[1]:
@@ -3088,6 +3130,97 @@ def main():
                         if sub_names:
                             st.caption("Related Skills: " + ", ".join(sub_names))
 
+            with st.container(border=True):
+                st.subheader("Ideal Candidate Profile")
+                st.write(f"**Job Title:** {ss['data'].get('job_title', '')}")
+                st.write(
+                    f"**Work Location City:** {ss['data'].get('work_location_city', '')}"
+                )
+                st.write(f"**Contract Type:** {ss['data'].get('contract_type', '')}")
+
+                task_keys = [
+                    "task_list",
+                    "technical_tasks",
+                    "managerial_tasks",
+                    "administrative_tasks",
+                    "customer_facing_tasks",
+                    "internal_reporting_tasks",
+                    "performance_tasks",
+                    "innovation_tasks",
+                ]
+                tasks_all = collect_unique_items(task_keys, ss.get("data", {}))
+                st.markdown("#### Tasks")
+                selected_tasks: list[tuple[str, int]] = []
+                for i, task in enumerate(tasks_all):
+                    cols = st.columns([0.7, 0.3])
+                    chk = cols[0].checkbox(task, key=f"chk_task_{i}")
+                    yrs = cols[1].number_input(
+                        "Years",
+                        min_value=0,
+                        step=1,
+                        key=f"yrs_task_{i}",
+                    )
+                    if chk:
+                        selected_tasks.append((task, int(yrs)))
+
+                skill_keys = [
+                    "must_have_skills",
+                    "nice_to_have_skills",
+                    "certifications_required",
+                    "language_requirements",
+                    "tool_proficiency",
+                    "tech_stack",
+                    "it_skills",
+                ]
+                skills_all = collect_unique_items(skill_keys, ss.get("data", {}))
+                st.markdown("#### Skills")
+                selected_skills: list[tuple[str, int]] = []
+                for i, sk in enumerate(skills_all):
+                    cols = st.columns([0.7, 0.3])
+                    chk = cols[0].checkbox(sk, key=f"chk_skill_{i}")
+                    yrs = cols[1].number_input(
+                        "Years",
+                        min_value=0,
+                        step=1,
+                        key=f"yrs_skill_{i}",
+                    )
+                    if chk:
+                        selected_skills.append((sk, int(yrs)))
+
+                if st.button("Does your ideal Profile look like this?", key="gen_icp"):
+                    with st.spinner("Generating…"):
+                        try:
+                            ss["data"]["ideal_candidate_profile"] = asyncio.run(
+                                generate_ideal_candidate_profile(
+                                    ss.get("data", {}), selected_tasks, selected_skills
+                                )
+                            )
+                            sal, parts = predict_annual_salary(
+                                cast(str | None, ss["data"].get("job_title")),
+                                cast(str | None, ss["data"].get("role_description")),
+                                " ".join([t for t, _ in selected_tasks]),
+                                cast(str | None, ss["data"].get("city")),
+                                [s for s, _ in selected_skills],
+                            )
+                            ss["data"]["salary_range"] = f"{sal - 2000}–{sal + 2000} €"
+                            ss["salary_breakdown"] = [
+                                "Base salary: 30000 €",
+                                f"Job title impact: {parts['job_title']} €",
+                                f"Role description impact: {parts['role_description']} €",
+                                f"Tasks impact: {parts['task_list']} €",
+                                f"Location impact: {parts['location']} €",
+                                f"Skills impact: {parts['skills']} €",
+                            ]
+                        except Exception as e:
+                            logging.error("ideal profile generation failed: %s", e)
+                if ss.get("data", {}).get("ideal_candidate_profile"):
+                    st.markdown(ss["data"]["ideal_candidate_profile"])
+                    st.markdown(
+                        f"**Gehalts-Estimate:** {ss['data'].get('salary_range', '')}"
+                    )
+                    for p in ss.get("salary_breakdown", []):
+                        st.markdown(f"- {p}")
+
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
 
@@ -3156,12 +3289,7 @@ def main():
         with st.expander("All Data", expanded=False):
             display_summary()
 
-        # Ideal Candidate Profile is now collected in the BASIC step
-
-        st.subheader("Expected Annual Salary")
-        display_salary_plot()
-
-        st.header("Next Step – Use the collected data!")
+        # Ideal Candidate Profile is now collected in the Skills step
 
         btn_cols = st.columns(6)
         actions = [
