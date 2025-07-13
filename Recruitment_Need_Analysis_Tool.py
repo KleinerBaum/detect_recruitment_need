@@ -2549,11 +2549,39 @@ def main():
                 show_missing("innovation_expected", extr, meta_map, step_name)
             with cols[1]:
                 show_missing("on_call", extr, meta_map, step_name)
+                if ss.get("data", {}).get("on_call"):
+                    show_input(
+                        "on_call_expectations",
+                        extr.get("on_call_expectations", ExtractResult()),
+                        meta_map["on_call_expectations"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["on_call_expectations"] = ""
             with cols[2]:
                 show_missing("physical_duties", extr, meta_map, step_name)
+                if ss.get("data", {}).get("physical_duties"):
+                    show_input(
+                        "physical_duties_description",
+                        extr.get("physical_duties_description", ExtractResult()),
+                        meta_map["physical_duties_description"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["physical_duties_description"] = ""
             cols = st.columns(3)
             with cols[0]:
                 show_missing("travel_required", extr, meta_map, step_name)
+                travel_val = ss.get("data", {}).get("travel_required")
+                if travel_val and str(travel_val) != "No":
+                    show_input(
+                        "travel_details",
+                        extr.get("travel_details", ExtractResult()),
+                        meta_map["travel_details"],
+                        widget_prefix=step_name,
+                    )
+                else:
+                    ss["data"]["travel_details"] = ""
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}
