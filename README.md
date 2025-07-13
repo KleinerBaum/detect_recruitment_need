@@ -31,8 +31,10 @@ Berlin, München, Hamburg and Frankfurt.
 The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 *Team & Culture Context* now shows three bordered boxes. Each field provides a
 **Generate Ideas** button above the input and AI suggestions appear as pill
-buttons. Missing data remains highlighted in two columns below the extracted
-values. After uploading a file a small success message with a 🔥 icon confirms
+buttons. The section is expanded by default and once all fields are filled a
+short “Congratulations” toast pops up. Missing data remains highlighted in two
+columns below the extracted values. After uploading a file a small success
+message with a 🔥 icon confirms
 that the extraction finished. Entering a job ad URL now triggers extraction
 automatically and the welcome page shows how many fields were filled in
 percentage.

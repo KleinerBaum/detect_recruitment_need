@@ -1413,17 +1413,19 @@ def display_missing_company_inputs(
     ]
 
     with col_a:
-        st.markdown(f"### Missing Data on {company}")
-        for key in col_a_keys:
-            if key in missing:
+        missing_a = [k for k in col_a_keys if k in missing]
+        if missing_a:
+            st.markdown(f"### Missing Data on {company}")
+            for key in missing_a:
                 meta = missing[key]
                 result = ExtractResult(ss["data"].get(key), 1.0)
                 show_input(key, result, meta, widget_prefix="missing_COMPANY")
 
     with col_b:
-        st.markdown("### Missing Data on the Department and Team")
-        for key in col_b_keys:
-            if key in missing:
+        missing_b = [k for k in col_b_keys if k in missing]
+        if missing_b:
+            st.markdown("### Missing Data on the Department and Team")
+            for key in missing_b:
                 meta = missing[key]
                 result = ExtractResult(ss["data"].get(key), 1.0)
                 show_input(key, result, meta, widget_prefix="missing_COMPANY")
@@ -2344,7 +2346,7 @@ def main():
                     widget_prefix=step_name,
                 )
 
-            with st.expander("Team & Culture Context", expanded=False):
+            with st.expander("Team & Culture Context", expanded=True):
                 box_a, box_b, box_c = st.empty(), st.empty(), st.empty()
 
                 def _wrap(container: DeltaGenerator) -> DeltaGenerator:
@@ -2355,7 +2357,9 @@ def main():
                         "<div style='border:1px solid #ccc;padding:10px'>",
                         unsafe_allow_html=True,
                     )
-                    if st.button("Generate Ideas", key="gen_tech_stack"):
+                    row = st.columns([3, 1])
+                    row[0].markdown(f"**{meta_map['tech_stack']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = asyncio.run(
@@ -2383,7 +2387,9 @@ def main():
                         "<div style='border:1px solid #ccc;padding:10px'>",
                         unsafe_allow_html=True,
                     )
-                    if st.button("Generate Ideas", key="gen_team_challenges"):
+                    row = st.columns([3, 1])
+                    row[0].markdown(f"**{meta_map['team_challenges']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_team_challenges"):
                         with st.spinner("Generating…"):
                             try:
                                 ss["team_challenges_suggestions"] = asyncio.run(
@@ -2404,7 +2410,9 @@ def main():
                         if s not in cur_tc:
                             cur_tc.append(s)
                     ss["data"]["team_challenges"] = ", ".join(cur_tc)
-                    if st.button("Generate Ideas", key="gen_client_difficulties"):
+                    row = st.columns([3, 1])
+                    row[0].markdown(f"**{meta_map['client_difficulties']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_client_difficulties"):
                         with st.spinner("Generating…"):
                             try:
                                 ss["client_difficulties_suggestions"] = asyncio.run(
@@ -2434,7 +2442,9 @@ def main():
                         "<div style='border:1px solid #ccc;padding:10px'>",
                         unsafe_allow_html=True,
                     )
-                    if st.button("Generate Ideas", key="gen_recent_team_changes"):
+                    row = st.columns([3, 1])
+                    row[0].markdown(f"**{meta_map['recent_team_changes']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_recent_team_changes"):
                         with st.spinner("Generating…"):
                             try:
                                 ss["recent_team_changes_suggestions"] = asyncio.run(
@@ -2477,6 +2487,16 @@ def main():
                             widget_prefix=step_name,
                         )
                     st.markdown("</div>", unsafe_allow_html=True)
+
+            company_keys = [k for k, step in KEY_TO_STEP.items() if step == "COMPANY"]
+            if all(not value_missing(k) for k in company_keys):
+                if not ss.get("company_step_done"):
+                    st.toast(
+                        "🎉 Congratulations! All Company & Department data entered."
+                    )
+                    ss["company_step_done"] = True
+            else:
+                ss["company_step_done"] = False
 
         elif step_name == "ROLE":
             meta_map = {m["key"]: m for m in meta_fields}
