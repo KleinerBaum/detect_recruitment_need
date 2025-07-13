@@ -16,6 +16,8 @@ def load_file_tools():
 
 
 extract_text_from_file = load_file_tools().extract_text_from_file
+create_pdf = load_file_tools().create_pdf
+create_docx = load_file_tools().create_docx
 
 
 def test_extract_text_from_pdf(tmp_path: Path) -> None:
@@ -50,3 +52,13 @@ def test_extract_text_handles_errors() -> None:
         )
         == ""
     )
+
+
+def test_create_pdf_and_docx() -> None:
+    logo = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\x0d\n\x2d\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    pdf_bytes = create_pdf("Hello PDF", font="Arial", logo=logo)
+    assert pdf_bytes.startswith(b"%PDF")
+
+    docx_bytes = create_docx("Hello DOCX", font="Arial", logo=logo)
+    doc = docx.Document(io.BytesIO(docx_bytes))
+    assert doc.paragraphs[-1].text == "Hello DOCX"

@@ -58,6 +58,8 @@ _file_tools = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
 _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
+create_pdf = _file_tools.create_pdf
+create_docx = _file_tools.create_docx
 
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
@@ -1162,6 +1164,39 @@ async def suggest_role_description(data: dict) -> str:
     )
 
 
+def get_esco_tasks(job_title: str, *, limit: int = 10) -> list[str]:
+    """Return up to ``limit`` task titles from ESCO for the given job title."""
+
+    if not job_title:
+        return []
+    occs = search_occupations(job_title, limit=1)
+    if not occs:
+        return []
+    uri = occs[0].get("uri", "")
+    if not uri:
+        return []
+    skills = get_skills_for_occupation(uri, limit=limit)
+    tasks: list[str] = []
+    for item in skills:
+        label = item.get("label") or item.get("title") or item.get("preferredLabel")
+        if label:
+            tasks.append(str(label))
+    return tasks[:limit]
+
+
+async def suggest_tasks(data: dict, count: int = 10) -> list[str]:
+    """Return task suggestions via OpenAI based on the role data."""
+
+    prompt = (
+        f"List up to {count} key tasks for a role titled '{data.get('job_title', '')}'. "
+        f"Role description: '{data.get('role_description', '')}'. "
+        f"Role type: '{data.get('role_type', '')}'. "
+        f"Keywords: '{data.get('role_keywords', '')}'. "
+        'Return JSON object {"tasks": [..]} with one task per list item.'
+    )
+    return await _suggest_items(prompt, "tasks")
+
+
 async def suggest_recruitment_steps(data: dict, count: int = 5) -> list[str]:
     """Suggest common steps in the recruitment process."""
 
@@ -1401,6 +1436,36 @@ def show_input(
         val = st.checkbox(
             label, value=str(val).lower() == "true", key=widget_key, help=helptext
         )
+
+    elif field_type == "week_schedule":
+        st.markdown(label)
+        try:
+            schedule = json.loads(val) if val else {}
+        except Exception:
+            schedule = {}
+        result: dict[str, list[str]] = {}
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for day in days:
+            times = schedule.get(day, ["08:00", "17:00"])
+            try:
+                start_default = dt.datetime.strptime(times[0], "%H:%M").time()
+            except Exception:
+                start_default = dt.time(8, 0)
+            try:
+                end_default = dt.datetime.strptime(times[1], "%H:%M").time()
+            except Exception:
+                end_default = dt.time(17, 0)
+            cols = st.columns(2)
+            with cols[0]:
+                start = st.time_input(
+                    f"{day} start", value=start_default, key=f"{widget_key}_{day}_s"
+                )
+            with cols[1]:
+                end = st.time_input(
+                    f"{day} end", value=end_default, key=f"{widget_key}_{day}_e"
+                )
+            result[day] = [start.strftime("%H:%M"), end.strftime("%H:%M")]
+        val = json.dumps(result)
 
     elif field_type == "slider":
         digits = [int(x) for x in re.findall(r"\d+", str(val))]
@@ -1684,6 +1749,10 @@ def display_summary_overview() -> None:
         st.markdown("### About the Role")
         st.write(f"**Role Description:** {val('role_description')}")
         st.write(f"**Task List:** {val('task_list')}")
+        if ss.get("selected_tasks"):
+            st.write(
+                f"**Selected Tasks:** {', '.join(cast(list[str], ss['selected_tasks']))}"
+            )
         st.write(f"**Technical Tasks:** {val('technical_tasks')}")
         st.write(f"**Managerial Tasks:** {val('managerial_tasks')}")
         st.write(f"**Role Keywords:** {val('role_keywords')}")
@@ -1929,7 +1998,8 @@ def display_sidebar_data(current_step: int, lang: str) -> None:
 
     for i, step in enumerate(order, start=1):
         values = {k: data.get(k) for k in extracted.get(step, {}) if data.get(k)}
-        if not values:
+        has_tasks = step == "ROLE" and st.session_state.get("selected_tasks")
+        if not values and not has_tasks:
             continue
         if not heading_shown:
             st.sidebar.subheader(heading)
@@ -1939,6 +2009,11 @@ def display_sidebar_data(current_step: int, lang: str) -> None:
         ):
             for k, v in values.items():
                 st.write(f"**{k.replace('_', ' ').title()}:** {v}")
+            if has_tasks:
+                st.write(
+                    "**Selected Tasks:** "
+                    + ", ".join(cast(list[str], st.session_state["selected_tasks"]))
+                )
 
 
 def display_extraction_tabs() -> None:
@@ -2224,6 +2299,7 @@ def main():
     ss.setdefault("data", {})
     ss.setdefault("extracted", {})
     ss.setdefault("benefit_list", [])
+    ss.setdefault("selected_tasks", [])
     ss["_used_widget_keys"] = set()
     ss.setdefault("ORDER", ORDER)
 
@@ -2766,6 +2842,41 @@ def main():
 
             st.subheader("Tasks")
             show_missing("task_list", extr, meta_map, step_name)
+            row = st.columns([2, 1, 1])
+            if row[1].button("AI Tasks", key="gen_ai_tasks"):
+                with st.spinner("Generating…"):
+                    try:
+                        ss["ai_task_suggestions"] = asyncio.run(
+                            suggest_tasks(ss["data"])
+                        )
+                    except Exception as e:
+                        logging.error("task suggestion failed: %s", e)
+                        ss["ai_task_suggestions"] = []
+            if row[2].button("ESCO Tasks", key="gen_esco_tasks"):
+                with st.spinner("Fetching…"):
+                    try:
+                        title = ss.get("data", {}).get("job_title", "")
+                        ss["esco_task_suggestions"] = get_esco_tasks(title)
+                    except Exception as e:
+                        logging.error("ESCO task lookup failed: %s", e)
+                        ss["esco_task_suggestions"] = []
+            ai_sel = st.pills(
+                "",
+                ss.get("ai_task_suggestions", []),
+                selection_mode="multi",
+                key="sel_ai_tasks",
+            )
+            esco_sel = st.pills(
+                "",
+                ss.get("esco_task_suggestions", []),
+                selection_mode="multi",
+                key="sel_esco_tasks",
+            )
+            chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
+            for t in (ai_sel or []) + (esco_sel or []):
+                if t not in chosen_tasks:
+                    chosen_tasks.append(t)
+            ss["selected_tasks"] = chosen_tasks
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)
@@ -2815,13 +2926,51 @@ def main():
                 travel_val = ss.get("data", {}).get("travel_required")
                 if travel_val and str(travel_val) != "No":
                     show_input(
+                        "travel_region",
+                        extr.get("travel_region", ExtractResult()),
+                        meta_map["travel_region"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_length_days",
+                        extr.get("travel_length_days", ExtractResult()),
+                        meta_map["travel_length_days"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_frequency_number",
+                        extr.get("travel_frequency_number", ExtractResult()),
+                        meta_map["travel_frequency_number"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_frequency_unit",
+                        extr.get("travel_frequency_unit", ExtractResult()),
+                        meta_map["travel_frequency_unit"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "weekend_travel",
+                        extr.get("weekend_travel", ExtractResult()),
+                        meta_map["weekend_travel"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
                         "travel_details",
                         extr.get("travel_details", ExtractResult()),
                         meta_map["travel_details"],
                         widget_prefix=step_name,
                     )
                 else:
-                    ss["data"]["travel_details"] = ""
+                    for k in [
+                        "travel_region",
+                        "travel_length_days",
+                        "travel_frequency_number",
+                        "travel_frequency_unit",
+                        "weekend_travel",
+                        "travel_details",
+                    ]:
+                        ss["data"][k] = ""
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}
@@ -3289,7 +3438,24 @@ def main():
         with st.expander("All Data", expanded=False):
             display_summary()
 
-        # Ideal Candidate Profile is now collected in the Skills step
+
+        # Ideal Candidate Profile is now collected in the BASIC step
+
+        st.subheader("Expected Annual Salary")
+        display_salary_plot()
+
+        ss.setdefault("font_choice", "Arial")
+        st.selectbox(
+            "Font",
+            ["Arial", "Helvetica", "Courier", "Times"],
+            key="font_choice",
+        )
+        logo_file = st.file_uploader(
+            "Upload Logo", type=["png", "jpg", "jpeg"], key="logo_file"
+        )
+        logo_bytes = logo_file.getvalue() if logo_file else None
+
+        st.header("Next Step – Use the collected data!")
 
         btn_cols = st.columns(6)
         actions = [
@@ -3360,6 +3526,28 @@ def main():
                 st.text_area("Change Request", key=f"chg_{key}", value="")
                 st.button(
                     "Apply", key=f"apply_{key}", on_click=apply_change, args=(key,)
+                )
+                pdf_bytes = create_pdf(
+                    ss[f"out_{key}"],
+                    font=ss.get("font_choice", "Arial"),
+                    logo=logo_bytes,
+                )
+                st.download_button(
+                    "Download PDF",
+                    pdf_bytes,
+                    file_name=f"{key}.pdf",
+                    mime="application/pdf",
+                )
+                doc_bytes = create_docx(
+                    ss[f"out_{key}"],
+                    font=ss.get("font_choice", "Arial"),
+                    logo=logo_bytes,
+                )
+                st.download_button(
+                    "Download DOCX",
+                    doc_bytes,
+                    file_name=f"{key}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 )
 
         step_labels = [title for title, _ in STEPS]
