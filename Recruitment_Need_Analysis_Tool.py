@@ -15,7 +15,7 @@ from functools import lru_cache
 import spacy
 from spacy.language import Language
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Any, Literal, Sequence, cast
 
 from io import BytesIO
 from pathlib import Path
@@ -176,6 +176,49 @@ def safe_json_load(text: str) -> dict:
                 except Exception as e:
                     logging.error("Secondary JSON extraction failed: %s", e)
                     return {}
+
+
+async def json_chat(
+    messages: list[dict[str, str]],
+    expected: Sequence[str],
+    *,
+    max_attempts: int = 2,
+    model: str = "gpt-4o-mini",
+    temperature: float = 0.0,
+    max_tokens: int = 500,
+) -> dict:
+    """Return JSON data from the LLM with optional retries."""
+
+    for attempt in range(max_attempts):
+        chat = await client.chat.completions.create(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            messages=cast(Any, messages),
+            response_format=cast(Any, {"type": "json_object"}),
+        )
+
+        raw = chat.choices[0].message.content or ""
+        data = safe_json_load(raw)
+        if all(k in data for k in expected):
+            return data
+
+        missing = [k for k in expected if k not in data]
+        logging.warning(
+            "LLM output missing keys %s on attempt %s", missing, attempt + 1
+        )
+        if attempt + 1 < max_attempts:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        "Your last answer was incomplete. Missing: "
+                        f"{', '.join(missing)}. Return JSON with all keys."
+                    ),
+                }
+            )
+
+    return data
 
 
 def sanitize_value(val: Any) -> str | None:
@@ -993,18 +1036,13 @@ async def llm_fill(missing_keys: list[str], text: str) -> dict[str, ExtractResul
             f"Extract the following keys and return STRICT JSON only:\n{subset}\n\n"
             f"CONTEXT:\n{context_block}\n\nTEXT:\n```{text[:12_000]}```"
         )
-        chat = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0,
-            max_tokens=500,
-            messages=[
+        raw = await json_chat(
+            [
                 {"role": "system", "content": LLM_PROMPT},
                 {"role": "user", "content": user_msg},
             ],
-            response_format={"type": "json_object"},
+            subset,
         )
-
-        raw = safe_json_load(chat.choices[0].message.content or "")
         for k in subset:
             node = raw.get(k, {})
             val = node.get("value") if isinstance(node, dict) else node
@@ -1020,11 +1058,8 @@ async def llm_validate(data: dict[str, ExtractResult]) -> dict[str, ExtractResul
         return {}
 
     payload = {k: v.value for k, v in data.items()}
-    chat = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        temperature=0,
-        max_tokens=500,
-        messages=[
+    raw = await json_chat(
+        [
             {"role": "system", "content": LLM_PROMPT},
             {
                 "role": "user",
@@ -1035,10 +1070,8 @@ async def llm_validate(data: dict[str, ExtractResult]) -> dict[str, ExtractResul
                 ),
             },
         ],
-        response_format={"type": "json_object"},
+        list(data.keys()),
     )
-
-    raw = safe_json_load(chat.choices[0].message.content or "")
     out = {}
     for k, node in raw.items():
         if isinstance(node, dict):
@@ -1102,6 +1135,13 @@ async def extract(text: str) -> dict[str, ExtractResult]:
 
     validated = await llm_validate(interim)
     interim.update(validated)
+
+    remaining = [k for k in MUST_HAVE_KEYS if value_missing(k)]
+    if remaining:
+        interim.update(await llm_fill(remaining, text))
+        subset = {k: interim[k] for k in remaining if k in interim}
+        if subset:
+            interim.update(await llm_validate(subset))
     return interim
 
 

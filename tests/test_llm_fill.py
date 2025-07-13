@@ -31,3 +31,23 @@ def test_llm_fill_includes_context(monkeypatch):
     monkeypatch.setattr(tool.vector_store, "search", dummy_search)
     asyncio.run(tool.llm_fill(["job_title"], "some text"))
     assert dummy_search.called == "some text"[:1000]
+
+
+async def dummy_create_retry(*args, **kwargs):
+    dummy_create_retry.calls += 1
+    if dummy_create_retry.calls == 1:
+        content = "{}"
+    else:
+        content = '{"job_title": {"value": "Engineer", "confidence": 0.9}}'
+    msg = types.SimpleNamespace(content=content)
+    return types.SimpleNamespace(choices=[types.SimpleNamespace(message=msg)])
+
+
+def test_llm_fill_retries_on_missing(monkeypatch):
+    tool = load_tool_module()
+    dummy_create_retry.calls = 0
+    monkeypatch.setattr(tool.client.chat.completions, "create", dummy_create_retry)
+    monkeypatch.setattr(tool.vector_store, "search", dummy_search)
+    res = asyncio.run(tool.llm_fill(["job_title"], "text"))
+    assert dummy_create_retry.calls == 2
+    assert res["job_title"].value == "Engineer"
