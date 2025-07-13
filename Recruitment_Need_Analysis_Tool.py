@@ -853,6 +853,21 @@ def update_benefit_preferences(city: str) -> None:
     ss["local_benefits"] = LOCAL_BENEFITS.get(city.lower(), [])
 
 
+def sync_remote_policy(data: dict[str, Any]) -> None:
+    """Synchronize remote policy with the selected work schedule."""
+
+    schedule = data.get("work_schedule")
+    if schedule == "Remote":
+        data["remote_policy"] = "Remote"
+        data["remote_percentage"] = 100
+    elif schedule == "Hybrid":
+        data["remote_policy"] = "Hybrid"
+        data.setdefault("remote_percentage", 50)
+    else:
+        data.setdefault("remote_policy", "Onsite")
+        data.pop("remote_percentage", None)
+
+
 def calc_extraction_progress() -> int:
     """Return extraction completion percentage."""
 
@@ -2222,20 +2237,19 @@ def main():
                         meta_map["work_schedule"],
                         widget_prefix=step_name,
                     )
-                if (
-                    not value_missing("work_schedule")
-                    and ss.get("data", {}).get("work_schedule") == "Hybrid"
-                ):
-                    default_pct = int(ss.get("data", {}).get("onsite_percentage", 50))
+                sync_remote_policy(ss["data"])
+                schedule = ss.get("data", {}).get("work_schedule")
+                if schedule == "Hybrid":
+                    default_pct = int(ss.get("data", {}).get("remote_percentage", 50))
                     pct = st.slider(
-                        "% Onsite vs Remote",
+                        "% Remote",
                         min_value=0,
                         max_value=100,
                         value=default_pct,
                         step=5,
-                        key="onsite_percentage",
+                        key="remote_percentage",
                     )
-                    ss["data"]["onsite_percentage"] = pct
+                    ss["data"]["remote_percentage"] = pct
         elif step_name == "COMPANY":
             meta_map = {m["key"]: m for m in meta_fields}
             cols = st.columns(2)
@@ -2654,7 +2668,10 @@ def main():
                 with cols_a:
                     show_missing("vacation_days", extr, meta_map, step_name)
                     show_missing("remote_policy", extr, meta_map, step_name)
-                    if ss.get("data", {}).get("remote_policy") not in {"", "Onsite"}:
+                    if ss.get("data", {}).get("remote_policy") not in {
+                        "",
+                        "Onsite",
+                    } and value_missing("remote_percentage"):
                         pct = int(ss.get("data", {}).get("remote_percentage", 50))
                         pct = st.slider(
                             "% Remote", 0, 100, pct, 5, key="remote_percentage"
