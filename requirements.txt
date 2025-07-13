@@ -17,6 +17,7 @@ plotly
 spacy==3.8.7
 https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.8.0/xx_ent_wiki_sm-3.8.0-py3-none-any.whl
 
+
 # --- development / CI ---
 pre-commit==4.2.0          # hook runner :contentReference[oaicite:5]{index=5}
 pytest              # test runner :contentReference[oaicite:6]{index=6}
