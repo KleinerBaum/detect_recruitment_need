@@ -1367,6 +1367,36 @@ def show_input(
             label, value=str(val).lower() == "true", key=widget_key, help=helptext
         )
 
+    elif field_type == "week_schedule":
+        st.markdown(label)
+        try:
+            schedule = json.loads(val) if val else {}
+        except Exception:
+            schedule = {}
+        result: dict[str, list[str]] = {}
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for day in days:
+            times = schedule.get(day, ["08:00", "17:00"])
+            try:
+                start_default = dt.datetime.strptime(times[0], "%H:%M").time()
+            except Exception:
+                start_default = dt.time(8, 0)
+            try:
+                end_default = dt.datetime.strptime(times[1], "%H:%M").time()
+            except Exception:
+                end_default = dt.time(17, 0)
+            cols = st.columns(2)
+            with cols[0]:
+                start = st.time_input(
+                    f"{day} start", value=start_default, key=f"{widget_key}_{day}_s"
+                )
+            with cols[1]:
+                end = st.time_input(
+                    f"{day} end", value=end_default, key=f"{widget_key}_{day}_e"
+                )
+            result[day] = [start.strftime("%H:%M"), end.strftime("%H:%M")]
+        val = json.dumps(result)
+
     elif field_type == "slider":
         digits = [int(x) for x in re.findall(r"\d+", str(val))]
         title = str(ss.get("data", {}).get("job_title", ""))
@@ -2732,13 +2762,51 @@ def main():
                 travel_val = ss.get("data", {}).get("travel_required")
                 if travel_val and str(travel_val) != "No":
                     show_input(
+                        "travel_region",
+                        extr.get("travel_region", ExtractResult()),
+                        meta_map["travel_region"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_length_days",
+                        extr.get("travel_length_days", ExtractResult()),
+                        meta_map["travel_length_days"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_frequency_number",
+                        extr.get("travel_frequency_number", ExtractResult()),
+                        meta_map["travel_frequency_number"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "travel_frequency_unit",
+                        extr.get("travel_frequency_unit", ExtractResult()),
+                        meta_map["travel_frequency_unit"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
+                        "weekend_travel",
+                        extr.get("weekend_travel", ExtractResult()),
+                        meta_map["weekend_travel"],
+                        widget_prefix=step_name,
+                    )
+                    show_input(
                         "travel_details",
                         extr.get("travel_details", ExtractResult()),
                         meta_map["travel_details"],
                         widget_prefix=step_name,
                     )
                 else:
-                    ss["data"]["travel_details"] = ""
+                    for k in [
+                        "travel_region",
+                        "travel_length_days",
+                        "travel_frequency_number",
+                        "travel_frequency_unit",
+                        "weekend_travel",
+                        "travel_details",
+                    ]:
+                        ss["data"][k] = ""
 
         elif step_name == "SKILLS":
             meta_map = {m["key"]: m for m in meta_fields}

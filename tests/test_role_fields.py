@@ -17,6 +17,11 @@ def test_conditional_role_fields_present():
     keys = {m["key"] for m in tool.SCHEMA["ROLE"]}
     assert {
         "travel_details",
+        "travel_region",
+        "travel_length_days",
+        "travel_frequency_number",
+        "travel_frequency_unit",
+        "weekend_travel",
         "on_call_expectations",
         "physical_duties_description",
     } <= keys
