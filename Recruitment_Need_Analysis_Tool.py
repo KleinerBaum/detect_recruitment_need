@@ -24,7 +24,6 @@ import httpx
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
-
 import importlib.util
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
@@ -32,6 +31,15 @@ import datetime as dt
 import csv
 import base64
 import hashlib
+
+_forms_spec = importlib.util.spec_from_file_location(
+    "ui_forms", Path(__file__).with_name("ui_forms.py")
+)
+assert _forms_spec is not None
+_forms_module = importlib.util.module_from_spec(_forms_spec)
+assert _forms_spec.loader is not None
+_forms_spec.loader.exec_module(_forms_module)
+email_input = _forms_module.email_input
 
 _esco_spec = importlib.util.spec_from_file_location(
     "esco_api", Path(__file__).with_name("esco_api.py")
@@ -1528,13 +1536,16 @@ def show_input(
                 st.warning("Entered salary deviates from suggestion.")
 
     else:
-        val = st.text_input(
-            label,
-            value=val or "",
-            key=widget_key,
-            help=helptext,
-            placeholder=placeholder,
-        )
+        if key in {"recruitment_contact_email", "line_manager_email"}:
+            val = email_input(label, key=widget_key)
+        else:
+            val = st.text_input(
+                label,
+                value=val or "",
+                key=widget_key,
+                help=helptext,
+                placeholder=placeholder,
+            )
 
     # Save to session state
     st.session_state["data"][key] = val
@@ -3489,6 +3500,7 @@ def main():
         display_summary_overview()
         with st.expander("All Data", expanded=False):
             display_summary()
+
 
         if ss.get("data", {}).get("ideal_candidate_profile"):
             st.subheader("Ideal Candidate Profile")
