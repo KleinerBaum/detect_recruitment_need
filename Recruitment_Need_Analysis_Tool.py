@@ -436,6 +436,9 @@ REGEX_PATTERNS = {
     ),
     "reports_to": _simple("Reports\\s*To", "unterstellt", "reports_to"),
     "supervises": _simple("Supervises", "Führungsverantwortung", "supervises"),
+    "team_tech_stack": _simple(
+        "Tech(ology)?\\s*Stack", "Technologien?", "team_tech_stack"
+    ),
     "tech_stack": _simple("Tech(ology)?\\s*Stack", "Technologien?", "tech_stack"),
     "culture_notes": _simple("Culture", "Kultur", "culture_notes"),
     "team_challenges": _simple(
@@ -1065,6 +1068,14 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
         prefix = f"commonly offered by employers in {location}"
     else:
         prefix = f"competitors usually offer for similar '{job_title}' roles"
+        industries = data.get("target_industries")
+        if industries:
+            ind_str = (
+                ", ".join(industries)
+                if isinstance(industries, list)
+                else str(industries)
+            )
+            prefix += f" in the following target industries: {ind_str}"
 
     prompt = (
         f"List up to {count} employee benefits {prefix}. "
@@ -1135,8 +1146,16 @@ async def suggest_team_challenges(data: dict, count: int = 5) -> list[str]:
 async def suggest_client_difficulties(data: dict, count: int = 5) -> list[str]:
     """Suggest frequent client difficulties."""
 
+    industries = data.get("target_industries")
+    extra = ""
+    if industries:
+        ind_str = (
+            ", ".join(industries) if isinstance(industries, list) else str(industries)
+        )
+        extra = f" for the following target industries: {ind_str}"
+
     prompt = (
-        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry. "
+        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry{extra}. "
         'Return JSON object {"items": [..]} with one item per list entry.'
     )
     return await _suggest_items(prompt, "items")
@@ -2698,28 +2717,28 @@ def main():
                         unsafe_allow_html=True,
                     )
                     row = st.columns([3, 1])
-                    row[0].markdown(f"**{meta_map['tech_stack']['label']}**")
-                    if row[1].button("Generate Ideas", key="gen_tech_stack"):
+                    row[0].markdown(f"**{meta_map['team_tech_stack']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_team_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["tech_stack_suggestions"] = asyncio.run(
+                                ss["team_tech_stack_suggestions"] = asyncio.run(
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
                                 logging.error("tech stack suggestion failed: %s", e)
-                                ss["tech_stack_suggestions"] = []
-                    show_missing("tech_stack", extr, meta_map, step_name)
+                                ss["team_tech_stack_suggestions"] = []
+                    show_missing("team_tech_stack", extr, meta_map, step_name)
                     sel_ts = st.pills(
                         "",
-                        ss.get("tech_stack_suggestions", []),
+                        ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
-                        key="sel_tech_stack",
+                        key="sel_team_tech_stack",
                     )
-                    current_ts = parse_skill_list(ss["data"].get("tech_stack"))
+                    current_ts = parse_skill_list(ss["data"].get("team_tech_stack"))
                     for s in sel_ts or []:
                         if s not in current_ts:
                             current_ts.append(s)
-                    ss["data"]["tech_stack"] = ", ".join(current_ts)
+                    ss["data"]["team_tech_stack"] = ", ".join(current_ts)
                     st.markdown("</div>", unsafe_allow_html=True)
 
                 with _wrap(box_b):
@@ -3482,7 +3501,10 @@ def main():
         with st.expander("All Data", expanded=False):
             display_summary()
 
-        # Ideal Candidate Profile is now collected in the BASIC step
+
+        if ss.get("data", {}).get("ideal_candidate_profile"):
+            st.subheader("Ideal Candidate Profile")
+            st.markdown(ss["data"]["ideal_candidate_profile"])
 
         st.subheader("Expected Annual Salary")
         display_salary_plot()
