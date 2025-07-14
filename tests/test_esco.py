@@ -99,3 +99,15 @@ def test_related_and_categories(monkeypatch):
     monkeypatch.setattr(mod.httpx, "get", DummyClient(cat_data).get)
     cats = mod.get_skill_categories("suri")
     assert cats == ["c"]
+
+
+def test_get_occupation_statistics(monkeypatch):
+    mod = load_module()
+
+    monkeypatch.setattr(
+        mod, "fetch_occupation_details", lambda uri: {"preferredLabel": "Nurse"}
+    )
+    monkeypatch.setattr(mod, "get_skills_for_occupation", lambda uri: [1, 2, 3])
+
+    stats = mod.get_occupation_statistics("uri")
+    assert stats == {"skills": 3, "languages": 1}

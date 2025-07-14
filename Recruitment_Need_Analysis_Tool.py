@@ -24,12 +24,29 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
 import importlib.util
+
+try:
+    from ui_forms import email_input
+except ModuleNotFoundError:  # pragma: no cover - fallback for tests
+
+    def email_input(label: str, key: str) -> str:
+        """Fallback email input field."""
+        return st.text_input(label, key=key)
+
+
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
 import datetime as dt
 import csv
 import base64
 import hashlib
+
+try:
+    from ui_forms import email_input  # type: ignore
+except Exception:  # pragma: no cover - fallback if module missing
+
+    def email_input(label: str, key: str) -> str:  # type: ignore[misc]
+        return st.text_input(label, key=key)
 
 
 async def _run_async(coro: Awaitable[Any]) -> Any:
@@ -82,6 +99,15 @@ assert _forms_spec.loader is not None
 _forms_spec.loader.exec_module(_forms_mod)
 email_input = _forms_mod.email_input
 
+
+_ui_spec = importlib.util.spec_from_file_location(
+    "ui_forms", Path(__file__).with_name("ui_forms.py")
+)
+assert _ui_spec is not None
+_ui_mod = importlib.util.module_from_spec(_ui_spec)
+assert _ui_spec.loader is not None
+_ui_spec.loader.exec_module(_ui_mod)
+email_input = _ui_mod.email_input
 
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
@@ -1228,14 +1254,19 @@ def get_esco_tasks(job_title: str, *, limit: int = 10) -> list[str]:
     return tasks[:limit]
 
 
-async def suggest_tasks(data: dict, count: int = 10) -> list[str]:
+async def suggest_tasks(
+    data: dict,
+    count: int = 10,
+    technology: str | None = None,
+) -> list[str]:
     """Return task suggestions via OpenAI based on the role data."""
 
+    tech_part = f" Focus on tasks involving {technology}." if technology else ""
     prompt = (
         f"List up to {count} key tasks for a role titled '{data.get('job_title', '')}'. "
         f"Role description: '{data.get('role_description', '')}'. "
         f"Role type: '{data.get('role_type', '')}'. "
-        f"Keywords: '{data.get('role_keywords', '')}'. "
+        f"Keywords: '{data.get('role_keywords', '')}'.{tech_part} "
         'Return JSON object {"tasks": [..]} with one task per list item.'
     )
     return await _suggest_items(prompt, "tasks")
@@ -1545,7 +1576,9 @@ def show_input(
 
     else:
         if key in {"recruitment_contact_email", "line_manager_email"}:
-            val = email_input(label, key=widget_key)
+            val = email_input(  # noqa: F821  # type: ignore[name-defined]
+                label, key=widget_key
+            )
         else:
             val = st.text_input(
                 label,
@@ -2833,8 +2866,8 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = await suggest_role_description(
-                            ss["data"]
+                        ss["data"]["role_description"] = await _run_async(
+                            suggest_role_description(ss["data"])
                         )
                     except Exception as e:  # pragma: no cover - log only
                         logging.error("role description generation failed: %s", e)
@@ -2890,43 +2923,68 @@ async def main() -> None:
                 )
                 show_missing("success_metrics", extr, meta_map, step_name)
 
-            st.subheader("Tasks")
-            show_missing("task_list", extr, meta_map, step_name)
-            row = st.columns([2, 1, 1])
-            if row[1].button("AI Tasks", key="gen_ai_tasks"):
-                with st.spinner("Generating…"):
-                    try:
-                        ss["ai_task_suggestions"] = await _run_async(
-                            suggest_tasks(ss["data"])
-                        )
-                    except Exception as e:
-                        logging.error("task suggestion failed: %s", e)
-                        ss["ai_task_suggestions"] = []
-            if row[2].button("ESCO Tasks", key="gen_esco_tasks"):
-                with st.spinner("Fetching…"):
-                    try:
-                        title = ss.get("data", {}).get("job_title", "")
-                        ss["esco_task_suggestions"] = get_esco_tasks(title)
-                    except Exception as e:
-                        logging.error("ESCO task lookup failed: %s", e)
-                        ss["esco_task_suggestions"] = []
-            ai_sel: list[str] | None = st.pills(
-                "",
-                ss.get("ai_task_suggestions", []),
-                selection_mode="multi",
-                key="sel_ai_tasks",
-            )
-            esco_sel: list[str] | None = st.pills(
-                "",
-                ss.get("esco_task_suggestions", []),
-                selection_mode="multi",
-                key="sel_esco_tasks",
-            )
-            chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
-            for t in (ai_sel or []) + (esco_sel or []):
-                if t not in chosen_tasks:
-                    chosen_tasks.append(t)
-            ss["selected_tasks"] = chosen_tasks
+            with st.container():
+                st.subheader("Tasks")
+                st.caption("Generate tasks or import them from ESCO.")
+                show_missing("task_list", extr, meta_map, step_name)
+
+                ai_count = st.slider(
+                    "Number of AI Tasks",
+                    min_value=1,
+                    max_value=20,
+                    value=5,
+                    key="ai_task_count",
+                )
+                ai_tech = st.text_input(
+                    "Technology focus (optional)",
+                    key="ai_task_tech",
+                )
+                cols = st.columns(2)
+                with cols[0]:
+                    st.markdown("**AI Tasks**")
+                    st.caption("LLM generated suggestions")
+                    if st.button("Generate", key="gen_ai_tasks"):
+                        with st.spinner("Generating…"):
+                            try:
+                                ss["ai_task_suggestions"] = asyncio.run(
+                                    suggest_tasks(
+                                        ss["data"],
+                                        count=int(ai_count),
+                                        technology=ai_tech or None,
+                                    )
+                                )
+                            except Exception as e:
+                                logging.error("task suggestion failed: %s", e)
+                                ss["ai_task_suggestions"] = []
+                    ai_sel = st.pills(
+                        "",
+                        ss.get("ai_task_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_ai_tasks",
+                    )
+                with cols[1]:
+                    st.markdown("**ESCO Tasks**")
+                    st.caption("Official ESCO database")
+                    if st.button("Fetch", key="gen_esco_tasks"):
+                        with st.spinner("Fetching…"):
+                            try:
+                                title = ss.get("data", {}).get("job_title", "")
+                                ss["esco_task_suggestions"] = get_esco_tasks(title)
+                            except Exception as e:
+                                logging.error("ESCO task lookup failed: %s", e)
+                                ss["esco_task_suggestions"] = []
+                    esco_sel = st.pills(
+                        "",
+                        ss.get("esco_task_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_esco_tasks",
+                    )
+                chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
+                for t in (ai_sel or []) + (esco_sel or []):
+                    if t not in chosen_tasks:
+                        chosen_tasks.append(t)
+                ss["selected_tasks"] = chosen_tasks
+
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)

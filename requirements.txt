@@ -4,7 +4,7 @@ streamlit
 openai==1.93.0             # OpenAI Python SDK :contentReference[oaicite:1]{index=1}
 PyPDF2==3.0.1
 fpdf2==2.8.3
-python-docx==1.1.2            # fast PDF text extraction (import as “fitz”) :contentReference[oaicite:2]{index=2}
+python-docx==1.1.2            # read/write Word docs (``python-docx``) :contentReference[oaicite:2]{index=2}
 requests==2.32.4           # HTTP client :contentReference[oaicite:3]{index=3}
 typing-extensions==4.14.1  # back-ports for newer typing features :contentReference[oaicite:4]{index=4}
 beautifulsoup4==4.12.3
