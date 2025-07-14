@@ -1229,14 +1229,19 @@ def get_esco_tasks(job_title: str, *, limit: int = 10) -> list[str]:
     return tasks[:limit]
 
 
-async def suggest_tasks(data: dict, count: int = 10) -> list[str]:
+async def suggest_tasks(
+    data: dict,
+    count: int = 10,
+    technology: str | None = None,
+) -> list[str]:
     """Return task suggestions via OpenAI based on the role data."""
 
+    tech_part = f" Focus on tasks involving {technology}." if technology else ""
     prompt = (
         f"List up to {count} key tasks for a role titled '{data.get('job_title', '')}'. "
         f"Role description: '{data.get('role_description', '')}'. "
         f"Role type: '{data.get('role_type', '')}'. "
-        f"Keywords: '{data.get('role_keywords', '')}'. "
+        f"Keywords: '{data.get('role_keywords', '')}'.{tech_part} "
         'Return JSON object {"tasks": [..]} with one task per list item.'
     )
     return await _suggest_items(prompt, "tasks")
@@ -2930,43 +2935,67 @@ def main():
                 )
                 show_missing("success_metrics", extr, meta_map, step_name)
 
-            st.subheader("Tasks")
-            show_missing("task_list", extr, meta_map, step_name)
-            row = st.columns([2, 1, 1])
-            if row[1].button("AI Tasks", key="gen_ai_tasks"):
-                with st.spinner("Generating…"):
-                    try:
-                        ss["ai_task_suggestions"] = asyncio.run(
-                            suggest_tasks(ss["data"])
-                        )
-                    except Exception as e:
-                        logging.error("task suggestion failed: %s", e)
-                        ss["ai_task_suggestions"] = []
-            if row[2].button("ESCO Tasks", key="gen_esco_tasks"):
-                with st.spinner("Fetching…"):
-                    try:
-                        title = ss.get("data", {}).get("job_title", "")
-                        ss["esco_task_suggestions"] = get_esco_tasks(title)
-                    except Exception as e:
-                        logging.error("ESCO task lookup failed: %s", e)
-                        ss["esco_task_suggestions"] = []
-            ai_sel = st.pills(
-                "",
-                ss.get("ai_task_suggestions", []),
-                selection_mode="multi",
-                key="sel_ai_tasks",
-            )
-            esco_sel = st.pills(
-                "",
-                ss.get("esco_task_suggestions", []),
-                selection_mode="multi",
-                key="sel_esco_tasks",
-            )
-            chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
-            for t in (ai_sel or []) + (esco_sel or []):
-                if t not in chosen_tasks:
-                    chosen_tasks.append(t)
-            ss["selected_tasks"] = chosen_tasks
+            with st.container():
+                st.subheader("Tasks")
+                st.caption("Generate tasks or import them from ESCO.")
+                show_missing("task_list", extr, meta_map, step_name)
+
+                ai_count = st.slider(
+                    "Number of AI Tasks",
+                    min_value=1,
+                    max_value=20,
+                    value=5,
+                    key="ai_task_count",
+                )
+                ai_tech = st.text_input(
+                    "Technology focus (optional)",
+                    key="ai_task_tech",
+                )
+                cols = st.columns(2)
+                with cols[0]:
+                    st.markdown("**AI Tasks**")
+                    st.caption("LLM generated suggestions")
+                    if st.button("Generate", key="gen_ai_tasks"):
+                        with st.spinner("Generating…"):
+                            try:
+                                ss["ai_task_suggestions"] = asyncio.run(
+                                    suggest_tasks(
+                                        ss["data"],
+                                        count=int(ai_count),
+                                        technology=ai_tech or None,
+                                    )
+                                )
+                            except Exception as e:
+                                logging.error("task suggestion failed: %s", e)
+                                ss["ai_task_suggestions"] = []
+                    ai_sel = st.pills(
+                        "",
+                        ss.get("ai_task_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_ai_tasks",
+                    )
+                with cols[1]:
+                    st.markdown("**ESCO Tasks**")
+                    st.caption("Official ESCO database")
+                    if st.button("Fetch", key="gen_esco_tasks"):
+                        with st.spinner("Fetching…"):
+                            try:
+                                title = ss.get("data", {}).get("job_title", "")
+                                ss["esco_task_suggestions"] = get_esco_tasks(title)
+                            except Exception as e:
+                                logging.error("ESCO task lookup failed: %s", e)
+                                ss["esco_task_suggestions"] = []
+                    esco_sel = st.pills(
+                        "",
+                        ss.get("esco_task_suggestions", []),
+                        selection_mode="multi",
+                        key="sel_esco_tasks",
+                    )
+                chosen_tasks = cast(list[str], ss.setdefault("selected_tasks", []))
+                for t in (ai_sel or []) + (esco_sel or []):
+                    if t not in chosen_tasks:
+                        chosen_tasks.append(t)
+                ss["selected_tasks"] = chosen_tasks
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)
@@ -3527,8 +3556,6 @@ def main():
         display_summary_overview()
         with st.expander("All Data", expanded=False):
             display_summary()
-
-
 
         if ss.get("data", {}).get("ideal_candidate_profile"):
             st.subheader("Ideal Candidate Profile")
