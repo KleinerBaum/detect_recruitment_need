@@ -36,6 +36,11 @@ You can now generate task suggestions via OpenAI or the ESCO API. Each
 suggested task appears as a pill button and selections are stored under
 "selected_tasks".
 
+The task section lives in its own container. On‑call schedules stay hidden
+until you tick the *On Call* box and travel details only appear once
+travel is required. AI task generation lets you choose the number of
+suggestions and optionally focus on a specific technology.
+
 The **COMPANY & DEPARTMENT** step groups company info in a cleaner layout. The
 *Team & Culture Context* now shows three bordered boxes. Each field provides a
 **Generate Ideas** button above the input and AI suggestions appear as pill
