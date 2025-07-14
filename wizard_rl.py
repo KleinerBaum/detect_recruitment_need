@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, List, TYPE_CHECKING
 
 import numpy as np
 import yaml
@@ -119,7 +119,10 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
+BaseEnv: type = gym.Env if gym is not None else object
+
+
+class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
@@ -135,11 +138,15 @@ class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
         self.state: dict[str, Any] = {}
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):  # type: ignore[override]
+        if gym is None:  # pragma: no cover - import guard
+            raise ImportError("gymnasium not installed")
         super().reset(seed=seed)
         self.state = {"wizard_step": self.step_order[0]}
         return state_to_vector(self.state, self.schema), {}
 
     def step(self, action: int):
+        if gym is None:  # pragma: no cover - import guard
+            raise ImportError("gymnasium not installed")
         idx = self.step_order.index(self.state.get("wizard_step"))
         if action == 1:  # skip
             idx = min(idx + 2, len(self.step_order) - 1)
@@ -148,7 +155,13 @@ class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
         self.state["wizard_step"] = self.step_order[idx]
         done = idx == len(self.step_order) - 1
         reward = 1.0 if done else 0.0
-        return state_to_vector(self.state, self.schema), reward, done, False, {}
+        return (
+            state_to_vector(self.state, self.schema),
+            reward,
+            done,
+            False,
+            {},
+        )
 
 
 # ---------------------------------------------------------------------------
