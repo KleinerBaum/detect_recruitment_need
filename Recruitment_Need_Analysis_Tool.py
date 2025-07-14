@@ -32,6 +32,13 @@ import csv
 import base64
 import hashlib
 
+try:
+    from ui_forms import email_input  # type: ignore
+except Exception:  # pragma: no cover - fallback if module missing
+
+    def email_input(label: str, key: str) -> str:  # type: ignore[misc]
+        return st.text_input(label, key=key)
+
 
 async def _run_async(coro: Awaitable[Any]) -> Any:
     """Run async coroutine from sync context without closing existing loop."""
@@ -45,7 +52,6 @@ async def _run_async(coro: Awaitable[Any]) -> Any:
             loop.close()
     else:
         return await coro
-
 
 
 _esco_spec = importlib.util.spec_from_file_location(
@@ -1553,7 +1559,9 @@ def show_input(
 
     else:
         if key in {"recruitment_contact_email", "line_manager_email"}:
-            val = email_input(label, key=widget_key)
+            val = email_input(  # noqa: F821  # type: ignore[name-defined]
+                label, key=widget_key
+            )
         else:
             val = st.text_input(
                 label,
@@ -2738,7 +2746,6 @@ async def main() -> None:
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = await _run_async(
-
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
@@ -2746,7 +2753,6 @@ async def main() -> None:
                                 ss["tech_stack_suggestions"] = []
                     show_missing("tech_stack", extr, meta_map, step_name)
                     sel_ts: list[str] | None = st.pills(
-
                         "",
                         ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
@@ -2886,7 +2892,7 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = asyncio.run(
+                        ss["data"]["role_description"] = await _run_async(
                             suggest_role_description(ss["data"])
                         )
                     except Exception as e:  # pragma: no cover - log only
@@ -3540,8 +3546,6 @@ async def main() -> None:
         display_summary_overview()
         with st.expander("All Data", expanded=False):
             display_summary()
-
-
 
         if ss.get("data", {}).get("ideal_candidate_profile"):
             st.subheader("Ideal Candidate Profile")
