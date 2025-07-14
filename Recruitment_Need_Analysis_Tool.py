@@ -92,6 +92,15 @@ extract_text_from_file = _file_tools.extract_text_from_file
 create_pdf = _file_tools.create_pdf
 create_docx = _file_tools.create_docx
 
+_ui_spec = importlib.util.spec_from_file_location(
+    "ui_forms", Path(__file__).with_name("ui_forms.py")
+)
+assert _ui_spec is not None
+_ui_mod = importlib.util.module_from_spec(_ui_spec)
+assert _ui_spec.loader is not None
+_ui_spec.loader.exec_module(_ui_mod)
+email_input = _ui_mod.email_input
+
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
     Path(__file__).resolve().parent / "services" / "vector_search.py",
