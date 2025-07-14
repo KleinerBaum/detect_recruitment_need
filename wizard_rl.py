@@ -27,6 +27,7 @@ else:
     class _BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
         pass
 
+      
     BaseEnv = _BaseEnv
 
 
@@ -129,7 +130,6 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
         reward -= 5.0
 
     return reward
-
 
 class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc, valid-type]
     """Gym environment simulating the wizard."""
