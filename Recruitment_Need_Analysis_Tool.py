@@ -25,6 +25,16 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
 import importlib.util
+
+try:
+    from ui_forms import email_input
+except ModuleNotFoundError:  # pragma: no cover - fallback for tests
+
+    def email_input(label: str, key: str) -> str:
+        """Fallback email input field."""
+        return st.text_input(label, key=key)
+
+
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
 import datetime as dt
@@ -45,7 +55,6 @@ async def _run_async(coro: Awaitable[Any]) -> Any:
             loop.close()
     else:
         return await coro
-
 
 
 _esco_spec = importlib.util.spec_from_file_location(
@@ -2743,7 +2752,6 @@ async def main() -> None:
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = await _run_async(
-
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
@@ -2751,7 +2759,6 @@ async def main() -> None:
                                 ss["tech_stack_suggestions"] = []
                     show_missing("tech_stack", extr, meta_map, step_name)
                     sel_ts: list[str] | None = st.pills(
-
                         "",
                         ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
@@ -2891,8 +2898,8 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = asyncio.run(
-                            suggest_role_description(ss["data"])
+                        ss["data"]["role_description"] = await suggest_role_description(
+                            ss["data"]
                         )
                     except Exception as e:  # pragma: no cover - log only
                         logging.error("role description generation failed: %s", e)
