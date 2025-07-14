@@ -2870,7 +2870,26 @@ def main():
             meta_map = {m["key"]: m for m in meta_fields}
 
             st.subheader("Role Summary")
-            show_missing("role_description", extr, meta_map, step_name)
+            if st.button("Generate Role Description", key="gen_role_desc"):
+                with st.spinner("Generating …"):
+                    try:
+                        ss["data"]["role_description"] = asyncio.run(
+                            suggest_role_description(ss["data"])
+                        )
+                    except Exception as e:  # pragma: no cover - log only
+                        logging.error("role description generation failed: %s", e)
+                        ss["data"]["role_description"] = ""
+
+            role_desc = ss.get("data", {}).get("role_description")
+            if role_desc:
+                st.text_area(
+                    meta_map["role_description"]["label"],
+                    value=role_desc,
+                    key=f"{step_name}_role_description",
+                    disabled=True,
+                )
+            else:
+                show_missing("role_description", extr, meta_map, step_name)
             cols = st.columns(2)
             with cols[0]:
                 show_missing("role_type", extr, meta_map, step_name)
@@ -3508,6 +3527,7 @@ def main():
         display_summary_overview()
         with st.expander("All Data", expanded=False):
             display_summary()
+
 
 
         if ss.get("data", {}).get("ideal_candidate_profile"):
