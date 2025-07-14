@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, List, TYPE_CHECKING
 
 import numpy as np
-import yaml
+import yaml  # type: ignore
 
 if TYPE_CHECKING:  # pragma: no cover - import for type hints
     import gymnasium as gym
@@ -17,6 +17,11 @@ else:  # pragma: no cover - optional dependency
         import gymnasium as gym
     except Exception:
         gym = None
+
+if gym is None:  # pragma: no cover - define placeholder
+    GymEnv = object  # type: ignore[misc, assignment]
+else:
+    GymEnv = gym.Env  # type: ignore[misc, assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +124,7 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
+class VacalyserWizardEnv(GymEnv):  # type: ignore[misc]
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
@@ -135,7 +140,8 @@ class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
         self.state: dict[str, Any] = {}
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):  # type: ignore[override]
-        super().reset(seed=seed)
+        if gym is not None:
+            super().reset(seed=seed)  # type: ignore[misc]
         self.state = {"wizard_step": self.step_order[0]}
         return state_to_vector(self.state, self.schema), {}
 
