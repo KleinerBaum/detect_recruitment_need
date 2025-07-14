@@ -24,7 +24,7 @@ COMPANY,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
 COMPANY,reports_to,text_input,0,Reports To,,Vorgesetzter
 ROLE,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
 ROLE,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
-COMPANY,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
+COMPANY,team_tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
 COMPANY,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
 COMPANY,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
 COMPANY,client_difficulties,text_area,0,Client Difficulties,,Schwierigkeiten mit Kunden

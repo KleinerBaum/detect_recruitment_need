@@ -428,6 +428,9 @@ REGEX_PATTERNS = {
     ),
     "reports_to": _simple("Reports\\s*To", "unterstellt", "reports_to"),
     "supervises": _simple("Supervises", "Führungsverantwortung", "supervises"),
+    "team_tech_stack": _simple(
+        "Tech(ology)?\\s*Stack", "Technologien?", "team_tech_stack"
+    ),
     "tech_stack": _simple("Tech(ology)?\\s*Stack", "Technologien?", "tech_stack"),
     "culture_notes": _simple("Culture", "Kultur", "culture_notes"),
     "team_challenges": _simple(
@@ -2703,28 +2706,28 @@ def main():
                         unsafe_allow_html=True,
                     )
                     row = st.columns([3, 1])
-                    row[0].markdown(f"**{meta_map['tech_stack']['label']}**")
-                    if row[1].button("Generate Ideas", key="gen_tech_stack"):
+                    row[0].markdown(f"**{meta_map['team_tech_stack']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_team_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["tech_stack_suggestions"] = asyncio.run(
+                                ss["team_tech_stack_suggestions"] = asyncio.run(
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
                                 logging.error("tech stack suggestion failed: %s", e)
-                                ss["tech_stack_suggestions"] = []
-                    show_missing("tech_stack", extr, meta_map, step_name)
+                                ss["team_tech_stack_suggestions"] = []
+                    show_missing("team_tech_stack", extr, meta_map, step_name)
                     sel_ts = st.pills(
                         "",
-                        ss.get("tech_stack_suggestions", []),
+                        ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
-                        key="sel_tech_stack",
+                        key="sel_team_tech_stack",
                     )
-                    current_ts = parse_skill_list(ss["data"].get("tech_stack"))
+                    current_ts = parse_skill_list(ss["data"].get("team_tech_stack"))
                     for s in sel_ts or []:
                         if s not in current_ts:
                             current_ts.append(s)
-                    ss["data"]["tech_stack"] = ", ".join(current_ts)
+                    ss["data"]["team_tech_stack"] = ", ".join(current_ts)
                     st.markdown("</div>", unsafe_allow_html=True)
 
                 with _wrap(box_b):
