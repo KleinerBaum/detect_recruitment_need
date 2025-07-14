@@ -11,22 +11,8 @@ import yaml  # type: ignore
 
 try:  # pragma: no cover - optional dependency
     import gymnasium as gym  # type: ignore
-except ImportError:  # pragma: no cover - optional dependency missing
+except Exception:  # pragma: no cover - optional dependency missing
     gym = None
-
-
-if gym is None:  # pragma: no cover - define placeholder
-    GymEnv = object  # type: ignore[misc, assignment]
-else:
-    GymEnv = gym.Env  # type: ignore[misc, assignment]
-
-
-class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
-    pass
-
-
-if gym is not None:
-    BaseEnv = gym.Env  # type: ignore[misc, assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +113,9 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     else:
         reward -= 5.0
     return reward
+
+
+BaseEnv: type = gym.Env if gym is not None else object
 
 
 class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]

@@ -42,6 +42,13 @@ import csv
 import base64
 import hashlib
 
+try:
+    from ui_forms import email_input  # type: ignore
+except Exception:  # pragma: no cover - fallback if module missing
+
+    def email_input(label: str, key: str) -> str:  # type: ignore[misc]
+        return st.text_input(label, key=key)
+
 
 async def _run_async(coro: Awaitable[Any]) -> Any:
     """Run async coroutine from sync context without closing existing loop."""
@@ -1567,7 +1574,9 @@ def show_input(
 
     else:
         if key in {"recruitment_contact_email", "line_manager_email"}:
-            val = email_input(label, key=widget_key)
+            val = email_input(  # noqa: F821  # type: ignore[name-defined]
+                label, key=widget_key
+            )
         else:
             val = st.text_input(
                 label,
@@ -2898,8 +2907,9 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = await suggest_role_description(
-                            ss["data"]
+                        ss["data"]["role_description"] = await _run_async(
+                            suggest_role_description(ss["data"])
+
                         )
                     except Exception as e:  # pragma: no cover - log only
                         logging.error("role description generation failed: %s", e)
