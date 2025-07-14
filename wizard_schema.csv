@@ -36,7 +36,6 @@ COMPANY,office_type,selectbox,0,Office Type,Open Space;Einzelbüro;Remote;Hybrid
 ROLE,role_description,text_area,1,Role Description,,Stellenbeschreibung / Aufgabenstellung
 ROLE,role_type,selectbox,0,Role Type,Technical;Non-Technical;Leadership;Operational;Project-based;Consultant,Rollenart
 ROLE,role_keywords,text_area,0,Role Keywords,,Schlagworte zur Rolle
-ROLE,primary_responsibilities,text_area,1,Primary Responsibilities,,Hauptaufgaben
 ROLE,key_responsibilities,text_area,1,Key Responsibilities,,Hauptverantwortlichkeiten
 ROLE,role_priority_projects,text_area,0,Priority Projects,,Wichtige Projekte
 ROLE,role_performance_metrics,text_area,0,Performance Metrics,,Leistungskennzahlen

@@ -15,8 +15,15 @@ if TYPE_CHECKING:  # pragma: no cover - import for type hints
 else:  # pragma: no cover - optional dependency
     try:
         import gymnasium as gym
-    except Exception:
+    except Exception:  # pragma: no cover - optional dependency missing
         gym = None
+
+if gym is not None:
+    BaseEnv = gym.Env
+else:
+
+    class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +126,7 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-class VacalyserWizardEnv(gym.Env):  # type: ignore[misc]
+class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
