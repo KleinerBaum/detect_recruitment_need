@@ -200,5 +200,5 @@ def get_occupation_statistics(occupation_uri: str) -> dict[str, Any]:
     skills = get_skills_for_occupation(occupation_uri)
     return {
         "skills": len(skills),
-        "languages": len(details.get("preferredLabel", {})),
+        "languages": 1 if details.get("preferredLabel") else 0,
     }

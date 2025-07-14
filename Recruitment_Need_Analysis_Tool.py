@@ -47,7 +47,6 @@ async def _run_async(coro: Awaitable[Any]) -> Any:
         return await coro
 
 
-
 _esco_spec = importlib.util.spec_from_file_location(
     "esco_api", Path(__file__).with_name("esco_api.py")
 )
@@ -75,6 +74,15 @@ _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
 create_pdf = _file_tools.create_pdf
 create_docx = _file_tools.create_docx
+
+_ui_spec = importlib.util.spec_from_file_location(
+    "ui_forms", Path(__file__).with_name("ui_forms.py")
+)
+assert _ui_spec is not None
+_ui_mod = importlib.util.module_from_spec(_ui_spec)
+assert _ui_spec.loader is not None
+_ui_spec.loader.exec_module(_ui_mod)
+email_input = _ui_mod.email_input
 
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
@@ -2738,7 +2746,6 @@ async def main() -> None:
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = await _run_async(
-
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
@@ -2746,7 +2753,6 @@ async def main() -> None:
                                 ss["tech_stack_suggestions"] = []
                     show_missing("tech_stack", extr, meta_map, step_name)
                     sel_ts: list[str] | None = st.pills(
-
                         "",
                         ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
@@ -2886,7 +2892,7 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = asyncio.run(
+                        ss["data"]["role_description"] = await _run_async(
                             suggest_role_description(ss["data"])
                         )
                     except Exception as e:  # pragma: no cover - log only
@@ -3540,8 +3546,6 @@ async def main() -> None:
         display_summary_overview()
         with st.expander("All Data", expanded=False):
             display_summary()
-
-
 
         if ss.get("data", {}).get("ideal_candidate_profile"):
             st.subheader("Ideal Candidate Profile")
