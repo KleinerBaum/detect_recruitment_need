@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pickle
 from pathlib import Path
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, List
 import numpy as np
 import yaml  # type: ignore
 
 gym: Any
 try:  # pragma: no cover - optional dependency
     import gymnasium as gym
-else:  # pragma: no cover - optional dependency
+except Exception:
     try:
-        import gymnasium as gym
+        import gym  # type: ignore[import-not-found]
     except Exception:  # pragma: no cover - optional dependency missing
         gym = None
 
@@ -132,12 +132,10 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-
 BaseEnv: type = gym.Env if gym is not None else object
 
 
 class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
-
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
