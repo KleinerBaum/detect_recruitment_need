@@ -12,8 +12,19 @@ import yaml
 gym: Any
 try:  # pragma: no cover - optional dependency
     import gymnasium as gym
-except Exception:
-    gym = None
+else:  # pragma: no cover - optional dependency
+    try:
+        import gymnasium as gym
+    except Exception:  # pragma: no cover - optional dependency missing
+        gym = None
+
+
+if gym is not None:
+    BaseEnv = gym.Env
+else:
+
+    class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +125,7 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     else:
         reward -= 5.0
     return reward
+
 
 
 BaseEnv: type = gym.Env if gym is not None else object

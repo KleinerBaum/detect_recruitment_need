@@ -191,23 +191,35 @@ def brute_force_brace_fix(s: str) -> str:
     return s + ("}" * max(opens, 0)) + ("]" * max(closes, 0))
 
 
+def migrate_profile_data(data: dict) -> dict:
+    """Upgrade legacy JSON field names."""
+
+    if "primary_responsibilities" in data:
+        if not data.get("key_responsibilities"):
+            data["key_responsibilities"] = data["primary_responsibilities"]
+        data.pop("primary_responsibilities", None)
+    return data
+
+
 def safe_json_load(text: str) -> dict:
     """
     Scrub GPT output into valid JSON, or return {}.
     """
     cleaned = re.sub(r"```(?:json)?", "", text).strip().rstrip("```").strip()
     try:
-        return json.loads(cleaned)
+        return migrate_profile_data(json.loads(cleaned))
     except json.JSONDecodeError:
         cleaned2 = re.sub(r",\s*([}\]])", r"\1", cleaned).replace("'", '"')
         try:
-            return json.loads(cleaned2)
+            return migrate_profile_data(json.loads(cleaned2))
         except json.JSONDecodeError:
             try:
-                return ast.literal_eval(cleaned2)
+                return migrate_profile_data(ast.literal_eval(cleaned2))
             except Exception:
                 try:
-                    return json.loads(brute_force_brace_fix(cleaned2))
+                    return migrate_profile_data(
+                        json.loads(brute_force_brace_fix(cleaned2))
+                    )
                 except Exception as e:
                     logging.error("Secondary JSON extraction failed: %s", e)
                     return {}
@@ -471,9 +483,6 @@ REGEX_PATTERNS = {
     ),
     "role_priority_projects": _simple(
         "Priority\\s*Projects", "Prioritätsprojekte", "role_priority_projects"
-    ),
-    "primary_responsibilities": _simple(
-        "Primary\\s*Responsibilities", "Hauptaufgaben", "primary_responsibilities"
     ),
     "key_deliverables": _simple(
         "Key\\s*Deliverables", "Ergebnisse", "key_deliverables"
@@ -2869,7 +2878,6 @@ def main():
                 show_missing("role_keywords", extr, meta_map, step_name)
 
             st.subheader("Responsibilities")
-            show_missing("primary_responsibilities", extr, meta_map, step_name)
             show_missing("key_responsibilities", extr, meta_map, step_name)
 
             sup_col, direct_col = st.columns(2)
