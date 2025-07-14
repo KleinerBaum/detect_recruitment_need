@@ -14,22 +14,6 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - optional dependency missing
     gym = None
 
-if gym is None:  # pragma: no cover - define placeholder
-    GymEnv = object  # type: ignore[misc, assignment]
-else:
-    GymEnv = gym.Env  # type: ignore[misc, assignment]
-
-
-if gym is not None:
-    BaseEnv = gym.Env  # type: ignore[misc, assignment]
-else:
-
-    class _BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
-        pass
-
-      
-    BaseEnv = _BaseEnv
-
 
 # ---------------------------------------------------------------------------
 # Schema Loading & State Vector
@@ -128,10 +112,13 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
         reward += 10.0
     else:
         reward -= 5.0
-
     return reward
 
-class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc, valid-type]
+
+BaseEnv: type = gym.Env if gym is not None else object
+
+
+class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
