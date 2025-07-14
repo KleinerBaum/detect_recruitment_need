@@ -5,18 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pickle
 from pathlib import Path
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, List
 import numpy as np
 import yaml  # type: ignore
 
-gym: Any
 try:  # pragma: no cover - optional dependency
-    import gymnasium as gym
-else:  # pragma: no cover - optional dependency
-    try:
-        import gymnasium as gym
-    except Exception:  # pragma: no cover - optional dependency missing
-        gym = None
+    import gymnasium as gym  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency missing
+    gym = None
 
 if gym is None:  # pragma: no cover - define placeholder
     GymEnv = object  # type: ignore[misc, assignment]
@@ -24,12 +20,12 @@ else:
     GymEnv = gym.Env  # type: ignore[misc, assignment]
 
 
-if gym is not None:
-    BaseEnv = gym.Env
-else:
+class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
+    pass
 
-    class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
-        pass
+
+if gym is not None:
+    BaseEnv = gym.Env  # type: ignore[misc, assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -132,12 +128,7 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-
-BaseEnv: type = gym.Env if gym is not None else object
-
-
 class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
-
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
@@ -150,7 +141,6 @@ class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
             )
             self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(obs_len,))
         self.state: dict[str, Any] = {}
-
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         if gym is not None:
