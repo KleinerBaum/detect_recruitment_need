@@ -15,7 +15,7 @@ from functools import lru_cache
 import spacy
 from spacy.language import Language
 from dataclasses import dataclass
-from typing import Any, Literal, Sequence, cast
+from typing import Any, Literal, Sequence, cast, Awaitable
 
 from io import BytesIO
 from pathlib import Path
@@ -32,14 +32,21 @@ import csv
 import base64
 import hashlib
 
-_forms_spec = importlib.util.spec_from_file_location(
-    "ui_forms", Path(__file__).with_name("ui_forms.py")
-)
-assert _forms_spec is not None
-_forms_module = importlib.util.module_from_spec(_forms_spec)
-assert _forms_spec.loader is not None
-_forms_spec.loader.exec_module(_forms_module)
-email_input = _forms_module.email_input
+
+async def _run_async(coro: Awaitable[Any]) -> Any:
+    """Run async coroutine from sync context without closing existing loop."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+    else:
+        return await coro
+
+
 
 _esco_spec = importlib.util.spec_from_file_location(
     "esco_api", Path(__file__).with_name("esco_api.py")
@@ -2361,7 +2368,7 @@ def scroll_to_top() -> None:
     )
 
 
-def main():
+async def main() -> None:
     st.set_page_config(
         page_title="🧭 Recruitment Need Analysis Tool",
         page_icon="🧭",
@@ -2448,7 +2455,7 @@ def main():
                     with st.spinner("Extracting…"):
                         text = http_text(url)
                         if text:
-                            flat = asyncio.run(extract(text))
+                            flat = await _run_async(extract(text))
                             ss["extracted"] = group_by_step(flat)
                             title_res = (
                                 ss["extracted"].get("BASIC", {}).get("job_title")
@@ -2503,7 +2510,7 @@ def main():
                 with status_box.container():
                     with st.spinner("Extracting…"):
                         text = extract_text_from_file(file_bytes, up.type)
-                        flat = asyncio.run(extract(text))
+                        flat = await _run_async(extract(text))
                         ss["extracted"] = group_by_step(flat)
                         title_res = ss["extracted"].get("BASIC", {}).get("job_title")
                         if isinstance(title_res, ExtractResult) and title_res.value:
@@ -2735,14 +2742,16 @@ def main():
                     if row[1].button("Generate Ideas", key="gen_team_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["team_tech_stack_suggestions"] = asyncio.run(
+                                ss["tech_stack_suggestions"] = await _run_async(
+
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
                                 logging.error("tech stack suggestion failed: %s", e)
-                                ss["team_tech_stack_suggestions"] = []
-                    show_missing("team_tech_stack", extr, meta_map, step_name)
-                    sel_ts = st.pills(
+                                ss["tech_stack_suggestions"] = []
+                    show_missing("tech_stack", extr, meta_map, step_name)
+                    sel_ts: list[str] | None = st.pills(
+
                         "",
                         ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
@@ -2765,14 +2774,14 @@ def main():
                     if row[1].button("Generate Ideas", key="gen_team_challenges"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["team_challenges_suggestions"] = asyncio.run(
+                                ss["team_challenges_suggestions"] = await _run_async(
                                     suggest_team_challenges(ss["data"])
                                 )
                             except Exception as e:
                                 logging.error("team challenge suggestion failed: %s", e)
                                 ss["team_challenges_suggestions"] = []
                     show_missing("team_challenges", extr, meta_map, step_name)
-                    sel_tc = st.pills(
+                    sel_tc: list[str] | None = st.pills(
                         "",
                         ss.get("team_challenges_suggestions", []),
                         selection_mode="multi",
@@ -2788,8 +2797,10 @@ def main():
                     if row[1].button("Generate Ideas", key="gen_client_difficulties"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["client_difficulties_suggestions"] = asyncio.run(
-                                    suggest_client_difficulties(ss["data"])
+                                ss["client_difficulties_suggestions"] = (
+                                    await _run_async(
+                                        suggest_client_difficulties(ss["data"])
+                                    )
                                 )
                             except Exception as e:
                                 logging.error(
@@ -2797,7 +2808,7 @@ def main():
                                 )
                                 ss["client_difficulties_suggestions"] = []
                     show_missing("client_difficulties", extr, meta_map, step_name)
-                    sel_cd = st.pills(
+                    sel_cd: list[str] | None = st.pills(
                         "",
                         ss.get("client_difficulties_suggestions", []),
                         selection_mode="multi",
@@ -2820,14 +2831,16 @@ def main():
                     if row[1].button("Generate Ideas", key="gen_recent_team_changes"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["recent_team_changes_suggestions"] = asyncio.run(
-                                    suggest_recent_team_changes(ss["data"])
+                                ss["recent_team_changes_suggestions"] = (
+                                    await _run_async(
+                                        suggest_recent_team_changes(ss["data"])
+                                    )
                                 )
                             except Exception as e:
                                 logging.error("recent changes suggestion failed: %s", e)
                                 ss["recent_team_changes_suggestions"] = []
                     show_missing("recent_team_changes", extr, meta_map, step_name)
-                    sel_rc = st.pills(
+                    sel_rc: list[str] | None = st.pills(
                         "",
                         ss.get("recent_team_changes_suggestions", []),
                         selection_mode="multi",
@@ -2996,6 +3009,7 @@ def main():
                     if t not in chosen_tasks:
                         chosen_tasks.append(t)
                 ss["selected_tasks"] = chosen_tasks
+
             with st.expander("Detailed Task Categories", expanded=False):
                 show_missing("technical_tasks", extr, meta_map, step_name)
                 show_missing("managerial_tasks", extr, meta_map, step_name)
@@ -3226,14 +3240,14 @@ def main():
                             key="commission_structure",
                         )
                         ss["data"]["commission_structure"] = txt
-                        pct = st.number_input(
+                        pct_bonus = st.number_input(
                             meta_map["bonus_percentage"]["label"],
                             min_value=0.0,
                             max_value=100.0,
                             step=0.5,
                             key="bonus_percentage",
                         )
-                        ss["data"]["bonus_percentage"] = pct
+                        ss["data"]["bonus_percentage"] = pct_bonus
 
                 with cols_b:
                     show_missing("relocation_support", extr, meta_map, step_name)
@@ -3282,10 +3296,10 @@ def main():
             if "hard_skill_suggestions" not in ss:
                 with st.spinner("AI analysiert Skills…"):
                     try:
-                        ss["hard_skill_suggestions"] = asyncio.run(
+                        ss["hard_skill_suggestions"] = await _run_async(
                             suggest_hard_skills(ss["data"])
                         )
-                        ss["soft_skill_suggestions"] = asyncio.run(
+                        ss["soft_skill_suggestions"] = await _run_async(
                             suggest_soft_skills(ss["data"])
                         )
                     except Exception as e:
@@ -3458,7 +3472,7 @@ def main():
                 if st.button("Does your ideal Profile look like this?", key="gen_icp"):
                     with st.spinner("Generating…"):
                         try:
-                            ss["data"]["ideal_candidate_profile"] = asyncio.run(
+                            ss["data"]["ideal_candidate_profile"] = await _run_async(
                                 generate_ideal_candidate_profile(
                                     ss.get("data", {}), selected_tasks, selected_skills
                                 )
@@ -3492,7 +3506,7 @@ def main():
         if step_name == "BENEFITS":
             st.subheader("AI Benefit Suggestions")
 
-            def benefit_row(text: str, key: str, func) -> list[str]:
+            async def benefit_row(text: str, key: str, func) -> list[str]:
                 row = st.columns([1, 1, 6, 1])
                 with row[0]:
                     st.markdown("Generate")
@@ -3511,7 +3525,7 @@ def main():
                     if st.button("Generate", key=f"gen_{key}"):
                         with st.spinner("Generating…"):
                             try:
-                                ss[key] = asyncio.run(func(ss["data"], int(count)))
+                                ss[key] = await _run_async(func(ss["data"], int(count)))
                             except Exception as e:
                                 logging.error("benefit suggestion failed: %s", e)
                                 ss[key] = []
@@ -3520,17 +3534,17 @@ def main():
             title = ss["data"].get("job_title", "this role")
             company = ss["data"].get("company_name", "your company")
 
-            sel_title = benefit_row(
+            sel_title = await benefit_row(
                 f"Benefits for {title}",
                 "benefit_title",
                 suggest_benefits_by_title,
             )
-            sel_loc = benefit_row(
+            sel_loc = await benefit_row(
                 "local Benefits",
                 "benefit_loc",
                 suggest_benefits_by_location,
             )
-            sel_comp = benefit_row(
+            sel_comp = await benefit_row(
                 f"Benefits offered by the competitors of {company}",
                 "benefit_comp",
                 suggest_benefits_competitors,
@@ -3596,7 +3610,7 @@ def main():
                 if st.button(label, key=f"btn_{key}"):
                     if func:
                         with st.spinner("Generating…"):
-                            ss[f"out_{key}"] = asyncio.run(func(ss["data"]))
+                            ss[f"out_{key}"] = await _run_async(func(ss["data"]))
                     else:
                         if key == "salary":
                             ss[f"out_{key}"] = estimate_salary_range(
@@ -3677,4 +3691,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

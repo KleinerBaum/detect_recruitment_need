@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 from typing import Any, List
 import numpy as np
-import yaml
+import yaml  # type: ignore
 
 gym: Any
 try:  # pragma: no cover - optional dependency
@@ -17,6 +17,11 @@ except Exception:
         import gym  # type: ignore[import-not-found]
     except Exception:  # pragma: no cover - optional dependency missing
         gym = None
+
+if gym is None:  # pragma: no cover - define placeholder
+    GymEnv = object  # type: ignore[misc, assignment]
+else:
+    GymEnv = gym.Env  # type: ignore[misc, assignment]
 
 
 if gym is not None:
@@ -143,6 +148,7 @@ class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
             )
             self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(obs_len,))
         self.state: dict[str, Any] = {}
+
 
     def reset(self, *, seed: int | None = None, options: dict | None = None):
         if gym is not None:
