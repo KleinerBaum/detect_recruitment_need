@@ -14,6 +14,7 @@ try:  # pragma: no cover - optional dependency
 except ImportError:  # pragma: no cover - optional dependency missing
     gym = None
 
+
 if gym is None:  # pragma: no cover - define placeholder
     GymEnv = object  # type: ignore[misc, assignment]
 else:
