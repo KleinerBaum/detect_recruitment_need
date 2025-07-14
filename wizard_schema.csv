@@ -24,7 +24,7 @@ COMPANY,team_structure,text_area,0,Team Structure,,Teamaufbau/Struktur
 COMPANY,reports_to,text_input,0,Reports To,,Vorgesetzter
 ROLE,direct_reports_count,number_input,0,Direct Reports,,Anzahl direkter Reports
 ROLE,supervises,checkbox,0,Supervises,,Hat Führungsverantwortung
-COMPANY,tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
+COMPANY,team_tech_stack,text_area,0,Tech Stack,,Verwendete Technologien/Tools
 COMPANY,culture_notes,text_area,0,Culture Notes,,Kulturelle Besonderheiten
 COMPANY,team_challenges,text_area,0,Team Challenges,,Herausforderungen im Team
 COMPANY,client_difficulties,text_area,0,Client Difficulties,,Schwierigkeiten mit Kunden
@@ -36,7 +36,6 @@ COMPANY,office_type,selectbox,0,Office Type,Open Space;Einzelbüro;Remote;Hybrid
 ROLE,role_description,text_area,1,Role Description,,Stellenbeschreibung / Aufgabenstellung
 ROLE,role_type,selectbox,0,Role Type,Technical;Non-Technical;Leadership;Operational;Project-based;Consultant,Rollenart
 ROLE,role_keywords,text_area,0,Role Keywords,,Schlagworte zur Rolle
-ROLE,primary_responsibilities,text_area,1,Primary Responsibilities,,Hauptaufgaben
 ROLE,key_responsibilities,text_area,1,Key Responsibilities,,Hauptverantwortlichkeiten
 ROLE,role_priority_projects,text_area,0,Priority Projects,,Wichtige Projekte
 ROLE,role_performance_metrics,text_area,0,Performance Metrics,,Leistungskennzahlen
@@ -85,7 +84,7 @@ SKILLS,leadership_competencies,checkbox,0,Leadership Competencies,,Führungskomp
 SKILLS,industry_experience,checkbox,0,Industry Experience,,Branchenerfahrung
 SKILLS,soft_requirement_details,text_area,0,Soft Requirement Details,,Weitere Anforderungen
 SKILLS,years_experience_min,number_input,0,Minimum Years Experience,,Min. Jahre Berufserfahrung
-SKILLS,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
+SUMMARY,ideal_candidate_profile,text_area,0,Ideal Candidate Profile,,Beschreibung Wunschkandidat:in
 SKILLS,it_skills,text_area,0,IT Skills,,IT-Kenntnisse
 BENEFITS,visa_sponsorship,selectbox,0,Visa Sponsorship,No;Yes;Optional,Visa möglich?
 BENEFITS,bonus_scheme,checkbox,0,Bonus Scheme,,Bonusregelung

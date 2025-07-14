@@ -22,6 +22,13 @@ def test_safe_json_load_valid_and_malformed():
     assert tool.safe_json_load('{"a": 1') == {"a": 1}
 
 
+def test_safe_json_load_migrates_primary():
+    tool = load_tool_module()
+    res = tool.safe_json_load('{"primary_responsibilities": "foo"}')
+    assert "primary_responsibilities" not in res
+    assert res["key_responsibilities"] == "foo"
+
+
 def test_pattern_search_confidence_and_value():
     tool = load_tool_module()
     res = tool.pattern_search("Name: Alice", "name", r"(?P<name>.+)")
