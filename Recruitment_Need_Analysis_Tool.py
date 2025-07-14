@@ -1057,6 +1057,14 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
         prefix = f"commonly offered by employers in {location}"
     else:
         prefix = f"competitors usually offer for similar '{job_title}' roles"
+        industries = data.get("target_industries")
+        if industries:
+            ind_str = (
+                ", ".join(industries)
+                if isinstance(industries, list)
+                else str(industries)
+            )
+            prefix += f" in the following target industries: {ind_str}"
 
     prompt = (
         f"List up to {count} employee benefits {prefix}. "
@@ -1127,8 +1135,16 @@ async def suggest_team_challenges(data: dict, count: int = 5) -> list[str]:
 async def suggest_client_difficulties(data: dict, count: int = 5) -> list[str]:
     """Suggest frequent client difficulties."""
 
+    industries = data.get("target_industries")
+    extra = ""
+    if industries:
+        ind_str = (
+            ", ".join(industries) if isinstance(industries, list) else str(industries)
+        )
+        extra = f" for the following target industries: {ind_str}"
+
     prompt = (
-        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry. "
+        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry{extra}. "
         'Return JSON object {"items": [..]} with one item per list entry.'
     )
     return await _suggest_items(prompt, "items")
@@ -3471,8 +3487,9 @@ def main():
         with st.expander("All Data", expanded=False):
             display_summary()
 
-
-        # Ideal Candidate Profile is now collected in the BASIC step
+        if ss.get("data", {}).get("ideal_candidate_profile"):
+            st.subheader("Ideal Candidate Profile")
+            st.markdown(ss["data"]["ideal_candidate_profile"])
 
         st.subheader("Expected Annual Salary")
         display_salary_plot()
