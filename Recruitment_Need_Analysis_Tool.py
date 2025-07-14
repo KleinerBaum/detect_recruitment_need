@@ -17,7 +17,6 @@ from spacy.language import Language
 from dataclasses import dataclass
 from typing import Any, Literal, Sequence, cast, Awaitable
 
-from io import BytesIO
 from pathlib import Path
 from bs4 import BeautifulSoup
 import httpx
@@ -47,7 +46,6 @@ async def _run_async(coro: Awaitable[Any]) -> Any:
         return await coro
 
 
-
 _esco_spec = importlib.util.spec_from_file_location(
     "esco_api", Path(__file__).with_name("esco_api.py")
 )
@@ -75,6 +73,15 @@ _spec.loader.exec_module(_file_tools)
 extract_text_from_file = _file_tools.extract_text_from_file
 create_pdf = _file_tools.create_pdf
 create_docx = _file_tools.create_docx
+_forms_spec = importlib.util.spec_from_file_location(
+    "ui_forms", Path(__file__).with_name("ui_forms.py")
+)
+assert _forms_spec is not None
+_forms_mod = importlib.util.module_from_spec(_forms_spec)
+assert _forms_spec.loader is not None
+_forms_spec.loader.exec_module(_forms_mod)
+email_input = _forms_mod.email_input
+
 
 _vs_spec = importlib.util.spec_from_file_location(
     "vector_search",
@@ -847,21 +854,6 @@ def http_text(url: str) -> str:
         logging.error("HTTP request failed: %s", e)
         return ""
     return html_text(html)
-
-
-@st.cache_data(ttl=24 * 60 * 60)
-def pdf_text(data: BytesIO) -> str:
-    """Cached wrapper around :func:`extract_text_from_file` for PDFs."""
-    return extract_text_from_file(data.getvalue(), "application/pdf")
-
-
-@st.cache_data(ttl=24 * 60 * 60)
-def docx_text(data: BytesIO) -> str:
-    """Cached wrapper around :func:`extract_text_from_file` for DOCX."""
-    return extract_text_from_file(
-        data.getvalue(),
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
 
 
 # ── Skill helpers -------------------------------------------------------------
@@ -2153,23 +2145,6 @@ async def generate_jobad(data: dict) -> str:
     return (chat.choices[0].message.content or "").strip()
 
 
-def download_as_pdf(text: str, filename: str = "jobad.pdf"):
-    """Convert text to a downloadable PDF."""
-    from fpdf import FPDF
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    for line in text.splitlines():
-        pdf.cell(0, 10, text=line, new_y="NEXT")
-    pdf.output(filename)
-    with open(filename, "rb") as f:
-        st.download_button(
-            "Download PDF", f, file_name=filename, mime="application/pdf"
-        )
-
-
 # --- b) Interview-Vorbereitungs-Sheet ---
 async def generate_interview_sheet(data: dict) -> str:
     """Create a compact preparation sheet for line managers and HR.
@@ -2233,32 +2208,6 @@ async def generate_ideal_candidate_profile(
         max_tokens=200,
         system_msg=system_msg,
     )
-
-
-# --- d) Arbeitsvertrag-Generator ---
-async def generate_contract(data: dict) -> str:
-    """Create a basic employment contract draft from the extracted core data.
-
-    Note: This is not legal advice and does not replace a lawyer.
-    """
-    prompt = (
-        "Erstelle einen Muster-Arbeitsvertrag (nur als Vorlage, keine Rechtsberatung!) auf Basis dieser strukturierten Daten. "
-        "Inkludiere alle relevanten Pflichtangaben (Name, Stelle, Vergütung, Beginn, Probezeit, Aufgaben, Arbeitszeit). "
-        f"Daten: {json.dumps(data, ensure_ascii=False, default=str)}"
-    )
-    chat = await client.chat.completions.create(
-        model="gpt-4o",
-        temperature=0.4,
-        max_tokens=1200,
-        messages=[
-            {
-                "role": "system",
-                "content": "Du bist Vertragsgenerator für HR (keine Rechtsberatung).",
-            },
-            {"role": "user", "content": prompt},
-        ],
-    )
-    return (chat.choices[0].message.content or "").strip()
 
 
 def estimate_salary_range(job_title: str, seniority: str) -> str:
@@ -2738,7 +2687,6 @@ async def main() -> None:
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = await _run_async(
-
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
@@ -2746,7 +2694,6 @@ async def main() -> None:
                                 ss["tech_stack_suggestions"] = []
                     show_missing("tech_stack", extr, meta_map, step_name)
                     sel_ts: list[str] | None = st.pills(
-
                         "",
                         ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
@@ -2886,8 +2833,8 @@ async def main() -> None:
             if st.button("Generate Role Description", key="gen_role_desc"):
                 with st.spinner("Generating …"):
                     try:
-                        ss["data"]["role_description"] = asyncio.run(
-                            suggest_role_description(ss["data"])
+                        ss["data"]["role_description"] = await suggest_role_description(
+                            ss["data"]
                         )
                     except Exception as e:  # pragma: no cover - log only
                         logging.error("role description generation failed: %s", e)
@@ -3541,8 +3488,6 @@ async def main() -> None:
         with st.expander("All Data", expanded=False):
             display_summary()
 
-
-
         if ss.get("data", {}).get("ideal_candidate_profile"):
             st.subheader("Ideal Candidate Profile")
             st.markdown(ss["data"]["ideal_candidate_profile"])
@@ -3563,7 +3508,7 @@ async def main() -> None:
 
         st.header("Next Step – Use the collected data!")
 
-        btn_cols = st.columns(6)
+        btn_cols = st.columns(5)
         actions = [
             ("Create Job Ad", "jobad", generate_jobad),
             ("Interview Guide", "interview", generate_interview_sheet),
@@ -3572,7 +3517,6 @@ async def main() -> None:
                 "boolean",
                 generate_boolean_search,
             ),
-            ("Create Contract", "contract", generate_contract),
             ("Estimate Salary Range", "salary", None),
             ("Calculate Total Cost", "total", None),
         ]
