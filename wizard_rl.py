@@ -6,22 +6,30 @@ from dataclasses import dataclass
 import pickle
 from pathlib import Path
 from typing import Any, List, TYPE_CHECKING
-
 import numpy as np
 import yaml  # type: ignore
 
-if TYPE_CHECKING:  # pragma: no cover - import for type hints
+gym: Any
+try:  # pragma: no cover - optional dependency
     import gymnasium as gym
 else:  # pragma: no cover - optional dependency
     try:
         import gymnasium as gym
-    except Exception:
+    except Exception:  # pragma: no cover - optional dependency missing
         gym = None
 
 if gym is None:  # pragma: no cover - define placeholder
     GymEnv = object  # type: ignore[misc, assignment]
 else:
     GymEnv = gym.Env  # type: ignore[misc, assignment]
+
+
+if gym is not None:
+    BaseEnv = gym.Env
+else:
+
+    class BaseEnv:  # pragma: no cover - minimal stub for missing gymnasium
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -124,28 +132,35 @@ def compute_reward(session_metrics: dict[str, Any]) -> float:
     return reward
 
 
-class VacalyserWizardEnv(GymEnv):  # type: ignore[misc]
+
+BaseEnv: type = gym.Env if gym is not None else object
+
+
+class VacalyserWizardEnv(BaseEnv):  # type: ignore[misc]
+
     """Gym environment simulating the wizard."""
 
     def __init__(self, schema: dict) -> None:
-        if gym is None:  # pragma: no cover - import guard
-            raise ImportError("gymnasium not installed")
         self.schema = schema
         self.step_order = [s["name"] for s in schema.get("steps", [])]
-        self.action_space = gym.spaces.Discrete(2)
-        obs_len = 1 + sum(
-            len(s.get("fields", [])) for s in self.schema.get("steps", [])
-        )
-        self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(obs_len,))
+        if gym is not None:
+            self.action_space = gym.spaces.Discrete(2)
+            obs_len = 1 + sum(
+                len(s.get("fields", [])) for s in self.schema.get("steps", [])
+            )
+            self.observation_space = gym.spaces.Box(low=0.0, high=1.0, shape=(obs_len,))
         self.state: dict[str, Any] = {}
 
-    def reset(self, *, seed: int | None = None, options: dict | None = None):  # type: ignore[override]
+
+    def reset(self, *, seed: int | None = None, options: dict | None = None):
         if gym is not None:
-            super().reset(seed=seed)  # type: ignore[misc]
+            gym.Env.reset(self, seed=seed)  # type: ignore[attr-defined]
         self.state = {"wizard_step": self.step_order[0]}
         return state_to_vector(self.state, self.schema), {}
 
     def step(self, action: int):
+        if gym is None:  # pragma: no cover - import guard
+            raise ImportError("gymnasium not installed")
         idx = self.step_order.index(self.state.get("wizard_step"))
         if action == 1:  # skip
             idx = min(idx + 2, len(self.step_order) - 1)
@@ -154,7 +169,13 @@ class VacalyserWizardEnv(GymEnv):  # type: ignore[misc]
         self.state["wizard_step"] = self.step_order[idx]
         done = idx == len(self.step_order) - 1
         reward = 1.0 if done else 0.0
-        return state_to_vector(self.state, self.schema), reward, done, False, {}
+        return (
+            state_to_vector(self.state, self.schema),
+            reward,
+            done,
+            False,
+            {},
+        )
 
 
 # ---------------------------------------------------------------------------

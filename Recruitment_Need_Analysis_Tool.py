@@ -24,7 +24,6 @@ import httpx
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from openai import AsyncOpenAI
-
 import importlib.util
 from dotenv import load_dotenv
 from dateutil import parser as dateparser
@@ -46,6 +45,7 @@ async def _run_async(coro: Awaitable[Any]) -> Any:
             loop.close()
     else:
         return await coro
+
 
 
 _esco_spec = importlib.util.spec_from_file_location(
@@ -198,23 +198,35 @@ def brute_force_brace_fix(s: str) -> str:
     return s + ("}" * max(opens, 0)) + ("]" * max(closes, 0))
 
 
+def migrate_profile_data(data: dict) -> dict:
+    """Upgrade legacy JSON field names."""
+
+    if "primary_responsibilities" in data:
+        if not data.get("key_responsibilities"):
+            data["key_responsibilities"] = data["primary_responsibilities"]
+        data.pop("primary_responsibilities", None)
+    return data
+
+
 def safe_json_load(text: str) -> dict:
     """
     Scrub GPT output into valid JSON, or return {}.
     """
     cleaned = re.sub(r"```(?:json)?", "", text).strip().rstrip("```").strip()
     try:
-        return json.loads(cleaned)
+        return migrate_profile_data(json.loads(cleaned))
     except json.JSONDecodeError:
         cleaned2 = re.sub(r",\s*([}\]])", r"\1", cleaned).replace("'", '"')
         try:
-            return json.loads(cleaned2)
+            return migrate_profile_data(json.loads(cleaned2))
         except json.JSONDecodeError:
             try:
-                return ast.literal_eval(cleaned2)
+                return migrate_profile_data(ast.literal_eval(cleaned2))
             except Exception:
                 try:
-                    return json.loads(brute_force_brace_fix(cleaned2))
+                    return migrate_profile_data(
+                        json.loads(brute_force_brace_fix(cleaned2))
+                    )
                 except Exception as e:
                     logging.error("Secondary JSON extraction failed: %s", e)
                     return {}
@@ -443,6 +455,9 @@ REGEX_PATTERNS = {
     ),
     "reports_to": _simple("Reports\\s*To", "unterstellt", "reports_to"),
     "supervises": _simple("Supervises", "Führungsverantwortung", "supervises"),
+    "team_tech_stack": _simple(
+        "Tech(ology)?\\s*Stack", "Technologien?", "team_tech_stack"
+    ),
     "tech_stack": _simple("Tech(ology)?\\s*Stack", "Technologien?", "tech_stack"),
     "culture_notes": _simple("Culture", "Kultur", "culture_notes"),
     "team_challenges": _simple(
@@ -475,9 +490,6 @@ REGEX_PATTERNS = {
     ),
     "role_priority_projects": _simple(
         "Priority\\s*Projects", "Prioritätsprojekte", "role_priority_projects"
-    ),
-    "primary_responsibilities": _simple(
-        "Primary\\s*Responsibilities", "Hauptaufgaben", "primary_responsibilities"
     ),
     "key_deliverables": _simple(
         "Key\\s*Deliverables", "Ergebnisse", "key_deliverables"
@@ -1072,6 +1084,14 @@ async def _suggest_benefits(data: dict, mode: str, count: int) -> list[str]:
         prefix = f"commonly offered by employers in {location}"
     else:
         prefix = f"competitors usually offer for similar '{job_title}' roles"
+        industries = data.get("target_industries")
+        if industries:
+            ind_str = (
+                ", ".join(industries)
+                if isinstance(industries, list)
+                else str(industries)
+            )
+            prefix += f" in the following target industries: {ind_str}"
 
     prompt = (
         f"List up to {count} employee benefits {prefix}. "
@@ -1142,8 +1162,16 @@ async def suggest_team_challenges(data: dict, count: int = 5) -> list[str]:
 async def suggest_client_difficulties(data: dict, count: int = 5) -> list[str]:
     """Suggest frequent client difficulties."""
 
+    industries = data.get("target_industries")
+    extra = ""
+    if industries:
+        ind_str = (
+            ", ".join(industries) if isinstance(industries, list) else str(industries)
+        )
+        extra = f" for the following target industries: {ind_str}"
+
     prompt = (
-        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry. "
+        f"List up to {count} client difficulties typical for the {data.get('industry', '')} industry{extra}. "
         'Return JSON object {"items": [..]} with one item per list entry.'
     )
     return await _suggest_items(prompt, "items")
@@ -1524,13 +1552,16 @@ def show_input(
                 st.warning("Entered salary deviates from suggestion.")
 
     else:
-        val = st.text_input(
-            label,
-            value=val or "",
-            key=widget_key,
-            help=helptext,
-            placeholder=placeholder,
-        )
+        if key in {"recruitment_contact_email", "line_manager_email"}:
+            val = email_input(label, key=widget_key)
+        else:
+            val = st.text_input(
+                label,
+                value=val or "",
+                key=widget_key,
+                help=helptext,
+                placeholder=placeholder,
+            )
 
     # Save to session state
     st.session_state["data"][key] = val
@@ -2702,11 +2733,12 @@ async def main() -> None:
                         unsafe_allow_html=True,
                     )
                     row = st.columns([3, 1])
-                    row[0].markdown(f"**{meta_map['tech_stack']['label']}**")
-                    if row[1].button("Generate Ideas", key="gen_tech_stack"):
+                    row[0].markdown(f"**{meta_map['team_tech_stack']['label']}**")
+                    if row[1].button("Generate Ideas", key="gen_team_tech_stack"):
                         with st.spinner("Generating…"):
                             try:
                                 ss["tech_stack_suggestions"] = await _run_async(
+
                                     suggest_tech_stack(ss["data"])
                                 )
                             except Exception as e:
@@ -2714,16 +2746,17 @@ async def main() -> None:
                                 ss["tech_stack_suggestions"] = []
                     show_missing("tech_stack", extr, meta_map, step_name)
                     sel_ts: list[str] | None = st.pills(
+
                         "",
-                        ss.get("tech_stack_suggestions", []),
+                        ss.get("team_tech_stack_suggestions", []),
                         selection_mode="multi",
-                        key="sel_tech_stack",
+                        key="sel_team_tech_stack",
                     )
-                    current_ts = parse_skill_list(ss["data"].get("tech_stack"))
+                    current_ts = parse_skill_list(ss["data"].get("team_tech_stack"))
                     for s in sel_ts or []:
                         if s not in current_ts:
                             current_ts.append(s)
-                    ss["data"]["tech_stack"] = ", ".join(current_ts)
+                    ss["data"]["team_tech_stack"] = ", ".join(current_ts)
                     st.markdown("</div>", unsafe_allow_html=True)
 
                 with _wrap(box_b):
@@ -2850,7 +2883,26 @@ async def main() -> None:
             meta_map = {m["key"]: m for m in meta_fields}
 
             st.subheader("Role Summary")
-            show_missing("role_description", extr, meta_map, step_name)
+            if st.button("Generate Role Description", key="gen_role_desc"):
+                with st.spinner("Generating …"):
+                    try:
+                        ss["data"]["role_description"] = asyncio.run(
+                            suggest_role_description(ss["data"])
+                        )
+                    except Exception as e:  # pragma: no cover - log only
+                        logging.error("role description generation failed: %s", e)
+                        ss["data"]["role_description"] = ""
+
+            role_desc = ss.get("data", {}).get("role_description")
+            if role_desc:
+                st.text_area(
+                    meta_map["role_description"]["label"],
+                    value=role_desc,
+                    key=f"{step_name}_role_description",
+                    disabled=True,
+                )
+            else:
+                show_missing("role_description", extr, meta_map, step_name)
             cols = st.columns(2)
             with cols[0]:
                 show_missing("role_type", extr, meta_map, step_name)
@@ -2858,7 +2910,6 @@ async def main() -> None:
                 show_missing("role_keywords", extr, meta_map, step_name)
 
             st.subheader("Responsibilities")
-            show_missing("primary_responsibilities", extr, meta_map, step_name)
             show_missing("key_responsibilities", extr, meta_map, step_name)
 
             sup_col, direct_col = st.columns(2)
@@ -3490,7 +3541,11 @@ async def main() -> None:
         with st.expander("All Data", expanded=False):
             display_summary()
 
-        # Ideal Candidate Profile is now collected in the BASIC step
+
+
+        if ss.get("data", {}).get("ideal_candidate_profile"):
+            st.subheader("Ideal Candidate Profile")
+            st.markdown(ss["data"]["ideal_candidate_profile"])
 
         st.subheader("Expected Annual Salary")
         display_salary_plot()
