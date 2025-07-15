@@ -9,9 +9,15 @@ a recruitment profile.
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Dict, List, Tuple
+from typing import Any, Coroutine, Dict, List, Tuple
+
+import asyncio
 
 import streamlit as st
+
+from file_tools import extract_text_from_file
+from services.langchain_chain import fetch_url_text
+from Recruitment_Need_Analysis_Tool import extract
 
 WELCOME_MESSAGE = (
     "Hello! I'm here to help gather all the details for your recruitment needs. "
@@ -77,6 +83,61 @@ FIELD_FLOW: List[Tuple[str, str, str]] = [
 ]
 
 
+def run_async(coro: Coroutine[Any, Any, Any]) -> Any:
+    """Run async coroutine from sync context."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    else:
+        return loop.run_until_complete(coro)
+
+
+def update_step_from_data() -> None:
+    """Set step to the first unanswered field."""
+    for i, (_, key, _) in enumerate(FIELD_FLOW):
+        if not st.session_state.data.get(key):
+            st.session_state.step = i
+            return
+    st.session_state.step = len(FIELD_FLOW)
+
+
+def autofill_from_source(file: Any | None, url: str) -> None:
+    """Extract data from a document or URL and prefill fields."""
+    text = ""
+    if file is not None:
+        text = extract_text_from_file(file.getvalue(), file.type)
+    elif url:
+        text = run_async(fetch_url_text(url))
+
+    if not text:
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": "Sorry, I couldn't read that source. Let's continue manually.",
+            }
+        )
+        return
+
+    extracted = run_async(extract(text))
+    summary: list[str] = []
+    for key, res in extracted.items():
+        if res.value:
+            st.session_state.data[key] = res.value
+            summary.append(f"**{key}**: {res.value}")
+
+    if summary:
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": "I've extracted the following details:\n"
+                + "\n".join(summary),
+            }
+        )
+    update_step_from_data()
+    ask_current_question()
+
+
 def init_session() -> None:
     """Initialize session state for the conversation."""
     if "messages" not in st.session_state:
@@ -117,6 +178,21 @@ def main() -> None:
     """Render the chat UI with persistent assistant welcome message."""
     st.title("Vacalyser Chat")
     init_session()
+
+    if st.session_state.step == 0 and not st.session_state.get("autofill_done"):
+        with st.chat_message("assistant"):
+            st.write(
+                "If you have a job description file or a relevant webpage, you can provide it now for autofill:"
+            )
+            file = st.file_uploader(
+                "Upload PDF or DOCX", type=["pdf", "docx"], key="job_file"
+            )
+            url = st.text_input("Or enter a URL", key="job_url")
+            if st.button("Autofill", key="autofill_btn"):
+                with st.spinner("Extracting…"):
+                    autofill_from_source(file, url)
+                st.session_state.autofill_done = True
+                st.rerun()
 
     if st.session_state.step == 0 and len(st.session_state.messages) == 1:
         ask_current_question()
