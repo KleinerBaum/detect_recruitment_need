@@ -21,7 +21,9 @@ streamlit run app.py
 ```
 
 The interface now includes responsive CSS that stacks columns on
-smartphone screens for easier use on the go.
+smartphone screens for easier use on the go. After you answer all
+questions the assistant shows a short summary of the collected
+information so you can verify everything.
 
 The **SKILLS** step suggests additional hard and soft skills via OpenAI and
 presents them as selectable buttons. Chosen suggestions are stored in your
