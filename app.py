@@ -108,6 +108,37 @@ def update_step_from_data() -> None:
     st.session_state.step = len(FIELD_FLOW)
 
 
+def _format_summary(data: Dict[str, Any]) -> str:
+    """Return collected data as a markdown bullet list."""
+
+    lines: List[str] = []
+    for _, key, _ in FIELD_FLOW:
+        val = data.get(key)
+        if val:
+            label = key.replace("_", " ").title()
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            lines.append(f"* **{label}:** {val}")
+    return "\n".join(lines)
+
+
+def display_final_summary() -> None:
+    """Append a final summary message to the chat history."""
+
+    if st.session_state.summary_shown:
+        return
+    summary = _format_summary(st.session_state.data)
+    msg = (
+        "Thank you! I've gathered all the information. "
+        "Here's a summary of the job profile you provided:\n\n"
+        + summary
+        + "\n\nDoes everything look correct? "
+        "If so, you can confirm, or let me know if any detail needs changing. ✅"
+    )
+    st.session_state.messages.append({"role": "assistant", "content": msg})
+    st.session_state.summary_shown = True
+
+
 def autofill_from_source(file: Any | None, url: str) -> None:
     """Extract data from a document or URL and prefill fields."""
     text = ""
@@ -150,15 +181,14 @@ def init_session() -> None:
         st.session_state.messages = [{"role": "assistant", "content": WELCOME_MESSAGE}]
     st.session_state.setdefault("data", {})
     st.session_state.setdefault("step", 0)
+    st.session_state.setdefault("summary_shown", False)
 
 
 def ask_current_question() -> None:
     """Append the next question to the chat history."""
     index = st.session_state.step
     if index >= len(FIELD_FLOW):
-        st.session_state.messages.append(
-            {"role": "assistant", "content": "All questions answered. Thanks!"}
-        )
+        display_final_summary()
         return
 
     section, key, prompt = FIELD_FLOW[index]
