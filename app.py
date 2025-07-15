@@ -14,6 +14,12 @@ from typing import Any, Coroutine, Dict, List, Tuple
 import asyncio
 
 import streamlit as st
+from validation_utils import (
+    VALIDATORS,
+    parse_date_value,
+    validate_email,
+    validate_phone,
+)
 
 from file_tools import extract_text_from_file
 from services.langchain_chain import fetch_url_text
@@ -210,7 +216,34 @@ def main() -> None:
         index = st.session_state.step
         if index < len(FIELD_FLOW):
             _, key, _ = FIELD_FLOW[index]
-            st.session_state.data[key] = user_input
+            validator = VALIDATORS.get(key)
+            value = user_input
+            if validator:
+                cleaned = validator(user_input)
+                if cleaned is None:
+                    error = "Please provide a valid value."
+                    if validator is parse_date_value:
+                        error = (
+                            "The date format wasn't recognized. "
+                            "Could you provide it as YYYY-MM-DD?"
+                        )
+                    elif validator is validate_email:
+                        error = (
+                            "That email doesn't look valid. "
+                            "Please enter a correct address (e.g., name@domain.com)."
+                        )
+                    elif validator is validate_phone:
+                        error = (
+                            "Please enter a valid phone number "
+                            "(digits and optional '+' only)."
+                        )
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": error}
+                    )
+                    ask_current_question()
+                    st.stop()
+                value = cleaned
+            st.session_state.data[key] = value
             st.session_state.step += 1
 
         ask_current_question()
