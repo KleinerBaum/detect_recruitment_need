@@ -9,9 +9,10 @@ a recruitment profile.
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Coroutine, Dict, List, Tuple
+from typing import Any, Coroutine, Dict, List, Optional, Tuple
 
 import asyncio
+import re
 
 import streamlit as st
 from validation_utils import (
@@ -87,6 +88,33 @@ FIELD_FLOW: List[Tuple[str, str, str]] = [
     for section, fields in SECTION_FIELDS.items()
     for key, prompt in fields
 ]
+
+FIELD_ALIASES: Dict[str, List[str]] = {
+    key: [key.replace("_", " ")] for _, key, _ in FIELD_FLOW
+}
+
+
+def parse_edit_command(text: str) -> Optional[Tuple[str, str]]:
+    """Return ``(field, value)`` if the user wants to edit a field."""
+
+    lower = text.lower().strip()
+
+    if ":" in text:
+        field_part, value = text.split(":", 1)
+        field_part = field_part.strip().lower()
+        for key, aliases in FIELD_ALIASES.items():
+            if field_part == key or field_part in aliases:
+                return key, value.strip()
+
+    if any(word in lower for word in ["change", "edit", "update"]):
+        for key, aliases in FIELD_ALIASES.items():
+            for alias in [key] + aliases:
+                if alias in lower:
+                    match = re.search(r"(?:to|:)\s*(.+)$", text, re.IGNORECASE)
+                    if match:
+                        return key, match.group(1).strip()
+
+    return None
 
 
 def run_async(coro: Coroutine[Any, Any, Any]) -> Any:
@@ -243,6 +271,23 @@ def main() -> None:
             st.markdown(user_input)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
+        edit = parse_edit_command(user_input)
+        if edit:
+            field, value = edit
+            st.session_state.data[field] = value
+            st.session_state.summary_shown = False
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": f"Updated {field.replace('_', ' ').title()} to {value}.",
+                }
+            )
+            index = st.session_state.step
+            if index < len(FIELD_FLOW) and FIELD_FLOW[index][1] == field:
+                st.session_state.step += 1
+            ask_current_question()
+            st.stop()
+
         index = st.session_state.step
         if index < len(FIELD_FLOW):
             _, key, _ = FIELD_FLOW[index]
@@ -275,6 +320,23 @@ def main() -> None:
                 value = cleaned
             st.session_state.data[key] = value
             st.session_state.step += 1
+        else:
+            confirm = user_input.strip().lower()
+            if confirm in {"done", "yes", "confirm", "ok", "looks good"}:
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": "Great! I've recorded all the information.",
+                    }
+                )
+                st.stop()
+            else:
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": "Please specify changes or type 'done' to finish.",
+                    }
+                )
 
         ask_current_question()
 
