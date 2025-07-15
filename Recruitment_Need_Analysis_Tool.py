@@ -1810,7 +1810,10 @@ def display_summary_overview() -> None:
     """Render the most important fields in four columns."""
 
     def val(field: str) -> str:
-        return str(ss["data"].get(field, ""))
+        value = ss["data"].get(field, "")
+        if isinstance(value, list):
+            return ", ".join(str(v) for v in value)
+        return str(value)
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -2946,7 +2949,7 @@ async def main() -> None:
                     if st.button("Generate", key="gen_ai_tasks"):
                         with st.spinner("Generating…"):
                             try:
-                                ss["ai_task_suggestions"] = asyncio.run(
+                                ss["ai_task_suggestions"] = await _run_async(
                                     suggest_tasks(
                                         ss["data"],
                                         count=int(ai_count),
@@ -2956,7 +2959,7 @@ async def main() -> None:
                             except Exception as e:
                                 logging.error("task suggestion failed: %s", e)
                                 ss["ai_task_suggestions"] = []
-                    ai_sel = st.pills(
+                    ai_sel: list[str] | None = st.pills(
                         "",
                         ss.get("ai_task_suggestions", []),
                         selection_mode="multi",
@@ -2973,7 +2976,7 @@ async def main() -> None:
                             except Exception as e:
                                 logging.error("ESCO task lookup failed: %s", e)
                                 ss["esco_task_suggestions"] = []
-                    esco_sel = st.pills(
+                    esco_sel: list[str] | None = st.pills(
                         "",
                         ss.get("esco_task_suggestions", []),
                         selection_mode="multi",
