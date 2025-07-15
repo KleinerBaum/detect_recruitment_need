@@ -14,6 +14,9 @@ pip install -r requirements.txt
 streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
 
+The interface now includes responsive CSS that stacks columns on
+smartphone screens for easier use on the go.
+
 The **SKILLS** step suggests additional hard and soft skills via OpenAI and
 presents them as selectable buttons. Chosen suggestions are stored in your
 profile. Skills are grouped into language skills, key competencies and other

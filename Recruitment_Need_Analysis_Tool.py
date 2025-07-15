@@ -164,6 +164,12 @@ st.markdown(
     [data-testid="stSidebarNav"] {
         display: none;
     }
+    /* stack Streamlit columns on small screens */
+    @media (max-width: 768px) {
+        [data-testid="column"] {
+            flex: 1 1 100% !important;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
