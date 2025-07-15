@@ -14,6 +14,12 @@ pip install -r requirements.txt
 streamlit run "Recruitment_Need_Analysis_Tool.py"
 ```
 
+3. Launch the simple chat demo:
+
+```bash
+streamlit run app.py
+```
+
 The interface now includes responsive CSS that stacks columns on
 smartphone screens for easier use on the go.
 
